@@ -1,64 +1,44 @@
+import "./Login.css";
+import { useState } from "react";
+import logo from "../gambar/LogoYarsi.jpeg";
+import atk from "../gambar/LogoATK.png";
+
+
 function Login({ onClose }) {
+  const [ceklis, tidak] = useState(false);
   return (
-    <div style={{
-      position: "fixed",
-      top: 0, left: 0,
-      width: "100%", height: "100%",
-      background: "rgba(0,0,0,0.5)",
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center"
-    }}>
-      <div style={{
-        width: 350,
-        background: "white",
-        padding: 20,
-        borderRadius: 10,
-        position: "relative"
-      }}>
-        {/* Tombol X */}
-        <button 
-          onClick={onClose}
-          style={{
-            position: "absolute",
-            background:"#030312ff",
-            top: 10,
-            right: 10,
-            border: "none",
-            fontSize: 18,
-            cursor: "pointer"
-          }}
-        >
+    <div className="modal-overlay">
+      <div className="modal-box">
+
+        <button className="close-btn" onClick={onClose}>
           ✖
         </button>
 
-        <h2 style={{ textAlign: "center" }}>Login</h2>
+        <div className="login-container">
+          <div className="left-side">
+  
+            <div className="left-top">
+              <img src={logo} className="logo-atas" />
+            </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <input 
-            type="text"
-            placeholder="Email"
-            style={{ padding: 10, borderRadius: 6, border: "1px solid #ccc" }}
-          />
+            <div className="left-bottom">
+              <img src={atk} className="logo-bawah" />
+            </div>
+          </div>
 
-          <input 
-            type="password"
-            placeholder="Password"
-            style={{ padding: 10, borderRadius: 6, border: "1px solid #ccc" }}
-          />
+          <div className="right-side">
+            <h2>Login</h2>
 
-          <button 
-            style={{
-              padding: 10,
-              borderRadius: 6,
-              background: "#3b82f6",
-              border: "none",
-              color: "white",
-              cursor: "pointer"
-            }}
-          >
-            Masuk
-          </button>
+            <form>
+              <input type="email" placeholder="Email" />
+              <input type="password" placeholder="Password" />
+              <label className="checkbox">
+                <input type="checkbox" checked={ceklis} onChange={(e) => tidak(e.target.checked)}></input>
+                <span>Ingat Saya</span>
+              </label>
+              <button type="submit">Masuk</button>
+            </form>
+          </div>
         </div>
       </div>
     </div>
