@@ -1,9 +1,12 @@
+/* ROOT: biarkan full width supaya halaman pengajuan tidak terpotong */
 #root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
 }
+
+/* ------ sisanya boleh tetap gaya Vite lama ------ */
 
 .logo {
   height: 6em;
@@ -41,13 +44,9 @@
   color: #888;
 }
 
+/* Landing page tetap bisa pakai ini */
 .landing {
-    width: 100%;
-    text-align: center;
+  width: 100%;
+  text-align: center;
 }
 
-#root {
-  max-width: 100% !important;
-  margin: 0 !important;
-  padding: 0 !important;
-}
