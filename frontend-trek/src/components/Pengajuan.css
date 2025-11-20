@@ -359,6 +359,7 @@ th {
     padding: 6px 10px;
     cursor: pointer;
     font-size: 13px;
+    color: #000000;
 }
 
 .search-item:hover {
