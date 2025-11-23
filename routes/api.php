@@ -11,3 +11,7 @@ Route::get('/barang', [BarangController::class, 'index']);
 Route::get('/barang/{barang}', [BarangController::class, 'show']);
 Route::get('/pengajuan', [PengajuanController::class, 'index']);
 Route::post('/pengajuan', [PengajuanController::class, 'store']);
+Route::post('/login', [AuthController::class, 'login']);
+Route::get('/pengajuan', [PengajuanController::class, 'index']);
+Route::post('/pengajuan', [PengajuanController::class, 'store']);
+Route::patch('/pengajuan/{pengajuan}/status', [PengajuanController::class, 'updateStatus']);

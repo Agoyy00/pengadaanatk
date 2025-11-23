@@ -1,32 +1,55 @@
 import "./Login.css";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom"; 
+import { useNavigate } from "react-router-dom";
 import logo from "../gambar/LogoYarsi.jpeg";
 import atk from "../gambar/LogoATK.png";
 
 function Login({ onClose }) {
   const [ceklis, tidak] = useState(false);
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-     if (email === "admin@yarsi.ac.id" && password === "admin123") {
-    navigate("/dashboardadmin");
-  } else if (email === "user@yarsi.ac.id" && password === "user123") {
-    navigate("/dashboarduser");
-  } else {
-    alert("Email atau password salah!");
-  }
+
+    try {
+      const response = await fetch("http://127.0.0.1:8000/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!data.success) {
+        alert(data.message || "Email atau password salah!");
+        return;
+      }
+
+      // Simpan user
+      localStorage.setItem("user", JSON.stringify(data.user));
+
+      // Redirect berdasarkan role
+      if (data.user.role === "admin") {
+        navigate("/dashboardadmin");
+      } else {
+        navigate("/dashboarduser");
+      }
+
+      // tutup modal
+      if (onClose) onClose();
+
+    } catch (error) {
+      console.error("Login error:", error);
+      alert("Terjadi kesalahan saat menghubungi server!");
+    }
   };
 
   return (
     <div className="modal-overlay">
       <div className="modal-box">
-
         <button className="close-btn" onClick={onClose}>
           ✖
         </button>
@@ -46,15 +69,15 @@ function Login({ onClose }) {
             <h2>Login</h2>
 
             <form onSubmit={handleLogin}>
-              <input 
-                type="email" 
+              <input
+                type="email"
                 placeholder="Email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
 
-              <input 
-                type="password" 
+              <input
+                type="password"
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -71,7 +94,6 @@ function Login({ onClose }) {
 
               <button type="submit">Masuk</button>
             </form>
-
           </div>
         </div>
       </div>

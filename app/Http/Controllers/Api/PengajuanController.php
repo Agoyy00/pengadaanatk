@@ -11,20 +11,25 @@ class PengajuanController extends Controller
 {
     /**
      * GET /api/pengajuan
-     * Menampilkan seluruh riwayat pengajuan + item + barang
+     * User → hanya riwayat dirinya sendiri (pakai query ?user_id=)
+     * Admin → semua pengajuan
      */
-    public function index()
+    public function index(Request $request)
     {
-        $pengajuan = Pengajuan::with(['items.barang'])
-            ->orderBy('created_at', 'desc')
-            ->get();
+        $query = Pengajuan::with(['items.barang', 'user'])
+            ->orderBy('created_at', 'desc');
 
-        return response()->json($pengajuan);
+        // Jika user_id ada → tampilkan hanya milik user itu
+        if ($request->has('user_id')) {
+            $query->where('user_id', $request->user_id);
+        }
+
+        return response()->json($query->get());
     }
 
     /**
      * POST /api/pengajuan
-     * Menyimpan pengajuan baru
+     * Simpan pengajuan baru milik user tertentu
      */
     public function store(Request $request)
     {
@@ -34,39 +39,40 @@ class PengajuanController extends Controller
             'nama_pemohon'            => 'required',
             'jabatan'                 => 'required',
             'unit'                    => 'required',
+            'user_id'                 => 'required|exists:users,id',
             'items'                   => 'required|array|min:1',
 
-            // Validasi item
-            'items.*.id'              => 'required|integer',
+            'items.*.id'              => 'required|integer|exists:barangs,id',
             'items.*.kebutuhanTotal'  => 'required|numeric',
             'items.*.sisaStok'        => 'required|numeric',
             'items.*.jumlahDiajukan'  => 'required|numeric|min:1',
             'items.*.estimasiNilai'   => 'required|numeric',
         ]);
 
-        // Hitung total nilai
+        // Hitung total nilai & jumlah
         $totalNilai = 0;
         $totalJumlahDiajukan = 0;
 
-        foreach ($request->items as $item) {
+        foreach ($validated['items'] as $item) {
             $subtotal = $item['jumlahDiajukan'] * $item['estimasiNilai'];
             $totalNilai += $subtotal;
             $totalJumlahDiajukan += $item['jumlahDiajukan'];
         }
 
-        // Simpan pengajuan
+        // Simpan header pengajuan
         $pengajuan = Pengajuan::create([
-            'tahun_akademik'         => $request->tahun_akademik,
-            'nama_pemohon'           => $request->nama_pemohon,
-            'jabatan'                => $request->jabatan,
-            'unit'                   => $request->unit,
-            'status'                 => 'diajukan',
+            'tahun_akademik'         => $validated['tahun_akademik'],
+            'nama_pemohon'           => $validated['nama_pemohon'],
+            'jabatan'                => $validated['jabatan'],
+            'unit'                   => $validated['unit'],
+            'status'                 => 'diajukan',              // belum diverifikasi
             'total_nilai'            => $totalNilai,
             'total_jumlah_diajukan'  => $totalJumlahDiajukan,
+            'user_id'                => $validated['user_id'],
         ]);
 
-        // Simpan semua item
-        foreach ($request->items as $item) {
+        // Simpan semua item barang
+        foreach ($validated['items'] as $item) {
             $subtotal = $item['jumlahDiajukan'] * $item['estimasiNilai'];
 
             PengajuanItem::create([
@@ -76,15 +82,43 @@ class PengajuanController extends Controller
                 'sisa_stok'       => $item['sisaStok'],
                 'jumlah_diajukan' => $item['jumlahDiajukan'],
                 'harga_satuan'    => $item['estimasiNilai'],
-                'subtotal'        => $subtotal, // ✔ sesuai Model kamu
+                'subtotal'        => $subtotal,
             ]);
         }
 
         return response()->json([
-            'success' => true,
-            'message' => 'Pengajuan berhasil dibuat',
-            'id'      => $pengajuan->id,
-            'total_nilai' => $totalNilai
+            'success'     => true,
+            'message'     => 'Pengajuan berhasil dibuat',
+            'pengajuan'   => $pengajuan->load('items.barang'),
+        ]);
+    }
+
+    /**
+     * PATCH /api/pengajuan/{pengajuan}/status
+     * Admin → update status pengajuan (diajukan / diverifikasi / ditolak)
+     */
+   public function updateStatus(Request $request, Pengajuan $pengajuan)
+{
+    $request->validate([
+        'status' => 'required|in:diajukan,diverifikasi,ditolak,disetujui',
+    ]);
+
+
+        // ❌ HANYA boleh ubah kalau masih "diajukan"
+        if ($pengajuan->status !== 'diajukan') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Status tidak dapat diubah karena pengajuan sudah ' . $pengajuan->status,
+            ], 422);
+        }
+
+        $pengajuan->status = $request->status;
+        $pengajuan->save();
+
+        return response()->json([
+            'success'   => true,
+            'message'   => 'Status pengajuan berhasil diperbarui',
+            'pengajuan' => $pengajuan,
         ]);
     }
 }

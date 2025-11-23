@@ -17,6 +17,7 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
+
         {/* LANDING PAGE */}
         <Route
           path="/"
@@ -33,12 +34,18 @@ function App() {
           }
         />
 
-        <Route path="/pengajuan" element={<Pengajuan onLogout={() => setShowLogin(true)} />}/>
-        <Route path="/dashboarduser" element={<DashboardUser />}/>
-        <Route path="/riwayat" element={<History />}/>
-        <Route path="/dashboardadmin" element={<DashboardAdmin />}/>  
-        <Route path="/verifikasi" element={<Verifikasi/>}/>
-        <Route path="/periode" element={<Periode/>}/>
+        {/* USER ROUTES */}
+        <Route
+          path="/pengajuan"
+          element={<Pengajuan onLogout={() => setShowLogin(true)} />}
+        />
+        <Route path="/dashboarduser" element={<DashboardUser />} />
+        <Route path="/riwayat" element={<History />} />
+
+        {/* ADMIN ROUTES */}
+        <Route path="/dashboardadmin" element={<DashboardAdmin />} />
+        <Route path="/verifikasi" element={<Verifikasi />} />
+        <Route path="/periode" element={<Periode />} />
 
       </Routes>
     </BrowserRouter>

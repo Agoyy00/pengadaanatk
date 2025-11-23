@@ -467,3 +467,13 @@ th {
 .status-disetujui {
   background-color: #1f9a3f; /* hijau */
 }
+
+.btn-danger {
+  background: #d9534f;
+  color: white;
+  border-color: #d9534f;
+}
+
+.btn-danger:hover {
+  filter: brightness(0.9);
+}

@@ -9,11 +9,24 @@ export default function Riwayat() {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
 
+  // 🔐 ambil user login
+  const storedUser = localStorage.getItem("user");
+  const currentUser = storedUser ? JSON.parse(storedUser) : null;
+  const userId = currentUser?.id;
+
   useEffect(() => {
     async function loadRiwayat() {
+      if (!userId) {
+        setErrorMsg("User belum login.");
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
-        const res = await fetch(`${API_BASE}/pengajuan`);
+
+        // 🔥 Load pengajuan hanya milik user ini
+        const res = await fetch(`${API_BASE}/pengajuan?user_id=${userId}`);
         const json = await res.json();
         setData(json);
       } catch (err) {
@@ -25,7 +38,7 @@ export default function Riwayat() {
     }
 
     loadRiwayat();
-  }, []);
+  }, [userId]);
 
   const renderStatus = (status) => {
     if (status === "diajukan") {
@@ -37,6 +50,9 @@ export default function Riwayat() {
     if (status === "disetujui") {
       return <span className="status-badge status-disetujui">Disetujui</span>;
     }
+    if (status === "ditolak") {
+      return <span className="status-badge status-ditolak">Ditolak</span>;
+    }
     return <span className="status-badge">{status}</span>;
   };
 
@@ -45,7 +61,7 @@ export default function Riwayat() {
       {/* SIDEBAR */}
       <aside className="sidebar">
         <div>
-          <div className="sidebar-logo">Sistem pengajuan ATK</div>
+          <div className="sidebar-logo">Sistem Pengajuan ATK</div>
           <div className="sidebar-subtitle">Universitas Yarsi</div>
         </div>
 
@@ -64,7 +80,9 @@ export default function Riwayat() {
         <header className="topbar">
           <div>
             <div className="topbar-title">Riwayat Pengajuan ATK</div>
-            <div className="topbar-sub">Selamat datang: Nama Kamu</div>
+            <div className="topbar-sub">
+              Selamat datang: {currentUser?.name || "Nama Kamu"}
+            </div>
           </div>
           <div className="topbar-right">
             <span>Role: User</span>
@@ -77,7 +95,7 @@ export default function Riwayat() {
           <div className="card">
             <div className="card-title">Riwayat Pengajuan</div>
             <div className="card-subtitle">
-              Daftar seluruh pengajuan ATK beserta status dan barang yang diajukan.
+              Semua pengajuan ATK yang pernah kamu lakukan.
             </div>
 
             {loading && <p>Sedang memuat...</p>}
@@ -118,15 +136,16 @@ export default function Riwayat() {
                                 : "-"}
                             </td>
 
-                            {/* Barang yang diajukan */}
+                            {/* BARANG YANG DIAJUKAN */}
                             <td>
                               {(!p.items || p.items.length === 0) && <span>-</span>}
 
-                              {p.items && p.items.length > 0 && (
+                              {p.items?.length > 0 && (
                                 <ul style={{ paddingLeft: 18, margin: 0 }}>
                                   {p.items.map((item) => {
                                     const namaBarang = item.barang?.nama ?? "Barang";
                                     const satuan = item.barang?.satuan ?? "";
+
                                     return (
                                       <li key={item.id}>
                                         {namaBarang} —{" "}

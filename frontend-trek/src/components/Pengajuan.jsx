@@ -23,6 +23,11 @@ function Pengajuan() {
 
   const API_BASE = "http://127.0.0.1:8000/api";
 
+  // 🔐 ambil user login dari localStorage
+  const storedUser = localStorage.getItem("user");
+  const currentUser = storedUser ? JSON.parse(storedUser) : null;
+  const userId = currentUser?.id;
+
   const getStepperLabel = () => {
     return "Stepper: Data Pengajuan → Input Barang → Konfirmasi";
   };
@@ -187,16 +192,28 @@ function Pengajuan() {
     setCurrentStep(3);
   };
 
-  // 🔁 Kirim pengajuan ke backend
+  // 🔁 Kirim pengajuan ke backend (dengan user_id)
   async function handleSubmit(e) {
     e.preventDefault();
+
+    if (!userId) {
+      alert("User belum login. Silakan login terlebih dahulu.");
+      return;
+    }
 
     const payload = {
       tahun_akademik: tahunAkademik,
       nama_pemohon: namaPemohon,
       jabatan,
       unit,
-      items,
+      user_id: userId,
+      items: items.map((item) => ({
+        id: item.id,
+        kebutuhanTotal: Number(item.kebutuhanTotal),
+        sisaStok: Number(item.sisaStok),
+        jumlahDiajukan: Number(item.jumlahDiajukan),
+        estimasiNilai: Number(item.estimasiNilai),
+      })),
       total_nilai: totalNilai,
       total_jumlah_diajukan: totalJumlahDiajukan,
     };
@@ -256,7 +273,9 @@ function Pengajuan() {
         <header className="topbar">
           <div>
             <div className="topbar-title">Buat Pengajuan Baru</div>
-            <div className="topbar-sub">Selamat datang: Nama Kamu</div>
+            <div className="topbar-sub">
+              Selamat datang: {currentUser?.name || "Nama Kamu"}
+            </div>
           </div>
           <div className="topbar-right">
             <span>Role: User</span>
