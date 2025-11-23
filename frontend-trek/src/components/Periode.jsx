@@ -17,24 +17,24 @@ export default function Dashboard() {
         <nav className="sidebar-menu">
           <div
             className="menu-item"
-            onClick={() => navigate("/dashboard")}
+            onClick={() => navigate("/dashboardadmin")}
             style={{ cursor: "pointer" }}
           >
             Dashboard
           </div>
           <div
             className="menu-item"
-            onClick={() => navigate("/pengajuan")}
+            onClick={() => navigate("/verifikasi")}
             style={{ cursor: "pointer" }}
           >
-            Buat Pengajuan Baru
+            Verifikasi
           </div>
           <div
             className="menu-item"
-            onClick={() => navigate("/riwayat")}
+            onClick={() => navigate("/periode")}
             style={{ cursor: "pointer" }}
           >
-            Riwayat Pengajuan
+            Atur Periode
           </div>
         </nav>
 
@@ -52,12 +52,12 @@ export default function Dashboard() {
         {/* TOPBAR */}
         <header className="topbar">
           <div>
-            <div className="topbar-title">Dashboard</div>
+            <div className="topbar-title">Atur Periode</div>
             <div className="topbar-sub">Selamat datang: Nama Kamu</div>
           </div>
           <div className="topbar-right">
-            <span>Role: User</span>
-            <span className="role-pill">User</span>
+            <span>Role: Admin</span>
+            <span className="role-pill">Admin</span>
           </div>
         </header>
 

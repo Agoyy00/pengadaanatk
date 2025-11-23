@@ -14,11 +14,13 @@ function Login({ onClose }) {
 
   const handleLogin = (e) => {
     e.preventDefault();
-    if (email === "admin@yarsi.ac.id" && password === "admin123") {
-      navigate("/dashboard");
-    } else {
-      alert("Email atau password salah!");
-    }
+     if (email === "admin@yarsi.ac.id" && password === "admin123") {
+    navigate("/dashboardadmin");
+  } else if (email === "user@yarsi.ac.id" && password === "user123") {
+    navigate("/dashboarduser");
+  } else {
+    alert("Email atau password salah!");
+  }
   };
 
   return (

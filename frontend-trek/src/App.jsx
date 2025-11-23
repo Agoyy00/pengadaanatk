@@ -6,7 +6,11 @@ import './App.css'
 import Navbar from "./components/Navbar";
 import Login from "./components/Login";
 import Pengajuan from "./components/Pengajuan";
-import Dashboard from "./components/Dashboard";
+import DashboardUser from "./components/DashboardUser";
+import History from "./components/History";
+import DashboardAdmin from "./components/DashboardAdmin";
+import Verifikasi from "./components/Verifikasi";
+import Periode from "./components/Periode";
 
 function App() {
   const [count, setCount] = useState(0)
@@ -33,7 +37,12 @@ function App() {
         />
 
         <Route path="/pengajuan" element={<Pengajuan onLogout={() => setShowLogin(true)} />}/>
-        <Route path="/dashboard" element={<Dashboard />}/>
+        <Route path="/dashboarduser" element={<DashboardUser />}/>
+        <Route path="/riwayat" element={<History />}/>
+        <Route path="/dashboardadmin" element={<DashboardAdmin />}/>  
+        <Route path="/verifikasi" element={<Verifikasi/>}/>
+        <Route path="/periode" element={<Periode/>}/>
+
       </Routes>
     </BrowserRouter>
   );

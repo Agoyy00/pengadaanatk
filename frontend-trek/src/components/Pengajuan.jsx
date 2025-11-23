@@ -193,9 +193,9 @@ export default function PengajuanForm() {
         </div>
 
         <nav className="sidebar-menu">
-          <div className="menu-item" onClick={() => navigate("/dashboard")} style={{ cursor: "pointer" }}>Dashboard</div>
+          <div className="menu-item" onClick={() => navigate("/dashboarduser")} style={{ cursor: "pointer" }}>Dashboard</div>
           <div className="menu-item disabled">Buat Pengajuan Baru</div>
-          <div className="menu-item">Riwayat Pengajuan</div>
+          <div className="menu-item" onClick={() => navigate("/riwayat")} >Riwayat Pengajuan</div>
         </nav>
 
         <div className="logout" onClick={() => navigate("/")} style={{ cursor: "pointer" }}>Log Out</div>
