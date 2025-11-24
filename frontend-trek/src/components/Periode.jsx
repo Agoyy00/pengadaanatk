@@ -65,7 +65,7 @@ export default function Dashboard() {
         <section className="main-content">
           <div className="card">
             <div className="card-title">Ringkasan Pengajuan</div>
-            <p>Ini adalah menu dashboard. Isi data atau statistik bisa dimasukkan di sini.</p>
+            <p>Ini adalah menu Periode. Isi data atau statistik bisa dimasukkan di sini.</p>
           </div>
         </section>
       </main>

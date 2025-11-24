@@ -1,10 +1,14 @@
-
 #root {
   width: 100%;
   max-width: 100%;
   margin: 0;
   padding: 0;
 }
+
+body{
+  background-color:#1D7D6C;
+}
+
 .logo {
   height: 6em;
   padding: 1.5em;
@@ -38,7 +42,7 @@
 }
 
 .read-the-docs {
-  color: #888;
+  color: #ffffff;
 }
 
 .landing {
