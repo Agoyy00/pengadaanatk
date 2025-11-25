@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import "./Pengajuan.css";
 
 function Pengajuan() {
@@ -21,22 +21,64 @@ function Pengajuan() {
   const [items, setItems] = useState([]);
   const [step2Error, setStep2Error] = useState("");
 
-  // 🔍 preview foto besar
+  // preview foto besar
   const [previewImage, setPreviewImage] = useState(null);
 
-  const API_BASE = "http://127.0.0.1:8000/api";
-  const BACKEND_BASE = "http://127.0.0.1:8000"; // untuk foto
+  // STATUS PERIODE
+  const [periodeLoading, setPeriodeLoading] = useState(true);
+  const [periodeOpen, setPeriodeOpen] = useState(null); // null = belum tahu
+  const [periodeMessage, setPeriodeMessage] = useState("");
 
-  // 🔐 ambil user login dari localStorage
+  const API_BASE = "http://127.0.0.1:8000/api";
+  const BACKEND_BASE = "http://127.0.0.1:8000";
+
+  const navigate = useNavigate();
+
+  // ambil user login dari localStorage
   const storedUser = localStorage.getItem("user");
   const currentUser = storedUser ? JSON.parse(storedUser) : null;
   const userId = currentUser?.id;
 
-  const getStepperLabel = () => {
-    return "Stepper: Data Pengajuan → Input Barang → Konfirmasi";
-  };
+  const getStepperLabel = () =>
+    "Stepper: Data Pengajuan → Input Barang → Konfirmasi";
 
-  // 🔍 AUTO-SUGGEST barang (debounce)
+  // ====== CEK PERIODE PENGAJUAN ======
+  useEffect(() => {
+    async function fetchPeriode() {
+      try {
+        setPeriodeLoading(true);
+        const res = await fetch(`${API_BASE}/periode/active`);
+
+        if (!res.ok) {
+          // kalau API error → jangan kunci form
+          setPeriodeOpen(true);
+          setPeriodeMessage("");
+          return;
+        }
+
+        const data = await res.json();
+
+        const isOpen =
+          data.is_open === true ||
+          data.is_open === 1 ||
+          data.is_open === "1" ||
+          data.is_open === "open";
+
+        setPeriodeOpen(isOpen);
+        setPeriodeMessage(data.message || "");
+      } catch (err) {
+        console.error("Gagal cek periode:", err);
+        setPeriodeOpen(true);
+        setPeriodeMessage("");
+      } finally {
+        setPeriodeLoading(false);
+      }
+    }
+
+    fetchPeriode();
+  }, []);
+
+  // ====== AUTO-SUGGEST BARANG ======
   useEffect(() => {
     if (!query.trim()) {
       setSearchResults([]);
@@ -61,13 +103,13 @@ function Pengajuan() {
     return () => clearTimeout(timeoutId);
   }, [query]);
 
-  // ➕ Tambah barang ke daftar item
+  // tambah barang ke daftar item
   const handleAddItem = (barang) => {
     const exists = items.some((i) => i.id === barang.id);
     if (exists) return;
 
-    setItems([
-      ...items,
+    setItems((prev) => [
+      ...prev,
       {
         id: barang.id,
         nama: barang.nama,
@@ -75,8 +117,8 @@ function Pengajuan() {
         kebutuhanTotal: 0,
         sisaStok: 0,
         jumlahDiajukan: 0,
-        estimasiNilai: barang.harga_satuan, // harga satuan
-        foto: barang.foto || null,          // path foto dari API
+        estimasiNilai: barang.harga_satuan,
+        foto: barang.foto || null,
       },
     ]);
 
@@ -85,17 +127,14 @@ function Pengajuan() {
     setStep2Error("");
   };
 
-  // 🔢 hanya boleh angka di input number
+  // hanya boleh angka di input number
   const handleNumericKeyDown = (e) => {
     const allowedKeys = ["Backspace", "Tab", "ArrowLeft", "ArrowRight", "Delete"];
     if (allowedKeys.includes(e.key)) return;
-
-    if (!/^[0-9]$/.test(e.key)) {
-      e.preventDefault();
-    }
+    if (!/^[0-9]$/.test(e.key)) e.preventDefault();
   };
 
-  // ketika kebutuhan total berubah → hitung jumlah diajukan = kebutuhan - sisa
+  // kebutuhan total berubah → jumlah diajukan = kebutuhan - sisa
   const handleChangeKebutuhan = (id, value) => {
     const num = Number(value) || 0;
     setItems((prev) =>
@@ -108,7 +147,7 @@ function Pengajuan() {
     );
   };
 
-  // ketika sisa stok berubah → hitung jumlah diajukan = kebutuhan - sisa
+  // sisa stok berubah → jumlah diajukan = kebutuhan - sisa
   const handleChangeSisaStok = (id, value) => {
     const num = Number(value) || 0;
     setItems((prev) =>
@@ -125,24 +164,24 @@ function Pengajuan() {
     setItems((prev) => prev.filter((i) => i.id !== id));
   };
 
-  // 💰 Total nilai semua item (jumlahDiajukan * harga_satuan)
+  // total nilai semua item
   const totalNilai = items.reduce(
     (sum, item) => sum + item.jumlahDiajukan * item.estimasiNilai,
     0
   );
 
-  // 🔢 total jumlah diajukan semua item
+  // total jumlah diajukan
   const totalJumlahDiajukan = items.reduce(
     (sum, item) => sum + item.jumlahDiajukan,
     0
   );
 
-  // ✅ Validasi STEP 1
+  // validasi STEP 1
   const handleNextFromStep1 = () => {
     const errors = {};
 
     if (!tahunAkademik.trim()) {
-    errors.tahunAkademik = "Tahun akademik wajib dipilih.";
+      errors.tahunAkademik = "Tahun akademik wajib dipilih.";
     } else if (!/^\d{4}\/\d{4}$/.test(tahunAkademik.trim())) {
       errors.tahunAkademik = "Format tahun akademik tidak valid.";
     }
@@ -153,13 +192,8 @@ function Pengajuan() {
       errors.namaPemohon = "Nama pemohon hanya boleh huruf (tanpa angka).";
     }
 
-    if (!jabatan) {
-      errors.jabatan = "Jabatan wajib dipilih.";
-    }
-
-    if (!unit) {
-      errors.unit = "Unit/Bagian wajib dipilih.";
-    }
+    if (!jabatan) errors.jabatan = "Jabatan wajib dipilih.";
+    if (!unit) errors.unit = "Unit/Bagian wajib dipilih.";
 
     if (Object.keys(errors).length > 0) {
       setErrorsStep1(errors);
@@ -170,7 +204,7 @@ function Pengajuan() {
     setCurrentStep(2);
   };
 
-  // ✅ Validasi STEP 2 sebelum ke konfirmasi
+  // validasi STEP 2
   const handleNextFromStep2 = () => {
     if (items.length === 0) {
       setStep2Error("Tambahkan minimal satu barang sebelum melanjutkan.");
@@ -191,7 +225,7 @@ function Pengajuan() {
     setCurrentStep(3);
   };
 
-  // 🔁 Kirim pengajuan ke backend (dengan user_id)
+  // kirim pengajuan ke backend
   async function handleSubmit(e) {
     e.preventDefault();
 
@@ -220,9 +254,7 @@ function Pengajuan() {
     try {
       const res = await fetch(`${API_BASE}/pengajuan`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
@@ -282,359 +314,403 @@ function Pengajuan() {
 
         {/* MAIN CONTENT */}
         <section className="main-content">
-          <div className="card">
-            <div className="card-title">Form Pengajuan (langkah 1 sampai 3)</div>
-            <div id="stepper-label" className="card-subtitle">
-              {getStepperLabel()}
-            </div>
-
-            <div className="stepper">
-              <div className="step">
-                <div
-                  className={`step-circle ${
-                    currentStep === 1 ? "active" : ""
-                  }`}
-                >
-                  1
-                </div>
-              </div>
-              <div className="step-line"></div>
-              <div className="step">
-                <div
-                  className={`step-circle ${
-                    currentStep === 2 ? "active" : ""
-                  }`}
-                >
-                  2
-                </div>
-              </div>
-              <div className="step-line"></div>
-              <div className="step">
-                <div
-                  className={`step-circle ${
-                    currentStep === 3 ? "active" : ""
-                  }`}
-                >
-                  3
-                </div>
+          {/* 1. MASIH CEK PERIODE */}
+          {periodeLoading || periodeOpen === null ? (
+            <div className="card">
+              <div className="card-subtitle">
+                Memeriksa status periode pengajuan...
               </div>
             </div>
-          </div>
+          ) : !periodeOpen ? (
+            // 2. PERIODE DITUTUP / BELUM DIBUKA → HANYA TAMPIL PESAN MERAH
+            <div className="card periode-closed-card">
+              <div className="card-title">Pengajuan ATK tidak tersedia</div>
+              <p>Saat ini pengajuan belum dibuka atau sudah ditutup.</p>
+              {periodeMessage && <p>{periodeMessage}</p>}
 
-          {/* FORM ALL STEP */}
-          <form onSubmit={handleSubmit}>
-            {/* STEP 1 */}
-            {currentStep === 1 && (
-              <div className="step-pane active">
-                <div className="form-grid">
-                  <div className="form-group">
-                    <label>Tahun Akademik</label>
-                    <select className="input-text" value={tahunAkademik} onChange={(e) => setTahunAkademik(e.target.value)}>
-                    <option value="">-- Pilih Tahun Akademik --</option>
-                    <option value="2023/2024">2023/2024</option>
-                    <option value="2024/2025">2024/2025</option>
-                    <option value="2025/2026">2025/2026</option>
-                  </select>
-
-                  {errorsStep1.tahunAkademik && (
-                    <div className="error-text">{errorsStep1.tahunAkademik}</div>
-                  )}
-                  </div>
-
-                  <div className="form-group">
-                    <label>Nama Pemohon</label>
-                    <input
-                      type="text"
-                      className="input-text"
-                      value={namaPemohon}
-                      onChange={(e) => setNamaPemohon(e.target.value)}
-                    />
-                    {errorsStep1.namaPemohon && (
-                      <div className="error-text">
-                        {errorsStep1.namaPemohon}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="form-group">
-                    <label>Jabatan</label>
-                    <select
-                      className="select-input"
-                      value={jabatan}
-                      onChange={(e) => setJabatan(e.target.value)}
-                    >
-                      <option>Staf</option>
-                      <option>Dosen</option>
-                      <option>Mahasiswa</option>
-                    </select>
-                    {errorsStep1.jabatan && (
-                      <div className="error-text">
-                        {errorsStep1.jabatan}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="form-group">
-                    <label>Unit/Bagian</label>
-                    <select
-                      className="select-input"
-                      value={unit}
-                      onChange={(e) => setUnit(e.target.value)}
-                    >
-                      <option>Direktorat</option>
-                      <option>DPJJ</option>
-                      <option>PDJAMA</option>
-                      <option>Pascasarjana</option>
-                      <option>Fakultas Kedokteran</option>
-                      <option>Fakultas Kedokteran Gigi</option>
-                      <option>Fakultas Teknologi Informasi</option>
-                      <option>Fakultas Hukum</option>
-                      <option>Fakultas Psikologi</option>
-                      <option>Fakultas Ekonomi</option>
-                    </select>
-                    {errorsStep1.unit && (
-                      <div className="error-text">{errorsStep1.unit}</div>
-                    )}
-                  </div>
+              <button
+                type="button"
+                className="btn btn-back-dashboard"
+                onClick={() => navigate("/dashboarduser")}
+              >
+                Kembali ke Dashboard
+              </button>
+            </div>
+          ) : (
+            // 3. PERIODE TERBUKA → TAMPILKAN FORM PENGAJUAN
+            <>
+              <div className="card">
+                <div className="card-title">
+                  Form Pengajuan (langkah 1 sampai 3)
+                </div>
+                <div id="stepper-label" className="card-subtitle">
+                  {getStepperLabel()}
                 </div>
 
-                <div className="actions">
-                  <span></span>
-                  <button
-                    type="button"
-                    className="btn btn-primary"
-                    onClick={handleNextFromStep1}
-                  >
-                    Selanjutnya: Input barang
-                  </button>
+                <div className="stepper">
+                  <div className="step">
+                    <div
+                      className={`step-circle ${
+                        currentStep === 1 ? "active" : ""
+                      }`}
+                    >
+                      1
+                    </div>
+                  </div>
+                  <div className="step-line"></div>
+                  <div className="step">
+                    <div
+                      className={`step-circle ${
+                        currentStep === 2 ? "active" : ""
+                      }`}
+                    >
+                      2
+                    </div>
+                  </div>
+                  <div className="step-line"></div>
+                  <div className="step">
+                    <div
+                      className={`step-circle ${
+                        currentStep === 3 ? "active" : ""
+                      }`}
+                    >
+                      3
+                    </div>
+                  </div>
                 </div>
               </div>
-            )}
 
-            {/* STEP 2 */}
-            {currentStep === 2 && (
-              <div className="step-pane active">
-                {/* CARI BARANG */}
-                <div className="form-group">
-                  <label>Cari Barang</label>
-                  <div className="search-wrapper">
-                    <input
-                      type="text"
-                      className="input-text"
-                      placeholder="Ketik nama barang..."
-                      value={query}
-                      onChange={(e) => setQuery(e.target.value)}
-                    />
-                    {loadingSearch && (
-                      <div className="search-loading">mencari...</div>
-                    )}
+              {/* FORM SEMUA STEP */}
+              <form onSubmit={handleSubmit}>
+                {/* STEP 1 */}
+                {currentStep === 1 && (
+                  <div className="step-pane active">
+                    <div className="form-grid">
+                      <div className="form-group">
+                        <label>Tahun Akademik</label>
+                        <select
+                          className="input-text"
+                          value={tahunAkademik}
+                          onChange={(e) => setTahunAkademik(e.target.value)}
+                        >
+                          <option value="">-- Pilih Tahun Akademik --</option>
+                          <option value="2023/2024">2023/2024</option>
+                          <option value="2024/2025">2024/2025</option>
+                          <option value="2025/2026">2025/2026</option>
+                        </select>
+                        {errorsStep1.tahunAkademik && (
+                          <div className="error-text">
+                            {errorsStep1.tahunAkademik}
+                          </div>
+                        )}
+                      </div>
 
-                    {/* DROPDOWN REKOMENDASI */}
-                    {searchResults.length > 0 && (
-                      <ul className="search-dropdown">
-                        {searchResults.map((b) => (
-                          <li
-                            key={b.id}
-                            className="search-item"
-                            onClick={() => handleAddItem(b)}
-                          >
-                            <div className="search-item-row">
-                              {b.foto && (
-                                <img
-                                  src={`${BACKEND_BASE}${b.foto}`}
-                                  alt={b.nama}
-                                  className="barang-thumb"
-                                />
-                              )}
-                              <div>
-                                <div>{b.nama}</div>
-                                <div className="search-item-meta">
-                                  {b.kode} · Stok gudang: {b.stok} · {b.satuan}
+                      <div className="form-group">
+                        <label>Nama Pemohon</label>
+                        <input
+                          type="text"
+                          className="input-text"
+                          value={namaPemohon}
+                          onChange={(e) => setNamaPemohon(e.target.value)}
+                        />
+                        {errorsStep1.namaPemohon && (
+                          <div className="error-text">
+                            {errorsStep1.namaPemohon}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="form-group">
+                        <label>Jabatan</label>
+                        <select
+                          className="select-input"
+                          value={jabatan}
+                          onChange={(e) => setJabatan(e.target.value)}
+                        >
+                          <option>Staf</option>
+                          <option>Dosen</option>
+                          <option>Mahasiswa</option>
+                        </select>
+                        {errorsStep1.jabatan && (
+                          <div className="error-text">
+                            {errorsStep1.jabatan}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="form-group">
+                        <label>Unit/Bagian</label>
+                        <select
+                          className="select-input"
+                          value={unit}
+                          onChange={(e) => setUnit(e.target.value)}
+                        >
+                          <option>Direktorat</option>
+                          <option>DPJJ</option>
+                          <option>PDJAMA</option>
+                          <option>Pascasarjana</option>
+                          <option>Fakultas Kedokteran</option>
+                          <option>Fakultas Kedokteran Gigi</option>
+                          <option>Fakultas Teknologi Informasi</option>
+                          <option>Fakultas Hukum</option>
+                          <option>Fakultas Psikologi</option>
+                          <option>Fakultas Ekonomi</option>
+                        </select>
+                        {errorsStep1.unit && (
+                          <div className="error-text">
+                            {errorsStep1.unit}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="actions">
+                      <span></span>
+                      <button
+                        type="button"
+                        className="btn btn-primary"
+                        onClick={handleNextFromStep1}
+                      >
+                        Selanjutnya: Input barang
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* STEP 2 */}
+                {currentStep === 2 && (
+                  <div className="step-pane active">
+                    <div className="form-group">
+                      <label>Cari Barang</label>
+                      <div className="search-wrapper">
+                        <input
+                          type="text"
+                          className="input-text"
+                          placeholder="Ketik nama barang..."
+                          value={query}
+                          onChange={(e) => setQuery(e.target.value)}
+                        />
+                        {loadingSearch && (
+                          <div className="search-loading">mencari...</div>
+                        )}
+
+                        {searchResults.length > 0 && (
+                          <ul className="search-dropdown">
+                            {searchResults.map((b) => (
+                              <li
+                                key={b.id}
+                                className="search-item"
+                                onClick={() => handleAddItem(b)}
+                              >
+                                <div className="search-item-row">
+                                  {b.foto && (
+                                    <img
+                                      src={`${BACKEND_BASE}${b.foto}`}
+                                      alt={b.nama}
+                                      className="barang-thumb"
+                                    />
+                                  )}
+                                  <div>
+                                    <div>{b.nama}</div>
+                                    <div className="search-item-meta">
+                                      {b.kode} · Stok gudang: {b.stok} ·{" "}
+                                      {b.satuan}
+                                    </div>
+                                  </div>
                                 </div>
-                              </div>
-                            </div>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="table-title">Item yang diajukan</div>
+
+                    <div className="table-wrapper">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Barang</th>
+                            <th>Satuan</th>
+                            <th>Harga Satuan</th>
+                            <th>Kebutuhan Total</th>
+                            <th>Sisa stok saat ini</th>
+                            <th>Jumlah Diajukan</th>
+                            <th>Harga Total</th>
+                            <th>Aksi</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {items.length === 0 && (
+                            <tr>
+                              <td colSpan="8">Belum ada item.</td>
+                            </tr>
+                          )}
+                          {items.map((item) => (
+                            <tr key={item.id}>
+                              <td>
+                                <div className="barang-cell">
+                                  {item.foto && (
+                                    <img
+                                      src={`${BACKEND_BASE}${item.foto}`}
+                                      alt={item.nama}
+                                      className="barang-thumb barang-thumb-clickable"
+                                      onClick={() =>
+                                        setPreviewImage(
+                                          `${BACKEND_BASE}${item.foto}`
+                                        )
+                                      }
+                                    />
+                                  )}
+                                  <span>{item.nama}</span>
+                                </div>
+                              </td>
+                              <td>{item.satuan}</td>
+                              <td>
+                                Rp {item.estimasiNilai.toLocaleString("id-ID")}
+                              </td>
+                              <td>
+                                <input
+                                  type="number"
+                                  inputMode="numeric"
+                                  onKeyDown={handleNumericKeyDown}
+                                  className="input-number"
+                                  value={item.kebutuhanTotal}
+                                  onChange={(e) =>
+                                    handleChangeKebutuhan(
+                                      item.id,
+                                      e.target.value
+                                    )
+                                  }
+                                />
+                              </td>
+                              <td>
+                                <input
+                                  type="number"
+                                  inputMode="numeric"
+                                  onKeyDown={handleNumericKeyDown}
+                                  className="input-number"
+                                  value={item.sisaStok}
+                                  onChange={(e) =>
+                                    handleChangeSisaStok(
+                                      item.id,
+                                      e.target.value
+                                    )
+                                  }
+                                />
+                              </td>
+                              <td>{item.jumlahDiajukan}</td>
+                              <td>
+                                Rp{" "}
+                                {(
+                                  item.jumlahDiajukan * item.estimasiNilai
+                                ).toLocaleString("id-ID")}
+                              </td>
+                              <td>
+                                <span
+                                  className="aksi-hapus"
+                                  onClick={() => handleRemoveItem(item.id)}
+                                >
+                                  Hapus
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div className="total-nilai">
+                      Total nilai pengajuan:{" "}
+                      <strong>
+                        Rp {totalNilai.toLocaleString("id-ID")}
+                      </strong>
+                    </div>
+
+                    {step2Error && (
+                      <div className="error-text" style={{ marginTop: 8 }}>
+                        {step2Error}
+                      </div>
+                    )}
+
+                    <div className="actions">
+                      <button
+                        type="button"
+                        className="btn"
+                        onClick={() => setCurrentStep(1)}
+                      >
+                        Kembali
+                      </button>
+
+                      <button
+                        type="button"
+                        className="btn btn-primary"
+                        onClick={handleNextFromStep2}
+                      >
+                        Selanjutnya: Konfirmasi
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* STEP 3 */}
+                {currentStep === 3 && (
+                  <div className="step-pane active">
+                    <h4>Konfirmasi Pengajuan</h4>
+
+                    <p>
+                      <strong>Tahun Akademik:</strong> {tahunAkademik} <br />
+                      <strong>Nama Pemohon:</strong> {namaPemohon} <br />
+                      <strong>Jabatan:</strong> {jabatan} <br />
+                      <strong>Unit:</strong> {unit}
+                    </p>
+
+                    <h5>Item yang diajukan:</h5>
+                    {items.length === 0 ? (
+                      <p>Tidak ada item.</p>
+                    ) : (
+                      <ul>
+                        {items.map((i) => (
+                          <li key={i.id}>
+                            {i.nama} — kebutuhan {i.kebutuhanTotal}, sisa stok{" "}
+                            {i.sisaStok},{" "}
+                            <strong>diajukan {i.jumlahDiajukan}</strong>{" "}
+                            {i.satuan}
                           </li>
                         ))}
                       </ul>
                     )}
-                  </div>
-                </div>
 
-                {/* TABEL ITEM */}
-                <div className="table-title">Item yang diajukan</div>
+                    <h5>Ringkasan jumlah & nilai:</h5>
+                    <p>
+                      Total jumlah diajukan:{" "}
+                      <strong>{totalJumlahDiajukan}</strong>
+                      <br />
+                      Total nilai pengajuan:{" "}
+                      <strong>
+                        Rp {totalNilai.toLocaleString("id-ID")}
+                      </strong>
+                    </p>
 
-                <div className="table-wrapper">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Barang</th>
-                        <th>Satuan</th>
-                        <th>Harga Satuan</th>
-                        <th>Kebutuhan Total</th>
-                        <th>Sisa stok saat ini</th>
-                        <th>Jumlah Diajukan</th>
-                        <th>Harga Total</th>
-                        <th>Aksi</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {items.length === 0 && (
-                        <tr>
-                          <td colSpan="8">Belum ada item.</td>
-                        </tr>
-                      )}
-                      {items.map((item) => (
-                        <tr key={item.id}>
-                          <td>
-                            <div className="barang-cell">
-                              {item.foto && (
-                                <img
-                                  src={`${BACKEND_BASE}${item.foto}`}
-                                  alt={item.nama}
-                                  className="barang-thumb barang-thumb-clickable"
-                                  onClick={() =>
-                                    setPreviewImage(
-                                      `${BACKEND_BASE}${item.foto}`
-                                    )
-                                  }
-                                />
-                              )}
-                              <span>{item.nama}</span>
-                            </div>
-                          </td>
-                          <td>{item.satuan}</td>
-                          <td>
-                            Rp {item.estimasiNilai.toLocaleString("id-ID")}
-                          </td>
-                          <td>
-                            <input
-                              type="number"
-                              inputMode="numeric"
-                              onKeyDown={handleNumericKeyDown}
-                              className="input-number"
-                              value={item.kebutuhanTotal}
-                              onChange={(e) =>
-                                handleChangeKebutuhan(item.id, e.target.value)
-                              }
-                            />
-                          </td>
-                          <td>
-                            <input
-                              type="number"
-                              inputMode="numeric"
-                              onKeyDown={handleNumericKeyDown}
-                              className="input-number"
-                              value={item.sisaStok}
-                              onChange={(e) =>
-                                handleChangeSisaStok(item.id, e.target.value)
-                              }
-                            />
-                          </td>
-                          <td>{item.jumlahDiajukan}</td>
-                          <td>
-                            Rp{" "}
-                            {(
-                              item.jumlahDiajukan * item.estimasiNilai
-                            ).toLocaleString("id-ID")}
-                          </td>
-                          <td>
-                            <span
-                              className="aksi-hapus"
-                              onClick={() => handleRemoveItem(item.id)}
-                            >
-                              Hapus
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                    <div className="actions">
+                      <button
+                        type="button"
+                        className="btn"
+                        onClick={() => setCurrentStep(2)}
+                      >
+                        Kembali
+                      </button>
 
-                {/* Total nilai semua item */}
-                <div className="total-nilai">
-                  Total nilai pengajuan:{" "}
-                  <strong>Rp {totalNilai.toLocaleString("id-ID")}</strong>
-                </div>
-
-                {step2Error && (
-                  <div className="error-text" style={{ marginTop: 8 }}>
-                    {step2Error}
+                      <button type="submit" className="btn btn-primary">
+                        Kirim Pengajuan
+                      </button>
+                    </div>
                   </div>
                 )}
-
-                <div className="actions">
-                  <button
-                    type="button"
-                    className="btn"
-                    onClick={() => setCurrentStep(1)}
-                  >
-                    Kembali
-                  </button>
-
-                  <button
-                    type="button"
-                    className="btn btn-primary"
-                    onClick={handleNextFromStep2}
-                  >
-                    Selanjutnya: Konfirmasi
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* STEP 3 */}
-            {currentStep === 3 && (
-              <div className="step-pane active">
-                <h4>Konfirmasi Pengajuan</h4>
-
-                <p>
-                  <strong>Tahun Akademik:</strong> {tahunAkademik} <br />
-                  <strong>Nama Pemohon:</strong> {namaPemohon} <br />
-                  <strong>Jabatan:</strong> {jabatan} <br />
-                  <strong>Unit:</strong> {unit}
-                </p>
-
-                <h5>Item yang diajukan:</h5>
-                {items.length === 0 ? (
-                  <p>Tidak ada item.</p>
-                ) : (
-                  <ul>
-                    {items.map((i) => (
-                      <li key={i.id}>
-                        {i.nama} — kebutuhan {i.kebutuhanTotal}, sisa stok{" "}
-                        {i.sisaStok},{" "}
-                        <strong>diajukan {i.jumlahDiajukan}</strong> {i.satuan}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-
-                <h5>Ringkasan jumlah & nilai:</h5>
-                <p>
-                  Total jumlah diajukan:{" "}
-                  <strong>{totalJumlahDiajukan}</strong>
-                  <br />
-                  Total nilai pengajuan:{" "}
-                  <strong>Rp {totalNilai.toLocaleString("id-ID")}</strong>
-                </p>
-
-                <div className="actions">
-                  <button
-                    type="button"
-                    className="btn"
-                    onClick={() => setCurrentStep(2)}
-                  >
-                    Kembali
-                  </button>
-
-                  <button type="submit" className="btn btn-primary">
-                    Kirim Pengajuan
-                  </button>
-                </div>
-              </div>
-            )}
-          </form>
+              </form>
+            </>
+          )}
         </section>
       </main>
 
@@ -644,10 +720,7 @@ function Pengajuan() {
           className="img-modal-overlay"
           onClick={() => setPreviewImage(null)}
         >
-          <div
-            className="img-modal"
-            onClick={(e) => e.stopPropagation()} // biar klik gambar nggak nutup
-          >
+          <div className="img-modal" onClick={(e) => e.stopPropagation()}>
             <img src={previewImage} alt="Preview barang" />
           </div>
         </div>

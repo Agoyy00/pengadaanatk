@@ -535,3 +535,54 @@ th {
   align-items: center;
   gap: 8px;
 }
+.btn-status-verif {
+  border: none;
+  padding: 6px 12px;
+  font-size: 13px;
+  border-radius: 3px;
+  background: #1f9a3f;
+  color: #fff;
+  cursor: pointer;
+  margin-right: 6px;
+}
+
+.btn-status-verif:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.btn-status-tolak {
+  border: none;
+  padding: 6px 12px;
+  font-size: 13px;
+  border-radius: 3px;
+  background: #c0392b; /* merah */
+  color: #fff;
+  cursor: pointer;
+}
+
+.btn-status-tolak:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.periode-closed-card {
+  background: #ffe5e5;
+  border-left: 6px solid #d32f2f;
+  color: #b71c1c;
+}
+
+.btn-back-dashboard {
+  margin-top: 16px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  background: #d32f2f;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn-back-dashboard:hover {
+  opacity: 0.9;
+}
+
