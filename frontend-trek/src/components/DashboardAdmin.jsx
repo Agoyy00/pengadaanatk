@@ -64,10 +64,7 @@ export default function DashboardAdmin() {
         <section className="main-content">
           <div className="card">
             <div className="card-title">Ringkasan Pengajuan</div>
-            <p>
-              Di halaman ini nanti kamu bisa menampilkan statistik, grafik, dan
-              ringkasan singkat jumlah pengajuan per status.
-            </p>
+            <p>Ini adalah menu Dashboard. Isi data atau statistik bisa dimasukkan di sini.</p>
           </div>
         </section>
       </main>

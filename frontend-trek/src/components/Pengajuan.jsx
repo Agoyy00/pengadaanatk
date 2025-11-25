@@ -142,9 +142,9 @@ function Pengajuan() {
     const errors = {};
 
     if (!tahunAkademik.trim()) {
-      errors.tahunAkademik = "Tahun akademik wajib diisi.";
-    } else if (!/^[0-9]+$/.test(tahunAkademik.trim())) {
-      errors.tahunAkademik = "Tahun akademik hanya boleh angka.";
+    errors.tahunAkademik = "Tahun akademik wajib dipilih.";
+    } else if (!/^\d{4}\/\d{4}$/.test(tahunAkademik.trim())) {
+      errors.tahunAkademik = "Format tahun akademik tidak valid.";
     }
 
     if (!namaPemohon.trim()) {
@@ -252,12 +252,12 @@ function Pengajuan() {
         </div>
 
         <nav className="sidebar-menu">
-          <Link to="/" className="menu-item">
+          <Link to="/dashboarduser" className="menu-item">
             Dashboard
           </Link>
           <div className="menu-item disabled">Buat Pengajuan Baru</div>
           <Link to="/riwayat" className="menu-item">
-            Riwayat pengajuan
+            Riwayat Pengajuan
           </Link>
         </nav>
 
@@ -329,17 +329,16 @@ function Pengajuan() {
                 <div className="form-grid">
                   <div className="form-group">
                     <label>Tahun Akademik</label>
-                    <input
-                      type="text"
-                      className="input-text"
-                      value={tahunAkademik}
-                      onChange={(e) => setTahunAkademik(e.target.value)}
-                    />
-                    {errorsStep1.tahunAkademik && (
-                      <div className="error-text">
-                        {errorsStep1.tahunAkademik}
-                      </div>
-                    )}
+                    <select className="input-text" value={tahunAkademik} onChange={(e) => setTahunAkademik(e.target.value)}>
+                    <option value="">-- Pilih Tahun Akademik --</option>
+                    <option value="2023/2024">2023/2024</option>
+                    <option value="2024/2025">2024/2025</option>
+                    <option value="2025/2026">2025/2026</option>
+                  </select>
+
+                  {errorsStep1.tahunAkademik && (
+                    <div className="error-text">{errorsStep1.tahunAkademik}</div>
+                  )}
                   </div>
 
                   <div className="form-group">

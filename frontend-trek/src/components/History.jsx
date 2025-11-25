@@ -52,7 +52,7 @@ export default function Riwayat() {
         <nav className="sidebar-menu">
           <Link to="/dashboarduser" className="menu-item">Dashboard</Link>
           <Link to="/pengajuan" className="menu-item">Buat Pengajuan Baru</Link>
-          <div className="menu-item disabled">Riwayat pengajuan</div>
+          <div className="menu-item disabled">Riwayat Pengajuan</div>
         </nav>
 
         <div className="logout">Log Out</div>
