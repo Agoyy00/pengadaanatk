@@ -6,7 +6,7 @@ export default function Navbar({ onLoginClick }) {
         top: 0,
         left: 0,
         width: "100%",
-        background: "#1a1a1a",
+        background: "transparant",
         padding: "15px 40px",
         color: "white",
         display: "flex",
@@ -16,7 +16,7 @@ export default function Navbar({ onLoginClick }) {
         boxShadow: "0 2px 10px rgba(0,0,0,0.4)"
       }}
     >
-      <h2 style={{ margin: 0 }}>Pengadaan ATK</h2>
+      <h2 style={{ margin: 0}}>Pengadaan ATK</h2>
 
       <button
         style={{

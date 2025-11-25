@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useState } from "react";
 import "./App.css";
-
+import yarsi from "./gambar/yarsi.png";
 import Navbar from "./components/Navbar";
 import Login from "./components/Login";
 import Pengajuan from "./components/Pengajuan";
@@ -24,11 +24,8 @@ function App() {
           element={
             <>
               <Navbar onLoginClick={() => setShowLogin(true)} />
-
-              <div className="landing">
-                <h1>Selamat Datang di Website Pengadaan ATK</h1>
+              <div className="landing" style={{backgroundImage: `url(${yarsi})`, backgroundSize: "cover", backgroundPosition: "center", backgroundRepeat: "no-repeat", height: "100vh"}}>
               </div>
-
               {showLogin && <Login onClose={() => setShowLogin(false)} />}
             </>
           }
