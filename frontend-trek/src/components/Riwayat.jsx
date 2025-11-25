@@ -66,12 +66,12 @@ export default function Riwayat() {
         </div>
 
         <nav className="sidebar-menu">
-          <Link to="/" className="menu-item">Dashboard</Link>
+          <Link to="/dashboarduser" className="menu-item">Dashboard</Link>
           <Link to="/pengajuan" className="menu-item">Buat Pengajuan Baru</Link>
           <div className="menu-item disabled">Riwayat pengajuan</div>
         </nav>
 
-        <div className="logout">Log Out</div>
+        <Link to="/" className="logout">Log Out</Link>
       </aside>
 
       {/* KANAN */}

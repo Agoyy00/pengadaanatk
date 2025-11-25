@@ -293,7 +293,7 @@ function Pengajuan() {
           </Link>
         </nav>
 
-        <div className="logout">Log Out</div>
+        <Link to="/" className="logout">Log Out</Link>
       </aside>
 
       {/* KANAN */}
