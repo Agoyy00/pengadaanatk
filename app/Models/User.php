@@ -11,21 +11,18 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
     /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
+     * Kolom yang boleh di-mass assign.
      */
     protected $fillable = [
         'name',
         'email',
         'password',
-        'role',    // ← tambahkan role di sini
+        'is_ldap',
+        'role_id',   // ✅ pakai role_id, bukan role
     ];
 
     /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
+     * Kolom yang disembunyikan saat serialisasi.
      */
     protected $hidden = [
         'password',
@@ -33,26 +30,40 @@ class User extends Authenticatable
     ];
 
     /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
+     * Casting atribut.
      */
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'password'          => 'hashed',
+            'is_ldap'           => 'boolean',
         ];
     }
 
-    // Helper untuk role
-    public function isAdmin(): bool
+    /**
+     * Relasi ke Role.
+     * Pastikan kamu punya App\Models\Role dengan kolom "name" (admin/user).
+     */
+    public function role()
     {
-        return $this->role === 'admin';
+        return $this->belongsTo(Role::class);
     }
 
+    /**
+     * Helper: apakah user ini admin?
+     */
+    public function isAdmin(): bool
+    {
+        // Bisa cek via role_id atau nama role
+        return $this->role_id === 1 || $this->role?->name === 'admin';
+    }
+
+    /**
+     * Helper: apakah user ini user biasa?
+     */
     public function isUser(): bool
     {
-        return $this->role === 'user';
+        return $this->role_id === 2 || $this->role?->name === 'user';
     }
 }

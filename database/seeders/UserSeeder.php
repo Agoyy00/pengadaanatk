@@ -14,9 +14,9 @@ class UserSeeder extends Seeder
         User::updateOrCreate(
             ['email' => 'admin@atk.test'],
             [
-                'name' => 'Admin ATK',
+                'name'     => 'Admin ATK',
                 'password' => Hash::make('password123'),
-                'role' => 'admin',
+                'role'     => 'admin',   // ← pakai kolom "role"
             ]
         );
 
@@ -24,9 +24,9 @@ class UserSeeder extends Seeder
         User::updateOrCreate(
             ['email' => 'user@atk.test'],
             [
-                'name' => 'User ATK',
+                'name'     => 'User ATK',
                 'password' => Hash::make('password123'),
-                'role' => 'user',
+                'role'     => 'user',    // ← pakai kolom "role"
             ]
         );
     }

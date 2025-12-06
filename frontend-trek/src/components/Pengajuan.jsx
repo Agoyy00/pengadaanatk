@@ -13,6 +13,7 @@ function Pengajuan() {
 
   // Error step 1
   const [errorsStep1, setErrorsStep1] = useState({});
+  const [limitError, setLimitError] = useState(""); // ❗ pesan "hanya 1x per periode"
 
   // STEP 2 – pencarian & item
   const [query, setQuery] = useState("");
@@ -77,6 +78,45 @@ function Pengajuan() {
 
     fetchPeriode();
   }, []);
+
+  // ====== CEK: user sudah pernah mengajukan di tahun akademik ini? ======
+  useEffect(() => {
+    if (!tahunAkademik || !userId) {
+      setLimitError("");
+      return;
+    }
+
+    async function checkLimit() {
+      try {
+        const res = await fetch(
+          `${API_BASE}/pengajuan/check/${userId}/${encodeURIComponent(
+            tahunAkademik
+          )}`
+        );
+
+        if (!res.ok) {
+          // kalau error, jangan blok user, cuma log aja
+          console.error("Gagal cek limit pengajuan");
+          setLimitError("");
+          return;
+        }
+
+        const data = await res.json();
+        if (data.already) {
+          setLimitError(
+            "Anda sudah pernah mengajukan ATK pada periode ini. Pengajuan hanya boleh 1 kali."
+          );
+        } else {
+          setLimitError("");
+        }
+      } catch (err) {
+        console.error("Error cek limit pengajuan:", err);
+        setLimitError("");
+      }
+    }
+
+    checkLimit();
+  }, [tahunAkademik, userId]);
 
   // ====== AUTO-SUGGEST BARANG ======
   useEffect(() => {
@@ -178,6 +218,12 @@ function Pengajuan() {
 
   // validasi STEP 1
   const handleNextFromStep1 = () => {
+    // ❗ Kalau sudah pernah mengajukan → stop di sini
+    if (limitError) {
+      alert(limitError);
+      return;
+    }
+
     const errors = {};
 
     if (!tahunAkademik.trim()) {
@@ -261,7 +307,7 @@ function Pengajuan() {
       const data = await res.json();
 
       if (!res.ok || !data.success) {
-        alert("Gagal mengirim pengajuan");
+        alert(data.message || "Gagal mengirim pengajuan");
         console.error("Error pengajuan:", data);
         return;
       }
@@ -293,7 +339,9 @@ function Pengajuan() {
           </Link>
         </nav>
 
-        <Link to="/" className="logout">Log Out</Link>
+        <Link to="/" className="logout">
+          Log Out
+        </Link>
       </aside>
 
       {/* KANAN */}
@@ -401,6 +449,16 @@ function Pengajuan() {
                         {errorsStep1.tahunAkademik && (
                           <div className="error-text">
                             {errorsStep1.tahunAkademik}
+                          </div>
+                        )}
+
+                        {/* ❗ Pesan “hanya 1 kali per periode” */}
+                        {limitError && (
+                          <div
+                            className="error-text"
+                            style={{ marginTop: 5, color: "red" }}
+                          >
+                            {limitError}
                           </div>
                         )}
                       </div>

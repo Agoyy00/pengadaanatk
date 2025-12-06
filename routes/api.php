@@ -43,6 +43,8 @@ Route::post('/login', [AuthController::class, 'login']);
 |--------------------------------------------------------------------------
 */
 
-Route::get('/periode/active', [PeriodeController::class, 'active']);             // User cek apakah pengajuan dibuka
-Route::post('/periode', [PeriodeController::class, 'storeOrUpdate']);            // Admin atur periode
-Route::get('/periode', [PeriodeController::class, 'index']);                     // (opsional) tampilkan semua periode
+Route::get('/periode/active', [PeriodeController::class, 'active']);      // cek periode aktif/akan datang
+Route::post('/periode',        [PeriodeController::class, 'storeOrUpdate']);
+Route::get('/periode',         [PeriodeController::class, 'index']);      // opsional lihat terakhir
+Route::delete('/periode/{periode}', [PeriodeController::class, 'destroy']); // hapus periode
+Route::get('/pengajuan/check/{user}/{tahun}', [PengajuanController::class, 'checkUserPengajuan']);

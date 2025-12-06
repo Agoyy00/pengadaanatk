@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Pengajuan;
 use App\Models\PengajuanItem;
+use App\Models\Periode;
 use Illuminate\Http\Request;
+use Carbon\Carbon;
 
 class PengajuanController extends Controller
 {
@@ -28,8 +30,27 @@ class PengajuanController extends Controller
     }
 
     /**
+     * GET /api/pengajuan/check/{user}/{tahun}
+     * Dipakai di STEP 1:
+     * - Untuk menampilkan pesan "Anda sudah pernah mengajukan..."
+     * - Hanya cek berdasarkan user_id + tahun_akademik
+     */
+    public function checkUserPengajuan($userId, $tahunAkademik)
+    {
+        $sudah = Pengajuan::where('user_id', $userId)
+            ->where('tahun_akademik', $tahunAkademik)
+            ->exists();
+
+        return response()->json([
+            'already' => $sudah,
+        ]);
+    }
+
+    /**
      * POST /api/pengajuan
      * Simpan pengajuan baru milik user tertentu
+     * + Hanya 1x per tahun akademik per user
+     * + Hanya boleh kalau periode tahun akademik itu sedang dibuka
      */
     public function store(Request $request)
     {
@@ -49,7 +70,49 @@ class PengajuanController extends Controller
             'items.*.estimasiNilai'   => 'required|numeric',
         ]);
 
-        // Hitung total nilai & jumlah
+        $tahunAkademik = $validated['tahun_akademik'];
+        $userId        = $validated['user_id'];
+        $now           = Carbon::now('Asia/Jakarta');
+
+        // ===================================================
+        // 1. CEK PERIODE TAHUN AKADEMIK INI MASIH DIBUKA
+        // ===================================================
+        $periode = Periode::where('tahun_akademik', $tahunAkademik)
+            ->where('mulai', '<=', $now)
+            ->where('selesai', '>=', $now)
+            ->first();
+
+        if (!$periode) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Periode pengajuan untuk tahun akademik ini belum dibuka atau sudah ditutup.',
+            ], 422);
+        }
+
+        if (!$now->between($periode->mulai, $periode->selesai) || !$periode->is_open) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Periode pengajuan saat ini tidak aktif.',
+            ], 422);
+        }
+
+        // ===================================================
+        // 2. CEK: USER SUDAH PERNAH MENGAJUKAN DI TAHUN INI?
+        // ===================================================
+        $sudahAda = Pengajuan::where('user_id', $userId)
+            ->where('tahun_akademik', $tahunAkademik)
+            ->exists();
+
+        if ($sudahAda) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda sudah pernah mengajukan ATK pada tahun akademik ini. Pengajuan hanya diperbolehkan satu kali per periode.',
+            ], 422);
+        }
+
+        // ===================================================
+        // 3. HITUNG TOTAL NILAI & JUMLAH
+        // ===================================================
         $totalNilai = 0;
         $totalJumlahDiajukan = 0;
 
@@ -59,7 +122,9 @@ class PengajuanController extends Controller
             $totalJumlahDiajukan += $item['jumlahDiajukan'];
         }
 
-        // Simpan header pengajuan
+        // ===================================================
+        // 4. SIMPAN HEADER PENGAJUAN
+        // ===================================================
         $pengajuan = Pengajuan::create([
             'tahun_akademik'         => $validated['tahun_akademik'],
             'nama_pemohon'           => $validated['nama_pemohon'],
@@ -71,7 +136,9 @@ class PengajuanController extends Controller
             'user_id'                => $validated['user_id'],
         ]);
 
-        // Simpan semua item barang
+        // ===================================================
+        // 5. SIMPAN DETAIL ITEM
+        // ===================================================
         foreach ($validated['items'] as $item) {
             $subtotal = $item['jumlahDiajukan'] * $item['estimasiNilai'];
 
@@ -87,22 +154,21 @@ class PengajuanController extends Controller
         }
 
         return response()->json([
-            'success'     => true,
-            'message'     => 'Pengajuan berhasil dibuat',
-            'pengajuan'   => $pengajuan->load('items.barang'),
+            'success'   => true,
+            'message'   => 'Pengajuan berhasil dibuat',
+            'pengajuan' => $pengajuan->load('items.barang'),
         ]);
     }
 
     /**
      * PATCH /api/pengajuan/{pengajuan}/status
-     * Admin → update status pengajuan (diajukan / diverifikasi / ditolak)
+     * Admin → update status pengajuan (diajukan / diverifikasi / ditolak / disetujui)
      */
-   public function updateStatus(Request $request, Pengajuan $pengajuan)
-{
-    $request->validate([
-        'status' => 'required|in:diajukan,diverifikasi,ditolak,disetujui',
-    ]);
-
+    public function updateStatus(Request $request, Pengajuan $pengajuan)
+    {
+        $request->validate([
+            'status' => 'required|in:diajukan,diverifikasi,ditolak,disetujui',
+        ]);
 
         // ❌ HANYA boleh ubah kalau masih "diajukan"
         if ($pengajuan->status !== 'diajukan') {
