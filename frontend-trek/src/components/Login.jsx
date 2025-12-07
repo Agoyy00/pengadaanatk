@@ -2,23 +2,20 @@ import "./Login.css";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
-
 import logo from "../gambar/LogoYarsi.jpeg";
 import atk from "../gambar/LogoATK.png";
 
 const API_BASE = "http://127.0.0.1:8000/api";
 
-function Login({ onClose, periodeInfo, periodeType }) {
-  const [remember, setRemember] = useState(false);
+function Login({ onClose }) {
+  const [ceklis, tidak] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false); // 👈 STATE SHOW/HIDE PASSWORD
 
   const navigate = useNavigate();
 
-  // ============================
-  // 🔹 LOGIN HANDLER
-  // ============================
+  // 🔹 Login handler
   const handleLogin = async (e) => {
     e.preventDefault();
 
@@ -36,99 +33,84 @@ function Login({ onClose, periodeInfo, periodeType }) {
         return;
       }
 
+      // Simpan user
       localStorage.setItem("user", JSON.stringify(data.user));
 
-      if (data.user.role === "admin") navigate("/dashboardadmin");
-      else navigate("/dashboarduser");
+      // Redirect berdasarkan role
+      if (data.user.role === "admin") {
+        navigate("/dashboardadmin");
+      } else {
+        navigate("/dashboarduser");
+      }
 
       if (onClose) onClose();
     } catch (error) {
       console.error("Login error:", error);
-      alert("Terjadi kesalahan server!");
+      alert("Terjadi kesalahan saat menghubungi server!");
     }
   };
 
   return (
     <div className="modal-overlay">
-      <div className="modal-box-small">
+      <div className="modal-box">
+        <button className="close-btn" onClick={onClose}>
+          ✖
+        </button>
 
-        {/* ❌ Tombol Close */}
-        <button className="close-btn-small" onClick={onClose}>✖</button>
+        <div className="login-container">
+          {/* Kiri: logo */}
+          <div className="left-side">
+            <div className="left-top">
+              <img src={logo} className="logo-atas" alt="Logo Yarsi" />
+            </div>
 
-        <div className="login-container-small">
-
-          {/* ============================
-              🔹 KIRI — GAMBAR
-          ============================ */}
-          <div className="left-side-small">
-            <img src={logo} className="logo-atas-small" alt="Logo Yarsi" />
-            <img src={atk} className="logo-bawah-small" alt="Logo ATK" />
+            <div className="left-bottom">
+              <img src={atk} className="logo-bawah" alt="Logo ATK" />
+            </div>
           </div>
 
-          {/* ============================
-              🔹 KANAN — FORM LOGIN
-          ============================ */}
-          <div className="right-side-small">
+          {/* Kanan: form */}
+          <div className="right-side">
+            <h2>Login</h2>
 
-            <h2 className="login-title">Login</h2>
-
-            {/* 🔔 Pengumuman Periode */}
-            {periodeInfo && (
-              <div className={`periode-box-login ${periodeType}`}>
-                <strong>📢 Informasi Periode Pengajuan</strong>
-                <p>{periodeInfo}</p>
-              </div>
-            )}
-
-            <form onSubmit={handleLogin} className="login-form-small">
-
-              {/* LABEL EMAIL */}
-              <label className="input-label">Email</label>
+            <form onSubmit={handleLogin}>
               <input
                 type="email"
-                placeholder="Masukkan email"
+                placeholder="Email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
 
-              {/* LABEL PASSWORD */}
-              <label className="input-label">Password</label>
-
-              <div className="password-wrapper-small">
+              {/* 👁️ Password + Show/Hide */}
+              <div className="password-wrapper">
                 <input
                   type={showPassword ? "text" : "password"}
-                  placeholder="Masukkan password"
+                  placeholder="Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
 
-                {/* 👁️ Show/hide password */}
                 <button
                   type="button"
-                  className="show-password-btn-small"
+                  className="show-password-btn"
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? <FaEye /> : <FaEyeSlash />}
                 </button>
               </div>
 
-              {/* INGAT SAYA */}
-              <label className="checkbox-small">
+              <label className="checkbox">
                 <input
                   type="checkbox"
-                  checked={remember}
-                  onChange={(e) => setRemember(e.target.checked)}
+                  checked={ceklis}
+                  onChange={(e) => tidak(e.target.checked)}
                 />
                 <span>Ingat Saya</span>
               </label>
 
-              {/* TOMBOL LOGIN */}
-              <button type="submit" className="submit-btn-small">
-                Masuk
-              </button>
+              <button type="submit">Masuk</button>
             </form>
           </div>
-
         </div>
       </div>
     </div>
