@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BarangController;
 use App\Http\Controllers\Api\PengajuanController;
 use App\Http\Controllers\Api\PeriodeController;
+use App\Http\Controllers\StatistikController;
 
 /*
 |--------------------------------------------------------------------------
@@ -48,3 +49,4 @@ Route::post('/periode',        [PeriodeController::class, 'storeOrUpdate']);
 Route::get('/periode',         [PeriodeController::class, 'index']);      // opsional lihat terakhir
 Route::delete('/periode/{periode}', [PeriodeController::class, 'destroy']); // hapus periode
 Route::get('/pengajuan/check/{user}/{tahun}', [PengajuanController::class, 'checkUserPengajuan']);
+Route::get('/statistik/fakultas', [StatistikController::class, 'fakultas']);
