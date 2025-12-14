@@ -1,6 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Pengajuan.css";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
 
 const API_BASE = "http://127.0.0.1:8000/api";
 
@@ -282,6 +292,27 @@ export default function Grafik() {
                     )}
                   </tbody>
                 </table>
+              </div>
+            </div>
+          )}
+
+          {/* ===== GRAFIK PENGGUNAAN PER UNIT ===== */}
+          {result && result.per_unit && result.per_unit.length > 0 && (
+            <div className="card" style={{ marginTop: 20 }}>
+              <div className="card-title">Grafik Penggunaan per Unit</div>
+              <div style={{ width: "100%", height: 350, border: "2px solid red" }}>
+                console.log("PER UNIT:", result.per_unit);
+                <ResponsiveContainer>
+                  <BarChart data={result.per_unit}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="unit" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="penggunaan" fill="#8884d8" name="Perkiraan Penggunaan" />
+                    <Bar dataKey="total_diajukan" fill="#82ca9d" name="Total Diajukan" />
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
             </div>
           )}

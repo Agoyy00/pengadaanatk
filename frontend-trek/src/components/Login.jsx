@@ -77,15 +77,6 @@ function Login({ onClose }) {
           <div className="right-side-small">
 
             <h2 className="login-title">Login</h2>
-
-            {/* 🔔 Pengumuman Periode */}
-            {periodeInfo && (
-              <div className={`periode-box-login ${periodeType}`}>
-                <strong>📢 Informasi Periode Pengajuan</strong>
-                <p>{periodeInfo}</p>
-              </div>
-            )}
-
             <form onSubmit={handleLogin} className="login-form-small">
 
               {/* Email */}
