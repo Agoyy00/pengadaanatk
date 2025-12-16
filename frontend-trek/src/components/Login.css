@@ -1,5 +1,5 @@
 /* =========================
-   MODAL & CONTAINER
+   MODAL & OVERLAY
    ========================= */
 .modal-overlay {
   position: fixed;
@@ -7,371 +7,224 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  background: rgba(0, 0, 0, 0.45);
-  z-index: 999;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  padding: 20px;
 }
 
-.modal-box {
-  width: 90%;
-  max-width: 900px;
-  background: #ffffff;
-  border-radius: 18px;
+.modal-box-small {
+  width: 100%;
+  max-width: 850px;
+  height: auto;
+  max-height: 90vh;
+  background: white;
+  border-radius: 16px;
+  display: flex;
   overflow: hidden;
   position: relative;
-  display: flex;
-  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.35);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 }
 
-.close-btn {
+/* =========================
+   CLOSE BUTTON
+   ========================= */
+.close-btn-small {
   position: absolute;
-  top: 12px;
-  right: 12px;
+  top: 16px;
+  right: 16px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  border: none;
   width: 32px;
   height: 32px;
-  border-radius: 999px;
-  background: rgba(15, 23, 42, 0.85);
-  color: #fff;
-  border: none;
   font-size: 16px;
+  border-radius: 50%;
   cursor: pointer;
+  z-index: 10;
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.close-btn:hover {
-  background: rgba(15, 23, 42, 1);
-}
-
-.login-container {
-  display: flex;
-  width: 100%;
-  min-height: 420px;
+.close-btn-small:hover {
+  background: rgba(0, 0, 0, 0.9);
+  transform: rotate(90deg);
 }
 
 /* =========================
-   LEFT SIDE (GAMBAR)
+   CONTAINER
    ========================= */
-.left-side {
-  flex: 1.05;
-  background: #ffffff;
+.login-container-small {
+  display: flex;
+  width: 100%;
+  min-height: 520px;
+}
+
+/* =========================
+   LEFT SIDE - GAMBAR
+   ========================= */
+.left-side-small {
+  flex: 1;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   align-items: center;
-  padding: 28px 18px;
+  padding: 40px 30px;
+  border-right: 1px solid #e2e8f0;
 }
 
-.left-top,
-.left-bottom {
-  display: flex;
-  justify-content: center;
-  align-items: center;
+.logo-atas-small {
   width: 100%;
-}
-
-.logo-atas {
-  max-width: 150px;
-  width: 100%;
+  max-width: 160px;
   height: auto;
+  object-fit: contain;
+  margin-bottom: 20px;
 }
 
-.logo-bawah {
-  max-width: 280px;
+.logo-bawah-small {
   width: 100%;
+  max-width: 320px;
   height: auto;
+  object-fit: contain;
+  margin-top: auto;
 }
 
 /* =========================
-   RIGHT SIDE (FORM)
+   RIGHT SIDE - FORM
    ========================= */
-.right-side {
+.right-side-small {
   flex: 1;
-  background: #d5e3f4;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 32px 40px;
-}
-
-.right-inner {
-  width: 100%;
-  max-width: 340px;
+  background: white;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  align-items: stretch;
+  justify-content: center;
+  padding: 40px 45px;
 }
 
-.right-inner h2 {
-  text-align: center;
-  margin: 0 0 6px 0;
-  font-size: 24px;
+.login-title {
+  font-size: 28px;
   font-weight: 700;
-  color: #111827;
+  color: #1e293b;
+  margin: 0 0 24px 0;
+  text-align: center;
 }
 
 /* =========================
    PENGUMUMAN PERIODE
    ========================= */
-.login-periode-info {
-  font-size: 0.86rem;
-  padding: 10px 12px;
+.periode-box-login {
+  background: #f8fafc;
+  padding: 14px 16px;
   border-radius: 10px;
-  background: #ffffff;
-  border-left: 4px solid #9ca3af;
-  box-shadow: 0 2px 4px rgba(148, 163, 184, 0.35);
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+  font-size: 13px;
+  border-left: 4px solid #94a3b8;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
-.login-periode-info.open {
+.periode-box-login strong {
+  display: block;
+  color: #1e293b;
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+
+.periode-box-login p {
+  color: #475569;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.periode-box-login.open {
   border-left-color: #16a34a;
+  background: #f0fdf4;
 }
 
-.login-periode-info.upcoming {
+.periode-box-login.open strong {
+  color: #166534;
+}
+
+.periode-box-login.upcoming {
   border-left-color: #f97316;
+  background: #fff7ed;
 }
 
-.login-periode-info.closed {
+.periode-box-login.upcoming strong {
+  color: #9a3412;
+}
+
+.periode-box-login.closed {
   border-left-color: #ef4444;
+  background: #fef2f2;
 }
 
-.login-periode-title {
-  font-weight: 600;
-  color: #111827;
-}
-
-.login-periode-text {
-  color: #374151;
+.periode-box-login.closed strong {
+  color: #991b1b;
 }
 
 /* =========================
    FORM
    ========================= */
-.right-inner form {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-top: 4px;
-}
-
-.right-inner input {
-  padding: 10px 12px;
-  border-radius: 8px;
-  border: 1px solid #cbd5e1;
-  background-color: #ffffff;
-  color: #111827;
-  font-size: 0.95rem;
-}
-
-.right-inner input:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.35);
-}
-
-/* checkbox */
-.checkbox {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin: 0;
-  font-size: 0.9rem;
-  color: #111827;
-}
-
-/* tombol submit */
-.submit-btn {
-  padding: 10px 12px;
-  border: none;
-  border-radius: 999px;
-  background: #2563eb;
-  color: white;
-  font-weight: 600;
-  cursor: pointer;
-  margin-top: 4px;
-  transition: background 0.15s ease, transform 0.05s ease;
-}
-
-.submit-btn:hover {
-  background: #1d4ed8;
-}
-
-.submit-btn:active {
-  transform: translateY(1px);
-}
-
-/* =========================
-   PASSWORD + ICON
-   ========================= */
-.password-wrapper {
-  position: relative;
-  width: 100%;
-}
-
-.password-wrapper input {
-  width: 100%;
-  padding-right: 42px;
-}
-
-.show-password-btn {
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: transparent !important;
-  border: none !important;
-  cursor: pointer;
-  font-size: 18px;
-  color: #6b7280;
-  padding: 0 !important;
-  margin: 0 !important;
-}
-
-.show-password-btn:hover {
-  color: #111827;
-}
-
-/* =========================
-   RESPONSIVE (LAYAR KECIL)
-   ========================= */
-@media (max-width: 768px) {
-  .modal-box {
-    max-width: 95%;
-  }
-
-  .login-container {
-    flex-direction: column;
-  }
-
-  .left-side {
-    display: none; /* kalau mau disembunyiin di HP */
-  }
-
-  .right-side {
-    flex: 1;
-    padding: 24px 20px;
-  }
-
-  .right-inner {
-    max-width: 100%;
-  }
-}
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: rgba(0,0,0,0.5);
-  z-index: 1000;
-}
-
-.modal-box-small {
-  width: 800px;
-  height: 500px;
-  background: white;
-  border-radius: 14px;
-  display: flex;
-  overflow: hidden;
-  position: relative;
-  box-shadow: 0 10px 35px rgba(0,0,0,0.25);
-}
-
-.close-btn {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  background: black;
-  color: white;
-  border: none;
-  width: 28px;
-  height: 28px;
-  font-size: 14px;
-  border-radius: 50%;
-  cursor: pointer;
-}
-
-.login-container-small {
-  display: flex;
-  width: 100%;
-  height: 100%;
-}
-
-.left-small {
-  flex: 1;
-  background: #ffffff;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  padding: 14px;
-}
-
-.logo-small-top {
-  width: 160px;
-  margin-bottom: 20px;
-}
-
-.logo-small-bottom {
-  width: 300px;
-  margin-top: 20px;
-}
-
-.right-small {
-  flex: 1;
-  background: #c9d9ea;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 30px;
-  text-align: center;
-}
-
-.login-title {
-  margin-bottom: 10px;
-}
-
-.periode-box {
-  background: #ffffff;
-  padding: 10px;
-  border-radius: 8px;
-  font-size: 14px;
-  border-left: 4px solid #9ca3af;
-  margin-bottom: 12px;
-  text-align: left;
-}
-
-.periode-box.open {
-  border-left-color: #16a34a;
-}
-.periode-box.upcoming {
-  border-left-color: #f97316;
-}
-.periode-box.closed {
-  border-left-color: #ef4444;
-}
-
 .login-form-small {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
 }
 
-.login-form-small input {
-  padding: 10px;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.input-label {
+  display: block;
+  text-align: left;
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.login-form-small input[type="email"],
+.login-form-small input[type="text"],
+.login-form-small input[type="password"] {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 8px;
   background: white;
+  font-size: 14px;
+  color: #1e293b;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
 }
 
+.login-form-small input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.login-form-small input::placeholder {
+  color: #94a3b8;
+}
+
+/* =========================
+   PASSWORD WRAPPER
+   ========================= */
 .password-wrapper-small {
   position: relative;
+  display: flex;
+  align-items: center;
 }
 
-.show-password-btn {
+.password-wrapper-small input {
+  padding-right: 45px;
+}
+
+.show-password-btn-small {
   position: absolute;
   right: 12px;
   top: 50%;
@@ -380,29 +233,131 @@
   background: transparent;
   cursor: pointer;
   font-size: 18px;
-}
-
-.checkbox {
+  color: #64748b;
+  padding: 4px;
   display: flex;
-  gap: 6px;
-  font-size: 14px;
   align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
 }
 
-.submit-btn-small {
-  padding: 10px;
-  background: #3b82f6;
-  border: none;
-  border-radius: 6px;
-  color: white;
-  cursor: pointer;
-  margin-top: 10px;
+.show-password-btn-small:hover {
+  color: #334155;
 }
-.input-label {
-  text-align: left;
+
+/* =========================
+   CHECKBOX
+   ========================= */
+.checkbox-small {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 14px;
+  color: #475569;
+  cursor: pointer;
+  margin-top: 4px;
+}
+
+.checkbox-small input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.checkbox-small span {
+  user-select: none;
+}
+
+/* =========================
+   SUBMIT BUTTON
+   ========================= */
+.submit-btn-small {
+  width: 100%;
+  padding: 12px;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 15px;
   font-weight: 600;
-  margin-bottom: -6px;
-  margin-top: 6px;
-  color: #1e293b;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.submit-btn-small:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+}
+
+.submit-btn-small:active {
+  transform: translateY(0);
+}
+
+/* =========================
+   RESPONSIVE
+   ========================= */
+@media (max-width: 768px) {
+  .modal-box-small {
+    max-width: 95%;
+    flex-direction: column;
+    max-height: 95vh;
+    overflow-y: auto;
+  }
+
+  .login-container-small {
+    flex-direction: column;
+    min-height: auto;
+  }
+
+  .left-side-small {
+    padding: 30px 20px;
+    border-right: none;
+    border-bottom: 1px solid #e2e8f0;
+    min-height: 200px;
+  }
+
+  .logo-atas-small {
+    max-width: 120px;
+  }
+
+  .logo-bawah-small {
+    max-width: 240px;
+  }
+
+  .right-side-small {
+    padding: 30px 25px;
+  }
+
+  .login-title {
+    font-size: 24px;
+    margin-bottom: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal-overlay {
+    padding: 10px;
+  }
+
+  .right-side-small {
+    padding: 25px 20px;
+  }
+
+  .login-form-small {
+    gap: 14px;
+  }
+
+  .input-label {
+    font-size: 13px;
+  }
+
+  .login-form-small input[type="email"],
+  .login-form-small input[type="text"],
+  .login-form-small input[type="password"] {
+    padding: 10px 12px;
+    font-size: 13px;
+  }
 }

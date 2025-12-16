@@ -1,10 +1,10 @@
-import "./Login.css";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
+import "./Login.css";
 
+import atk from "../gambar/Logo.png";
 import logo from "../gambar/LogoYarsi.jpeg";
-import atk from "../gambar/LogoATK.png";
 
 const API_BASE = "http://127.0.0.1:8000/api";
 
@@ -36,22 +36,12 @@ function Login({ onClose, periodeInfo, periodeType }) {
         return;
       }
 
-      const user = data.user;
+      localStorage.setItem("user", JSON.stringify(data.user));
 
-      // Simpan user ke localStorage
-      localStorage.setItem("user", JSON.stringify(user));
-
-      // 🔥 Arahkan sesuai role
-      if (user.role === "superadmin") {
-        navigate("/approval");        // halaman superadmin
-      } else if (user.role === "admin") {
-        navigate("/dashboardadmin");  // halaman admin
-      } else {
-        navigate("/dashboarduser");   // halaman user
-      }
+      if (data.user.role === "admin") navigate("/dashboardadmin");
+      else navigate("/dashboarduser");
 
       if (onClose) onClose();
-
     } catch (error) {
       console.error("Login error:", error);
       alert("Terjadi kesalahan server!");
@@ -62,18 +52,24 @@ function Login({ onClose, periodeInfo, periodeType }) {
     <div className="modal-overlay">
       <div className="modal-box-small">
 
-        {/* Tombol Close */}
-        <button className="close-btn-small" onClick={onClose}>✖</button>
+        {/* ❌ Tombol Close */}
+        <button className="close-btn-small" onClick={onClose}>
+          ✖
+        </button>
 
         <div className="login-container-small">
 
-          {/* KIRI — LOGO */}
+          {/* ============================
+              🔹 KIRI — GAMBAR
+          ============================ */}
           <div className="left-side-small">
             <img src={logo} className="logo-atas-small" alt="Logo Yarsi" />
             <img src={atk} className="logo-bawah-small" alt="Logo ATK" />
           </div>
 
-          {/* KANAN — FORM LOGIN */}
+          {/* ============================
+              🔹 KANAN — FORM LOGIN
+          ============================ */}
           <div className="right-side-small">
 
             <h2 className="login-title">Login</h2>
@@ -88,35 +84,42 @@ function Login({ onClose, periodeInfo, periodeType }) {
 
             <form onSubmit={handleLogin} className="login-form-small">
 
-              {/* Email */}
-              <label className="input-label">Email</label>
-              <input
-                type="email"
-                placeholder="Masukkan email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-
-              {/* Password */}
-              <label className="input-label">Password</label>
-              <div className="password-wrapper-small">
+              {/* INPUT EMAIL */}
+              <div className="input-group">
+                <label className="input-label">Email</label>
                 <input
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Masukkan password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  type="email"
+                  placeholder="Masukkan email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
                 />
-
-                <button
-                  type="button"
-                  className="show-password-btn-small"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? <FaEye /> : <FaEyeSlash />}
-                </button>
               </div>
 
-              {/* Ingat Saya */}
+              {/* INPUT PASSWORD */}
+              <div className="input-group">
+                <label className="input-label">Password</label>
+                <div className="password-wrapper-small">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Masukkan password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+
+                  {/* 👁️ Show/hide password */}
+                  <button
+                    type="button"
+                    className="show-password-btn-small"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <FaEye /> : <FaEyeSlash />}
+                  </button>
+                </div>
+              </div>
+
+              {/* INGAT SAYA */}
               <label className="checkbox-small">
                 <input
                   type="checkbox"
@@ -126,13 +129,13 @@ function Login({ onClose, periodeInfo, periodeType }) {
                 <span>Ingat Saya</span>
               </label>
 
-              {/* Tombol Login */}
+              {/* TOMBOL LOGIN */}
               <button type="submit" className="submit-btn-small">
                 Masuk
               </button>
             </form>
-
           </div>
+
         </div>
       </div>
     </div>
