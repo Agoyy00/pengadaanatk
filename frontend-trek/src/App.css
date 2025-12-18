@@ -79,6 +79,7 @@ body{
   font-weight: 700;
   margin-bottom: 10px;
   letter-spacing: 0.6px;
+  text-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
 }
 
 .landing-content p {
@@ -87,11 +88,73 @@ body{
   margin-bottom: 6px;
   opacity: 0.95;
   color: white;
+  text-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
 }
 
 .landing-content span {
   font-size: 15px;
   opacity: 0.85;
+  text-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
+}
+
+.landing::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 30% 30%, rgba(255,255,255,0.08), transparent 40%),
+    radial-gradient(circle at 70% 60%, rgba(255,255,255,0.06), transparent 45%);
+  pointer-events: none;
+}
+
+/* glass card */
+.glass {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 36px 44px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow:
+    0 20px 40px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.floating {
+  animation: floaty 6s ease-in-out infinite;
+}
+
+@keyframes floaty {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0); }
+} 
+
+.landing-divider {
+  width: 60px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.6);
+  margin: 24px auto;
+  border-radius: 2px;
+}
+
+.landing-btn {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #fff;
+  padding: 12px 28px;
+  font-size: 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  transition: all 0.3s ease;
+}
+
+.landing-btn:hover {
+  background: #ffffff;
+  color: #0a2f52;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+  transform: translateY(-2px);
 }
 
 /* animasi halus */

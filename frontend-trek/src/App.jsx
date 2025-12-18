@@ -148,12 +148,14 @@ function App() {
                 }}
               >
                 <div className="landing-overlay">
-                  <div className="landing-content">
+                  <div className="landing-content glass floating">
                     <h1>Sistem Pengajuan ATK</h1>
                     <p>Universitas YARSI</p>
                     <span>
                       Pengajuan alat tulis kantor terintegrasi, transparan, dan efisien
                     </span>
+                    <div className="landing-divider"></div>
+                    <button className="landing-btn" onClick={() => setShowLogin(true)}> Masuk ke Sistem</button>
                   </div>
                 </div>
               </div>

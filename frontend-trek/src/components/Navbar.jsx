@@ -17,22 +17,6 @@ export default function Navbar({ onLoginClick }) {
       }}
     >
       <h2 style={{ margin: 0}}>Pengadaan ATK</h2>
-
-      <button
-        style={{
-          padding: "8px 15px",
-          background: "#646cff",
-          border: "none",
-          borderRadius: "8px",
-          cursor: "pointer",
-          color: "white",
-          fontSize: "16px",
-          marginRight:"50px",
-        }}
-        onClick={onLoginClick}
-      >
-        Login
-      </button>
     </nav>
   );
 }

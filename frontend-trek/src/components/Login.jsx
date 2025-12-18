@@ -48,13 +48,9 @@ function Login({ onClose }) {
 
   return (
     <div className="modal-overlay">
-      <div className="modal-box">
-        <button className="close-btn" onClick={onClose}>
-          ✖
-        </button>
-
+      <div className="modal-box-small">
         {/* ❌ Tombol Close */}
-        <button className="close-btn-small" onClick={onClose}>
+        <button className="close-btn-small" onClick={onClose} aria-label="Tutup login">
           ✖
         </button>
 
