@@ -145,13 +145,18 @@ function App() {
                 className="landing"
                 style={{
                   backgroundImage: `url(${yarsi})`,
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
-                  backgroundRepeat: "no-repeat",
-                  height: "100vh",
                 }}
-              ></div>
-
+              >
+                <div className="landing-overlay">
+                  <div className="landing-content">
+                    <h1>Sistem Pengajuan ATK</h1>
+                    <p>Universitas YARSI</p>
+                    <span>
+                      Pengajuan alat tulis kantor terintegrasi, transparan, dan efisien
+                    </span>
+                  </div>
+                </div>
+              </div>
               {showLogin && (
                 <Login
                   onClose={() => setShowLogin(false)}

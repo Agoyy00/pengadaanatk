@@ -224,7 +224,7 @@ export default function Verifikasi() {
 
             {/* FILTER STATUS */}
             <div style={{ marginBottom: 12, display: "flex", gap: 8, alignItems: "center" }}>
-              <span style={{ fontSize: 13 }}>Filter status:</span>
+              <span style={{ fontSize: 13 }} className="A">Filter status:</span>
               <select
                 className="select-input"
                 style={{ maxWidth: 220 }}

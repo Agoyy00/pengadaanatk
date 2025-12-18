@@ -168,7 +168,7 @@ export default function Periode() {
                 }}
               >
                 <div>
-                  <label>Tahun Akademik</label>
+                  <label className="A">Tahun Akademik</label>
                   <select
                     className="input-text"
                     value={tahunAkademik}
@@ -181,7 +181,7 @@ export default function Periode() {
                 </div>
 
                 <div>
-                  <label>Mulai Pengajuan</label>
+                  <label className="B">Mulai Pengajuan</label>
                   <input
                     type="datetime-local"
                     value={mulai}
@@ -191,7 +191,7 @@ export default function Periode() {
                 </div>
 
                 <div>
-                  <label>Berakhir / Deadline</label>
+                  <label className="C">Berakhir / Deadline</label>
                   <input
                     type="datetime-local"
                     value={selesai}

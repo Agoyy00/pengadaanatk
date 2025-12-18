@@ -12,7 +12,7 @@ function Login({ onClose }) {
   const [ceklis, tidak] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false); // 👈 STATE SHOW/HIDE PASSWORD
+  const [showPassword, setShowPassword] = useState(false);
 
   const navigate = useNavigate();
 
