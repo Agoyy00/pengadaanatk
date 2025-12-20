@@ -5,15 +5,17 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Barang extends Model
+class Notification extends Model
 {
     use HasFactory;
 
+    protected $table = 'notifications';
+
     protected $fillable = [
-        'nama',
-        'kode',
-        'satuan',
-        'harga_satuan',
-        'foto', // kalau kolom ini ada di tabel, biarkan
+        'user_id',
+        'pengajuan_id',
+        'title',
+        'message',
+        'is_read',
     ];
 }

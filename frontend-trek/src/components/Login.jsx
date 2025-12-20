@@ -8,6 +8,12 @@ import atk from "../gambar/LogoATK.png";
 
 const API_BASE = "http://127.0.0.1:8000/api";
 
+// ✅ normalisasi role: "Super Admin" -> "superadmin", "super_admin" -> "superadmin"
+const normalizeRole = (role) =>
+  String(role || "")
+    .toLowerCase()
+    .replace(/[\s_]+/g, ""); // hapus spasi & underscore
+
 function Login({ onClose, periodeInfo, periodeType }) {
   const [remember, setRemember] = useState(false);
   const [email, setEmail] = useState("");
@@ -16,9 +22,6 @@ function Login({ onClose, periodeInfo, periodeType }) {
 
   const navigate = useNavigate();
 
-  // ============================
-  // 🔹 LOGIN HANDLER
-  // ============================
   const handleLogin = async (e) => {
     e.preventDefault();
 
@@ -38,20 +41,22 @@ function Login({ onClose, periodeInfo, periodeType }) {
 
       const user = data.user;
 
-      // Simpan user ke localStorage
+      // ✅ Simpan user
       localStorage.setItem("user", JSON.stringify(user));
 
-      // 🔥 Arahkan sesuai role
-      if (user.role === "superadmin") {
-        navigate("/approval");        // halaman superadmin
-      } else if (user.role === "admin") {
-        navigate("/dashboardadmin");  // halaman admin
+      // ✅ Role aman
+      const role = normalizeRole(user.role);
+
+      // ✅ Arahkan sesuai role
+      if (role === "superadmin") {
+        navigate("/approval");
+      } else if (role === "admin") {
+        navigate("/dashboardadmin");
       } else {
-        navigate("/dashboarduser");   // halaman user
+        navigate("/dashboarduser");
       }
 
       if (onClose) onClose();
-
     } catch (error) {
       console.error("Login error:", error);
       alert("Terjadi kesalahan server!");
@@ -61,24 +66,19 @@ function Login({ onClose, periodeInfo, periodeType }) {
   return (
     <div className="modal-overlay">
       <div className="modal-box-small">
-
-        {/* Tombol Close */}
-        <button className="close-btn-small" onClick={onClose}>✖</button>
+        <button className="close-btn-small" onClick={onClose}>
+          ✖
+        </button>
 
         <div className="login-container-small">
-
-          {/* KIRI — LOGO */}
           <div className="left-side-small">
             <img src={logo} className="logo-atas-small" alt="Logo Yarsi" />
             <img src={atk} className="logo-bawah-small" alt="Logo ATK" />
           </div>
 
-          {/* KANAN — FORM LOGIN */}
           <div className="right-side-small">
-
             <h2 className="login-title">Login</h2>
 
-            {/* 🔔 Pengumuman Periode */}
             {periodeInfo && (
               <div className={`periode-box-login ${periodeType}`}>
                 <strong>📢 Informasi Periode Pengajuan</strong>
@@ -87,8 +87,6 @@ function Login({ onClose, periodeInfo, periodeType }) {
             )}
 
             <form onSubmit={handleLogin} className="login-form-small">
-
-              {/* Email */}
               <label className="input-label">Email</label>
               <input
                 type="email"
@@ -97,7 +95,6 @@ function Login({ onClose, periodeInfo, periodeType }) {
                 onChange={(e) => setEmail(e.target.value)}
               />
 
-              {/* Password */}
               <label className="input-label">Password</label>
               <div className="password-wrapper-small">
                 <input
@@ -106,7 +103,6 @@ function Login({ onClose, periodeInfo, periodeType }) {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
-
                 <button
                   type="button"
                   className="show-password-btn-small"
@@ -116,7 +112,6 @@ function Login({ onClose, periodeInfo, periodeType }) {
                 </button>
               </div>
 
-              {/* Ingat Saya */}
               <label className="checkbox-small">
                 <input
                   type="checkbox"
@@ -126,12 +121,10 @@ function Login({ onClose, periodeInfo, periodeType }) {
                 <span>Ingat Saya</span>
               </label>
 
-              {/* Tombol Login */}
               <button type="submit" className="submit-btn-small">
                 Masuk
               </button>
             </form>
-
           </div>
         </div>
       </div>
