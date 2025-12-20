@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Pengajuan.css";
 
@@ -15,6 +15,12 @@ export default function KelolaBarangATK() {
   const storedUser = localStorage.getItem("user");
   const currentUser = storedUser ? JSON.parse(storedUser) : null;
   const role = normalizeRole(currentUser?.role);
+
+  // ✅ safety: kalau tidak ada user -> balik ke home
+  useEffect(() => {
+    if (!currentUser?.id) navigate("/", { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [q, setQ] = useState("");
   const [barangs, setBarangs] = useState([]);
@@ -98,7 +104,8 @@ export default function KelolaBarangATK() {
     } else {
       const num = Number(harga);
       if (Number.isNaN(num)) e.harga_satuan = "Harga harus angka.";
-      else if (!Number.isInteger(num)) e.harga_satuan = "Harga harus bilangan bulat.";
+      else if (!Number.isInteger(num))
+        e.harga_satuan = "Harga harus bilangan bulat.";
       else if (num < 0) e.harga_satuan = "Harga tidak boleh negatif.";
       else if (num > 1000000000) e.harga_satuan = "Harga terlalu besar.";
     }
@@ -138,12 +145,21 @@ export default function KelolaBarangATK() {
     setErrors(e);
     if (Object.keys(e).length > 0) return;
 
+    // ✅ actor_user_id WAJIB untuk audit log
     const payload = {
+      actor_user_id: currentUser?.id,
       nama: form.nama.trim(),
       kode: form.kode.trim(),
       satuan: form.satuan.trim(),
       harga_satuan: Number(form.harga_satuan),
     };
+
+    if (!payload.actor_user_id) {
+      alert("User login tidak terbaca. Silakan login ulang.");
+      localStorage.removeItem("user");
+      window.location.href = "/";
+      return;
+    }
 
     setLoading(true);
     try {
@@ -168,7 +184,11 @@ export default function KelolaBarangATK() {
         return;
       }
 
-      alert(mode === "create" ? "Barang berhasil ditambahkan ✅" : "Barang berhasil diubah ✅");
+      alert(
+        mode === "create"
+          ? "Barang berhasil ditambahkan ✅"
+          : "Barang berhasil diubah ✅"
+      );
       closeModal();
       await loadBarang();
     } catch (err) {
@@ -183,9 +203,22 @@ export default function KelolaBarangATK() {
     const ok = window.confirm(`Hapus barang "${item.nama}"?`);
     if (!ok) return;
 
+    if (!currentUser?.id) {
+      alert("User login tidak terbaca. Silakan login ulang.");
+      localStorage.removeItem("user");
+      window.location.href = "/";
+      return;
+    }
+
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/barang/${item.id}`, { method: "DELETE" });
+      // ✅ DELETE pakai body untuk actor_user_id
+      const res = await fetch(`${API_BASE}/barang/${item.id}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ actor_user_id: currentUser.id }),
+      });
+
       const data = await res.json();
 
       if (!res.ok || !data.success) {
@@ -254,7 +287,12 @@ export default function KelolaBarangATK() {
           <div className="card">
             <div
               className="card-title"
-              style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: 12,
+              }}
             >
               <span>Daftar Barang</span>
               <button
@@ -303,38 +341,97 @@ export default function KelolaBarangATK() {
 
             {loading && <p style={{ marginTop: 12 }}>Loading...</p>}
 
-            {!loading && barangs.length === 0 && <p style={{ marginTop: 12 }}>Tidak ada data.</p>}
+            {!loading && barangs.length === 0 && (
+              <p style={{ marginTop: 12 }}>Tidak ada data.</p>
+            )}
 
             {!loading && barangs.length > 0 && (
               <div style={{ overflowX: "auto", marginTop: 12 }}>
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
                   <thead>
                     <tr>
-                      <th style={{ textAlign: "left", padding: 10, borderBottom: "1px solid #eee" }}>
+                      <th
+                        style={{
+                          textAlign: "left",
+                          padding: 10,
+                          borderBottom: "1px solid #eee",
+                        }}
+                      >
                         Nama
                       </th>
-                      <th style={{ textAlign: "left", padding: 10, borderBottom: "1px solid #eee" }}>
+                      <th
+                        style={{
+                          textAlign: "left",
+                          padding: 10,
+                          borderBottom: "1px solid #eee",
+                        }}
+                      >
                         Kode
                       </th>
-                      <th style={{ textAlign: "left", padding: 10, borderBottom: "1px solid #eee" }}>
+                      <th
+                        style={{
+                          textAlign: "left",
+                          padding: 10,
+                          borderBottom: "1px solid #eee",
+                        }}
+                      >
                         Satuan
                       </th>
-                      <th style={{ textAlign: "right", padding: 10, borderBottom: "1px solid #eee" }}>
+                      <th
+                        style={{
+                          textAlign: "right",
+                          padding: 10,
+                          borderBottom: "1px solid #eee",
+                        }}
+                      >
                         Harga
                       </th>
-                      <th style={{ padding: 10, borderBottom: "1px solid #eee" }}></th>
+                      <th style={{ padding: 10, borderBottom: "1px solid #eee" }} />
                     </tr>
                   </thead>
                   <tbody>
                     {barangs.map((b) => (
                       <tr key={b.id}>
-                        <td style={{ padding: 10, borderBottom: "1px solid #f3f3f3" }}>{b.nama}</td>
-                        <td style={{ padding: 10, borderBottom: "1px solid #f3f3f3" }}>{b.kode}</td>
-                        <td style={{ padding: 10, borderBottom: "1px solid #f3f3f3" }}>{b.satuan}</td>
-                        <td style={{ padding: 10, borderBottom: "1px solid #f3f3f3", textAlign: "right" }}>
+                        <td
+                          style={{
+                            padding: 10,
+                            borderBottom: "1px solid #f3f3f3",
+                          }}
+                        >
+                          {b.nama}
+                        </td>
+                        <td
+                          style={{
+                            padding: 10,
+                            borderBottom: "1px solid #f3f3f3",
+                          }}
+                        >
+                          {b.kode}
+                        </td>
+                        <td
+                          style={{
+                            padding: 10,
+                            borderBottom: "1px solid #f3f3f3",
+                          }}
+                        >
+                          {b.satuan}
+                        </td>
+                        <td
+                          style={{
+                            padding: 10,
+                            borderBottom: "1px solid #f3f3f3",
+                            textAlign: "right",
+                          }}
+                        >
                           {Number(b.harga_satuan ?? 0).toLocaleString("id-ID")}
                         </td>
-                        <td style={{ padding: 10, borderBottom: "1px solid #f3f3f3", textAlign: "right" }}>
+                        <td
+                          style={{
+                            padding: 10,
+                            borderBottom: "1px solid #f3f3f3",
+                            textAlign: "right",
+                          }}
+                        >
                           <button
                             onClick={() => openEdit(b)}
                             style={{
@@ -386,7 +483,9 @@ export default function KelolaBarangATK() {
                     {mode === "create" ? "Tambah Barang" : "Edit Barang"}
                   </h2>
 
-                  <label style={{ display: "block", marginTop: 10, marginBottom: 6 }}>Nama</label>
+                  <label style={{ display: "block", marginTop: 10, marginBottom: 6 }}>
+                    Nama
+                  </label>
                   <input
                     style={{
                       width: "100%",
@@ -398,9 +497,13 @@ export default function KelolaBarangATK() {
                     onChange={(e) => setForm((p) => ({ ...p, nama: e.target.value }))}
                     placeholder="Contoh: Kertas A4 80gsm"
                   />
-                  {errors.nama && <div style={{ color: "#ef4444", marginTop: 6 }}>{errors.nama}</div>}
+                  {errors.nama && (
+                    <div style={{ color: "#ef4444", marginTop: 6 }}>{errors.nama}</div>
+                  )}
 
-                  <label style={{ display: "block", marginTop: 10, marginBottom: 6 }}>Kode</label>
+                  <label style={{ display: "block", marginTop: 10, marginBottom: 6 }}>
+                    Kode
+                  </label>
                   <input
                     style={{
                       width: "100%",
@@ -412,9 +515,13 @@ export default function KelolaBarangATK() {
                     onChange={(e) => setForm((p) => ({ ...p, kode: e.target.value }))}
                     placeholder="Contoh: KRT-A4-80"
                   />
-                  {errors.kode && <div style={{ color: "#ef4444", marginTop: 6 }}>{errors.kode}</div>}
+                  {errors.kode && (
+                    <div style={{ color: "#ef4444", marginTop: 6 }}>{errors.kode}</div>
+                  )}
 
-                  <label style={{ display: "block", marginTop: 10, marginBottom: 6 }}>Satuan</label>
+                  <label style={{ display: "block", marginTop: 10, marginBottom: 6 }}>
+                    Satuan
+                  </label>
                   <input
                     style={{
                       width: "100%",
@@ -449,10 +556,19 @@ export default function KelolaBarangATK() {
                     placeholder="Contoh: 15000"
                   />
                   {errors.harga_satuan && (
-                    <div style={{ color: "#ef4444", marginTop: 6 }}>{errors.harga_satuan}</div>
+                    <div style={{ color: "#ef4444", marginTop: 6 }}>
+                      {errors.harga_satuan}
+                    </div>
                   )}
 
-                  <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 16 }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "flex-end",
+                      gap: 10,
+                      marginTop: 16,
+                    }}
+                  >
                     <button
                       onClick={closeModal}
                       style={{

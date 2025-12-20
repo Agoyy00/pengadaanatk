@@ -4,25 +4,23 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Barang;
+use App\Models\BarangAuditLog;
 use Illuminate\Http\Request;
 
 class BarangController extends Controller
 {
-    // ============================
-    // Helper normalisasi data
-    // ============================
     private function normalizeKode(string $kode): string
     {
         $kode = trim($kode);
         $kode = strtoupper($kode);
-        $kode = preg_replace('/\s+/', '', $kode); // hapus spasi
+        $kode = preg_replace('/\s+/', '', $kode);
         return $kode;
     }
 
     private function normalizeNama(string $nama): string
     {
         $nama = trim($nama);
-        $nama = preg_replace('/\s+/', ' ', $nama); // spasi berlebih jadi 1
+        $nama = preg_replace('/\s+/', ' ', $nama);
         return $nama;
     }
 
@@ -33,79 +31,90 @@ class BarangController extends Controller
         return $satuan;
     }
 
-    // ============================
+    private function writeLog(?int $barangId, ?int $userId, string $action, $oldData, $newData): void
+    {
+        BarangAuditLog::create([
+            'barang_id' => $barangId,
+            'user_id'   => $userId,
+            'action'    => $action,
+            'old_data'  => $oldData,
+            'new_data'  => $newData,
+        ]);
+    }
+
     // GET /api/barang?q=
-    // ============================
     public function index(Request $request)
     {
         $q = $request->query('q');
 
         $query = Barang::query();
-
         if ($q) {
             $query->where('nama', 'like', "%{$q}%")
                   ->orWhere('kode', 'like', "%{$q}%")
                   ->orWhere('satuan', 'like', "%{$q}%");
         }
 
-        $barangs = $query->orderBy('nama')->get();
-
-        return response()->json($barangs);
+        return response()->json($query->orderBy('nama')->get());
     }
 
-    // ============================
-    // GET /api/barang/{barang}
-    // ============================
     public function show(Barang $barang)
     {
         return response()->json($barang);
     }
 
-    // ============================
+    // ✅ GET /api/barang/{barang}/logs
+    public function logs(Barang $barang)
+    {
+        $logs = BarangAuditLog::with(['user:id,name,role'])
+            ->where('barang_id', $barang->id)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'barang'  => $barang,
+            'logs'    => $logs,
+        ]);
+    }
+
     // POST /api/barang
-    // Admin menambah barang
-    // ============================
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'nama'        => 'required|string|max:255',
-            'kode'        => 'required|string|max:50',
-            'satuan'      => 'required|string|max:50',
-            'harga_satuan'=> 'nullable|integer|min:0|max:1000000000',
+            'actor_user_id' => 'required|exists:users,id',
+            'nama'          => 'required|string|max:255',
+            'kode'          => 'required|string|max:50',
+            'satuan'        => 'required|string|max:50',
+            'harga_satuan'  => 'nullable|integer|min:0|max:1000000000',
         ]);
 
         $nama   = $this->normalizeNama($validated['nama']);
         $kode   = $this->normalizeKode($validated['kode']);
         $satuan = $this->normalizeSatuan($validated['satuan']);
-        $harga  = array_key_exists('harga_satuan', $validated) ? $validated['harga_satuan'] : null;
+        $harga  = $validated['harga_satuan'] ?? 0;
 
-        // ✅ Validasi konsistensi: kode unik (case-insensitive)
         $existsKode = Barang::whereRaw('LOWER(kode) = ?', [strtolower($kode)])->exists();
         if ($existsKode) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Kode barang sudah digunakan. Gunakan kode lain.',
-            ], 422);
+            return response()->json(['success' => false, 'message' => 'Kode barang sudah digunakan.'], 422);
         }
 
-        // ✅ Validasi konsistensi: nama+satuan tidak boleh duplikat persis (case-insensitive)
         $existsNama = Barang::whereRaw('LOWER(nama) = ?', [strtolower($nama)])
             ->whereRaw('LOWER(satuan) = ?', [strtolower($satuan)])
             ->exists();
 
         if ($existsNama) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Barang dengan nama dan satuan yang sama sudah ada.',
-            ], 422);
+            return response()->json(['success' => false, 'message' => 'Barang dengan nama & satuan sama sudah ada.'], 422);
         }
 
         $barang = Barang::create([
-            'nama' => $nama,
-            'kode' => $kode,
-            'satuan' => $satuan,
-            'harga_satuan' => $harga ?? 0,
+            'nama'        => $nama,
+            'kode'        => $kode,
+            'satuan'      => $satuan,
+            'harga_satuan'=> $harga,
         ]);
+
+        // ✅ LOG CREATE
+        $this->writeLog($barang->id, (int)$validated['actor_user_id'], 'create', null, $barang->toArray());
 
         return response()->json([
             'success' => true,
@@ -114,58 +123,47 @@ class BarangController extends Controller
         ]);
     }
 
-    // ============================
     // PATCH /api/barang/{barang}
-    // Admin edit barang
-    // ============================
     public function update(Request $request, Barang $barang)
     {
         $validated = $request->validate([
-            'nama'        => 'required|string|max:255',
-            'kode'        => 'required|string|max:50',
-            'satuan'      => 'required|string|max:50',
-            'harga_satuan'=> 'nullable|integer|min:0|max:1000000000',
+            'actor_user_id' => 'required|exists:users,id',
+            'nama'          => 'required|string|max:255',
+            'kode'          => 'required|string|max:50',
+            'satuan'        => 'required|string|max:50',
+            'harga_satuan'  => 'nullable|integer|min:0|max:1000000000',
         ]);
+
+        $old = $barang->toArray();
 
         $nama   = $this->normalizeNama($validated['nama']);
         $kode   = $this->normalizeKode($validated['kode']);
         $satuan = $this->normalizeSatuan($validated['satuan']);
-        $harga  = array_key_exists('harga_satuan', $validated) ? $validated['harga_satuan'] : null;
+        $harga  = $validated['harga_satuan'] ?? $barang->harga_satuan;
 
-        // ✅ Validasi konsistensi: kode unik (case-insensitive) kecuali dirinya sendiri
         $existsKode = Barang::whereRaw('LOWER(kode) = ?', [strtolower($kode)])
             ->where('id', '!=', $barang->id)
             ->exists();
-
         if ($existsKode) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Kode barang sudah digunakan oleh barang lain.',
-            ], 422);
+            return response()->json(['success' => false, 'message' => 'Kode barang sudah digunakan oleh barang lain.'], 422);
         }
 
-        // ✅ Validasi konsistensi: nama+satuan tidak duplikat kecuali dirinya sendiri
         $existsNama = Barang::whereRaw('LOWER(nama) = ?', [strtolower($nama)])
             ->whereRaw('LOWER(satuan) = ?', [strtolower($satuan)])
             ->where('id', '!=', $barang->id)
             ->exists();
-
         if ($existsNama) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Barang dengan nama dan satuan yang sama sudah ada (duplikat).',
-            ], 422);
+            return response()->json(['success' => false, 'message' => 'Nama + satuan duplikat dengan barang lain.'], 422);
         }
 
         $barang->nama = $nama;
         $barang->kode = $kode;
         $barang->satuan = $satuan;
-
-        if ($harga !== null) {
-            $barang->harga_satuan = $harga;
-        }
-
+        $barang->harga_satuan = $harga;
         $barang->save();
+
+        // ✅ LOG UPDATE
+        $this->writeLog($barang->id, (int)$validated['actor_user_id'], 'update', $old, $barang->toArray());
 
         return response()->json([
             'success' => true,
@@ -174,13 +172,20 @@ class BarangController extends Controller
         ]);
     }
 
-    // ============================
     // DELETE /api/barang/{barang}
-    // Admin hapus barang
-    // ============================
-    public function destroy(Barang $barang)
+    public function destroy(Request $request, Barang $barang)
     {
+        $validated = $request->validate([
+            'actor_user_id' => 'required|exists:users,id',
+        ]);
+
+        $old = $barang->toArray();
+        $barangId = $barang->id;
+
         $barang->delete();
+
+        // ✅ LOG DELETE (new_data null)
+        $this->writeLog($barangId, (int)$validated['actor_user_id'], 'delete', $old, null);
 
         return response()->json([
             'success' => true,
@@ -188,18 +193,21 @@ class BarangController extends Controller
         ]);
     }
 
-    // ============================
     // PATCH /api/barang/{barang}/harga
-    // (kalau kamu pakai fitur kelola harga)
-    // ============================
     public function updateHarga(Request $request, Barang $barang)
     {
         $validated = $request->validate([
-            'harga_satuan' => 'required|integer|min:0|max:1000000000',
+            'actor_user_id' => 'required|exists:users,id',
+            'harga_satuan'  => 'required|integer|min:0|max:1000000000',
         ]);
+
+        $old = $barang->toArray();
 
         $barang->harga_satuan = $validated['harga_satuan'];
         $barang->save();
+
+        // ✅ LOG UPDATE HARGA
+        $this->writeLog($barang->id, (int)$validated['actor_user_id'], 'update_harga', $old, $barang->toArray());
 
         return response()->json([
             'success' => true,

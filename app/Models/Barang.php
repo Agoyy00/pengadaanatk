@@ -14,6 +14,11 @@ class Barang extends Model
         'kode',
         'satuan',
         'harga_satuan',
-        'foto', // kalau kolom ini ada di tabel, biarkan
+        'foto',
     ];
+
+    public function auditLogs()
+    {
+        return $this->hasMany(BarangAuditLog::class, 'barang_id')->orderBy('created_at', 'desc');
+    }
 }

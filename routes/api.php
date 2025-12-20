@@ -29,6 +29,8 @@ Route::post('/users', [UserManagementController::class, 'store']);
 */
 Route::get('/barang', [BarangController::class, 'index']);
 Route::get('/barang/{barang}', [BarangController::class, 'show']);
+Route::get('/barang/{barang}/logs', [BarangController::class, 'logs']);
+
 
 // ✅ CRUD barang (baru)
 Route::post('/barang', [BarangController::class, 'store']);

@@ -4,11 +4,23 @@ import "./Pengajuan.css";
 
 const API_BASE = "http://127.0.0.1:8000/api";
 
+const normalizeRole = (role) =>
+  String(role || "")
+    .toLowerCase()
+    .replace(/[\s_]+/g, "");
+
 export default function KelolaHargaATK() {
   const navigate = useNavigate();
 
   const storedUser = localStorage.getItem("user");
   const currentUser = storedUser ? JSON.parse(storedUser) : null;
+  const role = normalizeRole(currentUser?.role);
+
+  // ✅ safety: kalau tidak ada user -> balik ke home
+  useEffect(() => {
+    if (!currentUser?.id) navigate("/", { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(false);
@@ -18,13 +30,14 @@ export default function KelolaHargaATK() {
   const [hargaInput, setHargaInput] = useState("");
   const [errorHarga, setErrorHarga] = useState("");
 
-  const isSuperAdmin = useMemo(() => currentUser?.role === "superadmin", [currentUser]);
+  const isSuperAdmin = useMemo(() => role === "superadmin", [role]);
 
   const sidebarMenus = useMemo(() => {
     if (isSuperAdmin) {
       return [
         { label: "Dashboard Super Admin", to: "/approval" },
         { label: "Tambah User", to: "/tambahuser" },
+        { label: "Kelola Barang ATK", to: "/kelola-barang" }, // ✅ tambah menu barang
         { label: "Kelola Harga ATK", to: "/kelola-harga", active: true },
       ];
     }
@@ -32,6 +45,7 @@ export default function KelolaHargaATK() {
       { label: "Dashboard Admin", to: "/dashboardadmin" },
       { label: "Verifikasi", to: "/verifikasi" },
       { label: "Atur Periode", to: "/periode" },
+      { label: "Kelola Barang ATK", to: "/kelola-barang" }, // ✅ tambah menu barang
       { label: "Kelola Harga ATK", to: "/kelola-harga", active: true },
     ];
   }, [isSuperAdmin]);
@@ -39,7 +53,9 @@ export default function KelolaHargaATK() {
   async function loadBarangs(keyword = "") {
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/barang?q=${encodeURIComponent(keyword)}`);
+      const res = await fetch(
+        `${API_BASE}/barang?q=${encodeURIComponent(keyword)}`
+      );
       const data = await res.json();
       setBarangs(Array.isArray(data) ? data : []);
     } catch (e) {
@@ -55,7 +71,6 @@ export default function KelolaHargaATK() {
   }, []);
 
   const validateHarga = (val) => {
-    // validasi: wajib angka, >= 0, max 1 milyar (silakan ubah)
     if (val === "" || val === null || typeof val === "undefined") {
       return "Harga wajib diisi.";
     }
@@ -64,7 +79,6 @@ export default function KelolaHargaATK() {
     if (!Number.isFinite(num)) return "Harga tidak valid.";
     if (num < 0) return "Harga tidak boleh negatif.";
     if (num > 1000000000) return "Harga terlalu besar.";
-    // kalau mau wajib integer:
     if (!Number.isInteger(num)) return "Harga harus bilangan bulat (tanpa koma).";
     return "";
   };
@@ -78,16 +92,27 @@ export default function KelolaHargaATK() {
   const onSave = async () => {
     if (!selected) return;
 
+    if (!currentUser?.id) {
+      alert("User login tidak terbaca. Silakan login ulang.");
+      localStorage.removeItem("user");
+      window.location.href = "/";
+      return;
+    }
+
     const err = validateHarga(hargaInput);
     setErrorHarga(err);
     if (err) return;
 
     setLoading(true);
     try {
+      // ✅ kirim actor_user_id untuk audit log
       const res = await fetch(`${API_BASE}/barang/${selected.id}/harga`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ harga_satuan: Number(hargaInput) }),
+        body: JSON.stringify({
+          actor_user_id: currentUser.id,
+          harga_satuan: Number(hargaInput),
+        }),
       });
 
       const data = await res.json();
@@ -197,9 +222,7 @@ export default function KelolaHargaATK() {
 
             {loading && <p>Loading...</p>}
 
-            {!loading && barangs.length === 0 && (
-              <p>Tidak ada barang ditemukan.</p>
-            )}
+            {!loading && barangs.length === 0 && <p>Tidak ada barang ditemukan.</p>}
 
             {!loading && barangs.length > 0 && (
               <div style={{ overflowX: "auto" }}>
@@ -295,7 +318,6 @@ export default function KelolaHargaATK() {
                     value={hargaInput}
                     onChange={(e) => {
                       const v = e.target.value;
-                      // hanya boleh angka (opsional)
                       if (!/^\d*$/.test(v)) return;
                       setHargaInput(v);
                       setErrorHarga("");
