@@ -8,15 +8,20 @@ import logo from "../gambar/LogoYarsi.jpeg";
 
 const API_BASE = "http://127.0.0.1:8000/api";
 
-function Login({ onClose }) {
-  const [ceklis, tidak] = useState(false);
+// ✅ normalisasi role: "Super Admin" -> "superadmin", "super_admin" -> "superadmin"
+const normalizeRole = (role) =>
+  String(role || "")
+    .toLowerCase()
+    .replace(/[\s_]+/g, ""); // hapus spasi & underscore
+
+function Login({ onClose, periodeInfo, periodeType }) {
+  const [remember, setRemember] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
   const navigate = useNavigate();
 
-  // 🔹 Login handler
   const handleLogin = async (e) => {
     e.preventDefault();
 
@@ -36,8 +41,20 @@ function Login({ onClose }) {
 
       localStorage.setItem("user", JSON.stringify(data.user));
 
-      if (data.user.role === "admin") navigate("/dashboardadmin");
-      else navigate("/dashboarduser");
+      // ✅ Simpan user
+      localStorage.setItem("user", JSON.stringify(user));
+
+      // ✅ Role aman
+      const role = normalizeRole(user.role);
+
+      // ✅ Arahkan sesuai role
+      if (role === "superadmin") {
+        navigate("/approval");
+      } else if (role === "admin") {
+        navigate("/dashboardadmin");
+      } else {
+        navigate("/dashboarduser");
+      }
 
       if (onClose) onClose();
     } catch (error) {
@@ -49,7 +66,7 @@ function Login({ onClose }) {
   return (
     <div className="modal-overlay">
       <div className="modal-box-small">
-        <button className="close-btn-small" onClick={onClose} aria-label="Tutup login">
+        <button className="close-btn-small" onClick={onClose}>
           ✖
         </button>
 
@@ -61,11 +78,25 @@ function Login({ onClose }) {
 
           <div className="right-side-small">
             <h2 className="login-title">Login</h2>
-            <form onSubmit={handleLogin} className="login-form-small">
 
-              {/* INPUT EMAIL */}
-              <div className="input-group">
-                <label className="input-label">Email</label>
+            {periodeInfo && (
+              <div className={`periode-box-login ${periodeType}`}>
+                <strong>📢 Informasi Periode Pengajuan</strong>
+                <p>{periodeInfo}</p>
+              </div>
+            )}
+
+            <form onSubmit={handleLogin} className="login-form-small">
+              <label className="input-label">Email</label>
+              <input
+                type="email"
+                placeholder="Masukkan email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+
+              <label className="input-label">Password</label>
+              <div className="password-wrapper-small">
                 <input
                   type="email"
                   placeholder="Masukkan email"
@@ -73,32 +104,15 @@ function Login({ onClose }) {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                 />
+                <button
+                  type="button"
+                  className="show-password-btn-small"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <FaEye /> : <FaEyeSlash />}
+                </button>
               </div>
 
-              {/* INPUT PASSWORD */}
-              <div className="input-group">
-                <label className="input-label">Password</label>
-                <div className="password-wrapper-small">
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Masukkan password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
-
-                  {/* Show/hide password */}
-                  <button
-                    type="button"
-                    className="show-password-btn-small"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? <FaEye /> : <FaEyeSlash />}
-                  </button>
-                </div>
-              </div>
-
-              {/* INGAT SAYA */}
               <label className="checkbox-small">
                 <input
                   type="checkbox"
@@ -108,7 +122,6 @@ function Login({ onClose }) {
                 <span>Ingat Saya</span>
               </label>
 
-              {/* TOMBOL LOGIN */}
               <button type="submit" className="submit-btn-small">
                 Masuk
               </button>
