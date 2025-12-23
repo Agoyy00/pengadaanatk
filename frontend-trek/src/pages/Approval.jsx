@@ -1,7 +1,7 @@
 // src/components/Approval.jsx
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import "./Pengajuan.css";
+import "../css/Pengajuan.css";
 
 export default function Approval() {
   const navigate = useNavigate();
@@ -84,13 +84,12 @@ export default function Approval() {
               serta mengelola <strong>harga ATK</strong>.
             </p>
             <div
-  className="menu-item"
-  style={{ cursor: "pointer" }}
-  onClick={() => navigate("/kelola-barang")}
->
-  Kelola Barang ATK
-</div>
-
+              className="menu-item"
+              style={{ cursor: "pointer" }}
+              onClick={() => navigate("/kelola-barang")}
+            >
+              Kelola Barang ATK
+           </div>
           </div>
         </section>
       </main>

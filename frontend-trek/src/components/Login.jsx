@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
-import "./Login.css";
+import "../css/Login.css";
 
 import atk from "../gambar/Logo.png";
 import logo from "../gambar/LogoYarsi.jpeg";

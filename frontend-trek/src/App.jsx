@@ -8,19 +8,19 @@ import yarsi from "./gambar/yarsi.png";
 import Login from "./components/Login";
 import Navbar from "./components/Navbar";
 
-import DashboardAdmin from "./components/DashboardAdmin";
-import DashboardUser from "./components/DashboardUser";
-import Pengajuan from "./components/Pengajuan";
-import Periode from "./components/Periode";
-import Verifikasi from "./components/Verifikasi";
+import DashboardAdmin from "./pages/DashboardAdmin";
+import DashboardUser from "./pages/DashboardUser";
+import Pengajuan from "./pages/Pengajuan";
+import Periode from "./pages/Periode";
+import Verifikasi from "./pages/Verifikasi";
 
-import Approval from "./components/Approval";
-import Riwayat from "./components/Riwayat";
-import TambahUser from "./components/TambahUser";
+import Approval from "./pages/Approval";
+import Riwayat from "./pages/Riwayat";
+import TambahUser from "./pages/TambahUser";
 
 // ✅ HALAMAN BARU
-import KelolaBarangATK from "./components/KelolaBarangATK"; // ✅ ROUTE BARU
-import KelolaHargaATK from "./components/KelolaHargaATK";
+import KelolaBarangATK from "./pages/KelolaBarangATK"; // ✅ ROUTE BARU
+import KelolaHargaATK from "./pages/KelolaHargaATK";
 
 const API_BASE = "http://127.0.0.1:8000/api";
 

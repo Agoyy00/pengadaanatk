@@ -1,3 +1,13 @@
+* {
+    box-sizing: border-box;
+    font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+}
+
 .container {
   width: 350px;
   margin: 40px auto;

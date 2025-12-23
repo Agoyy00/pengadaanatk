@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import "./Pengajuan.css";
-import "./layout.css";
+import "../css/Pengajuan.css";
+import "../css/layout.css";
 
 function Pengajuan() {
   const [currentStep, setCurrentStep] = useState(1);
