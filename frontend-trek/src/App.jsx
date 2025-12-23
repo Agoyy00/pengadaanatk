@@ -1,22 +1,53 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { useState, useEffect } from "react";
+// src/App.jsx
+import { useEffect, useState } from "react";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import "./App.css";
 
 import yarsi from "./gambar/yarsi.png";
 
-import Navbar from "./components/Navbar";
 import Login from "./components/Login";
-import Pengajuan from "./components/Pengajuan";
-import DashboardUser from "./components/DashboardUser";
+import Navbar from "./components/Navbar";
+
 import DashboardAdmin from "./components/DashboardAdmin";
-import Verifikasi from "./components/Verifikasi";
+import DashboardUser from "./components/DashboardUser";
+import Pengajuan from "./components/Pengajuan";
 import Periode from "./components/Periode";
+import Verifikasi from "./components/Verifikasi";
+
 import Approval from "./components/Approval";
-import Grafik from "./components/Grafik";
-import TambahUser from "./components/TambahUser";
 import Riwayat from "./components/Riwayat";
+import TambahUser from "./components/TambahUser";
+
+// ✅ HALAMAN BARU
+import KelolaBarangATK from "./components/KelolaBarangATK"; // ✅ ROUTE BARU
+import KelolaHargaATK from "./components/KelolaHargaATK";
 
 const API_BASE = "http://127.0.0.1:8000/api";
+
+// ✅ Normalisasi role: "Super Admin" / "super_admin" -> "superadmin"
+const normalizeRole = (role) =>
+  String(role || "")
+    .toLowerCase()
+    .replace(/[\s_]+/g, "");
+
+function RequireAuth({ children, allowRoles = [] }) {
+  const storedUser = localStorage.getItem("user");
+  const user = storedUser ? JSON.parse(storedUser) : null;
+
+  if (!user) return <Navigate to="/" replace />;
+
+  const role = normalizeRole(user.role);
+  const allow = allowRoles.map(normalizeRole);
+
+  if (allow.length > 0 && !allow.includes(role)) {
+    // kalau role tidak sesuai, lempar ke dashboard masing-masing
+    if (role === "superadmin") return <Navigate to="/approval" replace />;
+    if (role === "admin") return <Navigate to="/dashboardadmin" replace />;
+    return <Navigate to="/dashboarduser" replace />;
+  }
+
+  return children;
+}
 
 function App() {
   const [showLogin, setShowLogin] = useState(false);
@@ -47,7 +78,6 @@ function App() {
 
           setToastType("none");
           setToastText(msg);
-
           return;
         }
 
@@ -64,13 +94,11 @@ function App() {
           msg = `Periode ${p.tahun_akademik} akan dibuka pada ${mulai.toLocaleString(
             "id-ID"
           )} dan ditutup pada ${selesai.toLocaleString("id-ID")}.`;
-
         } else if (now >= mulai && now <= selesai && data.is_open) {
           type = "open";
           msg = `Periode ${p.tahun_akademik} sedang DIBUKA hingga ${selesai.toLocaleString(
             "id-ID"
           )}.`;
-
         } else {
           type = "closed";
           msg = `Periode ${p.tahun_akademik} sudah DITUTUP pada ${selesai.toLocaleString(
@@ -78,11 +106,9 @@ function App() {
           )}.`;
         }
 
-        // 👉 Untuk popup login
         setPeriodeType(type);
         setPeriodeInfo(msg);
 
-        // 👉 Untuk toast pojok kanan
         setToastType(type);
         setToastText(msg);
       } catch (err) {
@@ -120,15 +146,14 @@ function App() {
     return "periode-toast none";
   };
 
-  // ===================================================
-  // 🔹 Render
-  // ===================================================
   return (
     <BrowserRouter>
       {/* 🔔 TOAST DI POJOK KANAN ATAS */}
       {toastText && (
         <div className={getToastClass()}>
-          <div className="periode-toast-title">📢 Informasi Periode Pengajuan</div>
+          <div className="periode-toast-title">
+            📢 Informasi Periode Pengajuan
+          </div>
           <div className="periode-toast-text">{toastText}</div>
         </div>
       )}
@@ -170,20 +195,106 @@ function App() {
           }
         />
 
-        {/* USER ROUTES */}
-        <Route path="/pengajuan" element={<Pengajuan />} />
-        <Route path="/dashboarduser" element={<DashboardUser />} />
-        <Route path="/riwayat" element={<Riwayat />} />
+        {/* =========================
+            USER ROUTES
+        ========================= */}
+        <Route
+          path="/dashboarduser"
+          element={
+            <RequireAuth allowRoles={["user"]}>
+              <DashboardUser />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/pengajuan"
+          element={
+            <RequireAuth allowRoles={["user"]}>
+              <Pengajuan />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/riwayat"
+          element={
+            <RequireAuth allowRoles={["user"]}>
+              <Riwayat />
+            </RequireAuth>
+          }
+        />
 
-        {/* ADMIN ROUTES */}
-        <Route path="/dashboardadmin" element={<DashboardAdmin />} />
-        <Route path="/verifikasi" element={<Verifikasi />} />
-        <Route path="/periode" element={<Periode />} />
+        {/* =========================
+            ADMIN ROUTES
+        ========================= */}
+        <Route
+          path="/dashboardadmin"
+          element={
+            <RequireAuth allowRoles={["admin"]}>
+              <DashboardAdmin />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/verifikasi"
+          element={
+            <RequireAuth allowRoles={["admin"]}>
+              <Verifikasi />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/periode"
+          element={
+            <RequireAuth allowRoles={["admin", "superadmin"]}>
+              <Periode />
+            </RequireAuth>
+          }
+        />
 
-        {/* SUPER ADMIN ROUTES */}
-        <Route path="/approval" element={<Approval />} />
-        <Route path="/grafik" element={<Grafik />} />
-        <Route path="/tambahuser" element={<TambahUser />} />
+        {/* =========================
+            SUPER ADMIN ROUTES
+        ========================= */}
+        <Route
+          path="/approval"
+          element={
+            <RequireAuth allowRoles={["superadmin"]}>
+              <Approval />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/tambahuser"
+          element={
+            <RequireAuth allowRoles={["superadmin"]}>
+              <TambahUser />
+            </RequireAuth>
+          }
+        />
+
+        {/* =========================
+            FITUR BARU
+        ========================= */}
+        <Route
+          path="/kelola-harga"
+          element={
+            <RequireAuth allowRoles={["admin", "superadmin"]}>
+              <KelolaHargaATK />
+            </RequireAuth>
+          }
+        />
+
+        {/* ✅ ROUTE BARU: Kelola Barang ATK */}
+        <Route
+          path="/kelola-barang"
+          element={
+            <RequireAuth allowRoles={["admin", "superadmin"]}>
+              <KelolaBarangATK />
+            </RequireAuth>
+          }
+        />
+
+        {/* fallback */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );

@@ -59,7 +59,6 @@ function Login({ onClose }) {
             <img src={atk} className="logo-bawah-small" alt="Logo ATK" />
           </div>
 
-          {/* KANAN — FORM LOGIN */}
           <div className="right-side-small">
             <h2 className="login-title">Login</h2>
             <form onSubmit={handleLogin} className="login-form-small">

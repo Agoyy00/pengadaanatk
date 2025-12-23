@@ -19,30 +19,33 @@ export default function Approval() {
         </div>
 
         <nav className="sidebar-menu">
-          {/* Dashboard Super Admin (halaman ini) */}
-          <div
-            className="menu-item disabled"
-            style={{ cursor: "default" }}
-          >
+          <div className="menu-item disabled" style={{ cursor: "default" }}>
             Dashboard Super Admin
           </div>
 
-          {/* 🔹 Analisis Data (dulu: Grafik) */}
-          <div
-            className="menu-item"
-            style={{ cursor: "pointer" }}
-            onClick={() => navigate("/grafik")}
-          >
-            Analisis Data
-          </div>
-
-          {/* Tambah User */}
           <div
             className="menu-item"
             style={{ cursor: "pointer" }}
             onClick={() => navigate("/tambahuser")}
           >
             Tambah User
+          </div>
+
+          {/* ✅ MENU BARU */}
+          <div
+            className="menu-item"
+            style={{ cursor: "pointer" }}
+            onClick={() => navigate("/kelola-harga")}
+          >
+            Kelola Harga ATK
+          </div>
+
+          <div
+            className="menu-item"
+            style={{ cursor: "pointer" }}
+            onClick={() => navigate("/periode")}
+          >
+            Atur Periode
           </div>
         </nav>
 
@@ -60,7 +63,6 @@ export default function Approval() {
 
       {/* MAIN */}
       <main className="main">
-        {/* TOPBAR */}
         <header className="topbar">
           <div>
             <div className="topbar-title">Dashboard Super Admin</div>
@@ -74,16 +76,21 @@ export default function Approval() {
           </div>
         </header>
 
-        {/* CONTENT */}
         <section className="main-content">
           <div className="card">
             <div className="card-title">Panel Super Admin</div>
             <p>
-              Super Admin dapat mengelola user (menambah akun admin / user),
-              serta melakukan <strong>analisis data pengajuan</strong> berdasarkan
-              item spesifik (misalnya penggunaan kertas, pulpen, dan lain-lain)
-              di seluruh unit untuk memantau efisiensi program pengadaan ATK.
+              Super Admin dapat mengelola user, mengatur periode pengajuan,
+              serta mengelola <strong>harga ATK</strong>.
             </p>
+            <div
+  className="menu-item"
+  style={{ cursor: "pointer" }}
+  onClick={() => navigate("/kelola-barang")}
+>
+  Kelola Barang ATK
+</div>
+
           </div>
         </section>
       </main>

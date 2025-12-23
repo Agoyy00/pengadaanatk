@@ -6,6 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Pengajuan;
 use App\Models\PengajuanItem;
 use App\Models\Periode;
+use App\Models\Notification;
+use App\Models\User;
+
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -154,6 +157,7 @@ class PengajuanController extends Controller
     /**
      * PATCH /api/pengajuan/{pengajuan}/status
      * Admin → update status pengajuan (diajukan / diverifikasi / ditolak / disetujui)
+     * ✅ Tambah: ketika status menjadi "diverifikasi" → buat notifikasi untuk semua SuperAdmin
      */
     public function updateStatus(Request $request, Pengajuan $pengajuan)
     {
@@ -171,6 +175,21 @@ class PengajuanController extends Controller
         $pengajuan->status = $request->status;
         $pengajuan->save();
 
+        // ✅ NOTIFIKASI SAAT DIVERIFIKASI
+        if ($request->status === 'diverifikasi') {
+            $superAdmins = User::where('role', 'superadmin')->get();
+
+            foreach ($superAdmins as $sa) {
+                Notification::create([
+                    'user_id'     => $sa->id,
+                    'pengajuan_id'=> $pengajuan->id,
+                    'title'       => 'Pengajuan diverifikasi admin',
+                    'message'     => 'Pengajuan dari ' . $pengajuan->nama_pemohon . ' (' . $pengajuan->unit . ') sudah diverifikasi.',
+                    'is_read'     => false,
+                ]);
+            }
+        }
+
         return response()->json([
             'success'   => true,
             'message'   => 'Status pengajuan berhasil diperbarui',
@@ -180,14 +199,6 @@ class PengajuanController extends Controller
 
     /**
      * GET /api/analisis-barang
-     *
-     * Query param:
-     *  - barang_id        (wajib)
-     *  - tahun_akademik   (boleh "all" → semua tahun)
-     *  - unit             (boleh "all" → semua unit)
-     *
-     * Contoh:
-     *  /api/analisis-barang?barang_id=3&tahun_akademik=2025/2026&unit=Direktorat
      */
     public function analisisBarang(Request $request)
     {
@@ -286,9 +297,7 @@ class PengajuanController extends Controller
 
     /**
      * PATCH /api/pengajuan/{pengajuan}/revisi
-     *
-     * Admin merevisi jumlah barang + catatan revisi,
-     * lalu menghitung ulang total_jumlah_diajukan & total_nilai.
+     * revisiItems - sesuai kode kamu
      */
     public function revisiItems(Request $request, Pengajuan $pengajuan)
     {
