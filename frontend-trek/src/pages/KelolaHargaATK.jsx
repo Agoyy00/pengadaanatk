@@ -33,22 +33,13 @@ export default function KelolaHargaATK() {
   const isSuperAdmin = useMemo(() => role === "superadmin", [role]);
 
   const sidebarMenus = useMemo(() => {
-    if (isSuperAdmin) {
-      return [
-        { label: "Dashboard Super Admin", to: "/approval" },
-        { label: "Tambah User", to: "/tambahuser" },
-        { label: "Kelola Barang ATK", to: "/kelola-barang" }, // ✅ tambah menu barang
-        { label: "Kelola Harga ATK", to: "/kelola-harga", active: true },
-      ];
-    }
-    return [
-      { label: "Dashboard Admin", to: "/dashboardadmin" },
-      { label: "Verifikasi", to: "/verifikasi" },
-      { label: "Atur Periode", to: "/periode" },
-      { label: "Kelola Barang ATK", to: "/kelola-barang" }, // ✅ tambah menu barang
-      { label: "Kelola Harga ATK", to: "/kelola-harga", active: true },
+  return [
+    { label: "Dashboard Admin", to: "/dashboardadmin" },
+    { label: "Verifikasi", to: "/verifikasi" },
+    { label: "Kelola Barang ATK", to: "/kelola-barang"},
+    { label: "Kelola Harga ATK", to: "/kelola-harga", active: true },
     ];
-  }, [isSuperAdmin]);
+    }, []);
 
   async function loadBarangs(keyword = "") {
     setLoading(true);

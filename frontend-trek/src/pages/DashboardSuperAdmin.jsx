@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import "../css/Pengajuan.css";
 
@@ -86,6 +86,17 @@ export default function DashboardSuperAdmin() {
   // Hitung jumlah unread
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
+  const sidebarMenus = useMemo(() => {
+  return [
+    { label: "Dashboard Super Admin", to: "/dashboardsuperadmin", active: true },
+    { label: "Approval", to: "/approval" },
+    { label: "Tambah User", to: "/tambahuser" },
+    { label: "Atur Periode", to: "/periode" },
+    { label: "Grafik & Analisis Data", to: "/grafik" },
+    ];
+    }, []);
+
+
   return (
     <div className="layout">
       {/* SIDEBAR */}
@@ -95,50 +106,22 @@ export default function DashboardSuperAdmin() {
           <div className="sidebar-subtitle">Universitas Yarsi</div>
         </div>
 
-        <nav className="sidebar-menu">
-          {/* Halaman ini sendiri */}
-          <div className="menu-item disabled" style={{ cursor: "default" }}>
-            Dashboard Super Admin
-          </div>
-          
-
-          {/* Menu analisis data (sesuaikan route kamu) */}
+       <nav className="sidebar-menu">
+        {sidebarMenus.map((m) => (
           <div
-            className="menu-item"
-            onClick={() => navigate("/approval")}
-            style={{ cursor: "pointer" }}
+            key={m.label}
+            className={`menu-item ${m.active ? "disabled" : ""}`}
+            style={{ cursor: m.active ? "default" : "pointer" }}
+            onClick={() => {
+              if (!m.active) {
+                navigate(m.to);
+              }
+            }}
           >
-            Analisis Data
+            {m.label}
           </div>
-
-
-          {/* Menu tambah user */}
-          <div
-            className="menu-item"
-            onClick={() => navigate("/tambahuser")}
-            style={{ cursor: "pointer" }}
-          >
-            Tambah User
-          </div>
-
-          {/* Menu atur periode */}
-          <div
-            className="menu-item"
-            onClick={() => navigate("/periode")}
-            style={{ cursor: "pointer" }}
-          >
-            Atur Periode
-          </div>
-
-          {/* ✅ MENU BARU: Kelola Harga ATK */}
-          <div
-            className="menu-item"
-            onClick={() => navigate("/kelola-harga")}
-            style={{ cursor: "pointer" }}
-          >
-            Kelola Harga ATK
-          </div>
-        </nav>
+        ))}
+      </nav>
 
         <div
           className="logout"

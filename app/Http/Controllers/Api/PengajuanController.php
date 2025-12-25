@@ -1,7 +1,8 @@
 <?php
 
 namespace App\Http\Controllers\Api;
-
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use App\Models\Pengajuan;
 use App\Models\PengajuanItem;
@@ -159,43 +160,45 @@ class PengajuanController extends Controller
      * Admin → update status pengajuan (diajukan / diverifikasi / ditolak / disetujui)
      * ✅ Tambah: ketika status menjadi "diverifikasi" → buat notifikasi untuk semua SuperAdmin
      */
+
     public function updateStatus(Request $request, Pengajuan $pengajuan)
-    {
+        {
         $request->validate([
-            'status' => 'required|in:diajukan,diverifikasi,ditolak,disetujui',
+            'status' => 'required|in:diajukan,diverifikasi_admin,disetujui,ditolak_admin',
         ]);
 
-        if ($pengajuan->status !== 'diajukan') {
+        // RULE ADMIN
+        if (
+            $pengajuan->status === 'diajukan' &&
+            $request->status !== 'diverifikasi_admin'
+        ) {
             return response()->json([
                 'success' => false,
-                'message' => 'Status tidak dapat diubah karena pengajuan sudah ' . $pengajuan->status,
+                'message' => 'Admin hanya boleh verifikasi',
+            ], 422);
+        }
+
+        // RULE SUPER ADMIN
+        if (
+            $pengajuan->status === 'diverifikasi_admin' &&
+            !in_array($request->status, ['disetujui', 'ditolak_admin'])
+        ) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Super admin hanya boleh approve / tolak',
             ], 422);
         }
 
         $pengajuan->status = $request->status;
         $pengajuan->save();
 
-        // ✅ NOTIFIKASI SAAT DIVERIFIKASI
-        if ($request->status === 'diverifikasi') {
-            $superAdmins = User::where('role', 'superadmin')->get();
-
-            foreach ($superAdmins as $sa) {
-                Notification::create([
-                    'user_id'     => $sa->id,
-                    'pengajuan_id'=> $pengajuan->id,
-                    'title'       => 'Pengajuan diverifikasi admin',
-                    'message'     => 'Pengajuan dari ' . $pengajuan->nama_pemohon . ' (' . $pengajuan->unit . ') sudah diverifikasi.',
-                    'is_read'     => false,
-                ]);
-            }
-        }
-
         return response()->json([
-            'success'   => true,
-            'message'   => 'Status pengajuan berhasil diperbarui',
+            'success' => true,
+            'message' => 'Status berhasil diperbarui',
             'pengajuan' => $pengajuan,
         ]);
     }
+
 
     /**
      * GET /api/analisis-barang
@@ -299,57 +302,88 @@ class PengajuanController extends Controller
      * PATCH /api/pengajuan/{pengajuan}/revisi
      * revisiItems - sesuai kode kamu
      */
+
     public function revisiItems(Request $request, Pengajuan $pengajuan)
-    {
-        $validated = $request->validate([
-            'items'                     => 'required|array|min:1',
-            'items.*.id'                => 'required|integer|exists:pengajuan_items,id',
-            'items.*.jumlah_disetujui'  => 'required|integer|min:0',
-            'items.*.catatan_revisi'    => 'nullable|string',
-        ]);
+{
+    Log::info('REVISI MASUK', $request->all());
 
-        if (!in_array($pengajuan->status, ['diajukan', 'diverifikasi'])) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Pengajuan tidak dapat direvisi karena status sudah ' . $pengajuan->status,
-            ], 422);
-        }
+    $validated = $request->validate([
+        'items'                   => 'required|array|min:1',
+        'items.*.id'              => 'required|integer|exists:pengajuan_items,id',
+        'items.*.jumlah_diajukan' => 'required|integer|min:0',
+        'items.*.sisa_stok'       => 'required|integer|min:0',
+        'items.*.catatan_revisi'  => 'nullable|string',
+    ]);
 
-        foreach ($validated['items'] as $rev) {
-            $item = PengajuanItem::where('pengajuan_id', $pengajuan->id)
-                ->where('id', $rev['id'])
-                ->first();
-
-            if (!$item) {
-                continue;
-            }
-
-            $item->jumlah_disetujui = $rev['jumlah_disetujui'];
-            $item->catatan_revisi   = $rev['catatan_revisi'] ?? null;
-            $item->save();
-        }
-
-        // Hitung ulang total berdasarkan jumlah_disetujui (kalau null → jumlah_diajukan)
-        $items = PengajuanItem::where('pengajuan_id', $pengajuan->id)->get();
-
-        $totalJumlah = 0;
-        $totalNilai  = 0;
-
-        foreach ($items as $it) {
-            $qty = $it->jumlah_disetujui ?? $it->jumlah_diajukan;
-            $totalJumlah += $qty;
-            $totalNilai  += $qty * $it->harga_satuan;
-        }
-
-        $pengajuan->total_jumlah_diajukan = $totalJumlah;
-        $pengajuan->total_nilai           = $totalNilai;
-        $pengajuan->status                = 'disetujui';
-        $pengajuan->save();
-
+    if ($pengajuan->status !== 'diajukan') {
         return response()->json([
-            'success'   => true,
-            'message'   => 'Revisi jumlah barang berhasil disimpan.',
-            'pengajuan' => $pengajuan->load('items.barang'),
-        ]);
+            'success' => false,
+            'message' => 'Pengajuan tidak bisa direvisi karena status sudah ' . $pengajuan->status,
+        ], 422);
     }
+
+    foreach ($validated['items'] as $rev) {
+        PengajuanItem::where('pengajuan_id', $pengajuan->id)
+            ->where('id', $rev['id'])
+            ->update([
+                'jumlah_diajukan' => $rev['jumlah_diajukan'],
+                'sisa_stok'       => $rev['sisa_stok'],
+                'catatan_revisi'  => $rev['catatan_revisi'] ?? null,
+            ]);
+    }
+
+    // hitung ulang total
+    $items = PengajuanItem::where('pengajuan_id', $pengajuan->id)->get();
+
+    $totalJumlah = 0;
+    $totalNilai  = 0;
+
+    foreach ($items as $it) {
+        $totalJumlah += $it->jumlah_diajukan;
+        $totalNilai  += $it->jumlah_diajukan * $it->harga_satuan;
+    }
+
+    $pengajuan->update([
+        'total_jumlah_diajukan' => $totalJumlah,
+        'total_nilai'           => $totalNilai,
+    ]);
+
+    return response()->json([
+        'success'   => true,
+        'message'   => 'Revisi berhasil disimpan',
+        'pengajuan' => $pengajuan->load('items.barang'),
+    ]);
+}
+
+/**
+ * GET /api/pengajuan/approval
+ * Super Admin → hanya pengajuan yang sudah diverifikasi admin
+ */
+    public function approvalList()
+    {
+        $data = Pengajuan::with(['items.barang', 'user'])
+            ->where('status', 'diverifikasi_admin')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json($data);
+    }
+    
+    public function downloadPdf(Pengajuan $pengajuan)
+{
+    if ($pengajuan->status !== 'disetujui') {
+        return response()->json([
+            'message' => 'Pengajuan belum disetujui'
+        ], 403);
+    }
+
+    $pengajuan->load('items.barang', 'user');
+
+    $pdf = PDF::loadView('pdf.pengajuan', compact('pengajuan'));
+
+    return $pdf->download(
+        'pengajuan-'.$pengajuan->id.'.pdf'
+    );
+}
+
 }

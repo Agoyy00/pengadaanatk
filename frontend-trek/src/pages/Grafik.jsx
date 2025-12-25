@@ -1,16 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import "../css/Pengajuan.css";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-  Legend,
-  ResponsiveContainer,
-} from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 const API_BASE = "http://127.0.0.1:8000/api";
 
@@ -21,11 +12,19 @@ export default function Grafik() {
   const storedUser = localStorage.getItem("user");
   const currentUser = storedUser ? JSON.parse(storedUser) : null;
 
+  const dummyData = [
+  { nama_barang: "Kertas", total_diajukan: 0 },
+  { nama_barang: "Pulpen", total_diajukan: 3 },
+  { nama_barang: "Map", total_diajukan: 1 }
+];
+
   // Dropdown data
   const [barangList, setBarangList] = useState([]);
   const [barangId, setBarangId] = useState("");
   const [tahunAkademik, setTahunAkademik] = useState("all");
   const [unit, setUnit] = useState("all");
+  const [grafikData, setGrafikData] = useState([]);
+
 
   // Result & status
   const [loading, setLoading] = useState(false);
@@ -45,6 +44,191 @@ export default function Grafik() {
     "Fakultas Psikologi",
     "Fakultas Ekonomi",
   ];
+
+  const [barangs, setBarangs] = useState([]); // daftar semua barang (termasuk yang belum diajukan)
+  const [pengajuanData, setPengajuanData] = useState([]); 
+// bentuk: [{ nama_barang: "Kertas", total_diajukan: 10 }, ...]
+
+useEffect(() => {
+  fetch(`${API_BASE}/barang`)
+    .then(res => res.json())
+    .then(barangs => {
+      const init = barangs.map(b => ({
+        nama_barang: b.nama,
+        total_diajukan: 0
+      }));
+      setGrafikData(init);
+    });
+}, []);
+
+useEffect(() => {
+  console.log("GRAFIK DATA:", grafikData);
+}, [grafikData]);
+
+{console.log("RENDER DATA:", grafikData)}
+
+
+useEffect(() => {
+  fetch(`${API_BASE}/pengajuan`)
+    .then(res => res.json())
+    .then(data => {
+      setGrafikData(prev => {
+        const map = {};
+
+        // init dari data barang awal
+        prev.forEach(b => {
+          map[b.nama_barang] = 0;
+        });
+
+        // hitung dari API
+        data.forEach(p => {
+          p.items.forEach(i => {
+            const nama = i.barang.nama;
+            map[nama] = (map[nama] || 0) + i.jumlah_diajukan;
+          });
+        });
+
+        // barang yg ada pengajuan → ke kiri
+        return Object.keys(map)
+          .map(nama => ({
+            nama_barang: nama,
+            total_diajukan: map[nama]
+          }))
+          .sort((a, b) => b.total_diajukan - a.total_diajukan);
+      });
+    });
+}, []);
+
+
+// ===== Live-update Grafik =====
+useEffect(() => {
+  let intervalId;
+
+  async function fetchPengajuan() {
+    try {
+      const res = await fetch(`${API_BASE}/pengajuan?status=diverifikasi`); // hanya yang diverifikasi admin
+      const data = await res.json();
+
+      if (!Array.isArray(data)) return;
+
+      // hitung total per barang
+      const totals = [...barangs]; // copy state awal
+      data.forEach(pengajuan => {
+        pengajuan.items.forEach(item => {
+          const idx = totals.findIndex(b => b.nama_barang === item.barang.nama);
+          if (idx >= 0) {
+            totals[idx].total_diajukan += item.jumlah_diajukan;
+          } else {
+            totals.unshift({
+              nama_barang: item.barang.nama,
+              total_diajukan: item.jumlah_diajukan
+            });
+          }
+        });
+      });
+
+      setBarangs(totals);
+    } catch (err) {
+      console.error("Gagal fetch pengajuan untuk grafik:", err);
+    }
+  }
+
+  // pertama kali panggil langsung
+  fetchPengajuan();
+
+  // interval setiap 5 detik
+  intervalId = setInterval(fetchPengajuan, 5000);
+
+  return () => clearInterval(intervalId); // cleanup saat unmount
+}, [barangs]);
+
+function updateGrafik(newItems) {
+  setPengajuanData(prev => {
+    const updated = [...prev];
+
+    newItems.forEach(item => {
+      const idx = updated.findIndex(b => b.nama_barang === item.nama_barang);
+      if (idx >= 0) {
+        updated[idx].total_diajukan += item.jumlah_diajukan;
+      } else {
+        // barang baru muncul otomatis di kiri
+        updated.unshift({ nama_barang: item.nama_barang, total_diajukan: item.jumlah_diajukan });
+      }
+    });
+
+    return updated;
+  });
+}
+
+useEffect(() => {
+  async function loadBarangAwal() {
+    try {
+      const res = await fetch(`${API_BASE}/barang`);
+      const data = await res.json();
+
+      // random urutan barang
+      const shuffled = [...data].sort(() => Math.random() - 0.5);
+
+      const init = shuffled.map(b => ({
+        nama_barang: b.nama,
+        total_diajukan: 0
+      }));
+
+      setGrafikData(init);
+    } catch (e) {
+      console.error("Gagal load barang awal:", e);
+    }
+  }
+
+  loadBarangAwal();
+}, []);
+
+useEffect(() => {
+  let intervalId;
+
+  async function updatePengajuan() {
+    try {
+      const res = await fetch(`${API_BASE}/pengajuan?status=diverifikasi`);
+      const data = await res.json();
+
+      if (!Array.isArray(data)) return;
+
+      setGrafikData(prev => {
+        const map = {};
+
+        // init dari state lama
+        prev.forEach(b => {
+          map[b.nama_barang] = b.total_diajukan;
+        });
+
+        // hitung ulang
+        data.forEach(p => {
+          p.items.forEach(i => {
+            map[i.barang.nama] =
+              (map[i.barang.nama] || 0) + i.jumlah_diajukan;
+          });
+        });
+
+        // sort: yang ada pengajuan ke kiri
+        return Object.keys(map)
+          .map(nama => ({
+            nama_barang: nama,
+            total_diajukan: map[nama]
+          }))
+          .sort((a, b) => b.total_diajukan - a.total_diajukan);
+      });
+
+    } catch (e) {
+      console.error("Update pengajuan gagal:", e);
+    }
+  }
+
+  updatePengajuan();
+  intervalId = setInterval(updatePengajuan, 5000);
+
+  return () => clearInterval(intervalId);
+}, []);
+
 
   // ==== Ambil daftar barang untuk dropdown ====
   useEffect(() => {
@@ -105,6 +289,16 @@ export default function Grafik() {
     }
   }
 
+  const sidebarMenus = useMemo(() => {
+  return [
+  { label: "Dashboard Super Admin", to: "/dashboardsuperadmin"},
+  { label: "Approval", to: "/approval" },
+  { label: "Tambah User", to: "/tambahuser" },
+  { label: "Atur Periode", to: "/periode"},
+  { label: "Grafik & Analisis Data", to: "/grafik", active: true  },
+  ];
+  }, []);
+
   return (
     <div className="layout">
       {/* SIDEBAR SUPER ADMIN */}
@@ -115,14 +309,21 @@ export default function Grafik() {
         </div>
 
         <nav className="sidebar-menu">
-          <div className="menu-item" onClick={() => navigate("/approval")}>
-            Dashboard Super Admin
+        {sidebarMenus.map((m) => (
+          <div
+            key={m.label}
+            className={`menu-item ${m.active ? "disabled" : ""}`}
+            style={{ cursor: m.active ? "default" : "pointer" }}
+            onClick={() => {
+              if (!m.active) {
+                navigate(m.to);
+              }
+            }}
+          >
+            {m.label}
           </div>
-          <div className="menu-item disabled">Analisis Data</div>
-          <div className="menu-item" onClick={() => navigate("/tambahuser")}>
-            Tambah User
-          </div>
-        </nav>
+        ))}
+      </nav>
 
         <div
           className="logout"
@@ -295,28 +496,6 @@ export default function Grafik() {
               </div>
             </div>
           )}
-
-          {/* ===== GRAFIK PENGGUNAAN PER UNIT ===== */}
-          {result && result.per_unit && result.per_unit.length > 0 && (
-            <div className="card" style={{ marginTop: 20 }}>
-              <div className="card-title">Grafik Penggunaan per Unit</div>
-              <div style={{ width: "100%", height: 350, border: "2px solid red" }}>
-                console.log("PER UNIT:", result.per_unit);
-                <ResponsiveContainer>
-                  <BarChart data={result.per_unit}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="unit" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="penggunaan" fill="#8884d8" name="Perkiraan Penggunaan" />
-                    <Bar dataKey="total_diajukan" fill="#82ca9d" name="Total Diajukan" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          )}
-
           {result && !result.summary && !errorMsg && (
             <div className="card" style={{ marginTop: 20 }}>
               <div className="card-title">Hasil Analisis</div>

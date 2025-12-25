@@ -502,7 +502,6 @@ function Pengajuan() {
                           >
                             <option>Staf</option>
                             <option>Dosen</option>
-                            <option>Mahasiswa</option>
                           </select>
                         </div>
 
@@ -724,46 +723,59 @@ function Pengajuan() {
                   </div>
                 )}
 
-                {/* STEP 3 */}
                 {currentStep === 3 && (
-                  <div className="step-pane active">
-                    <h4>Konfirmasi Pengajuan</h4>
-
-                    <p>
-                      <strong>Tahun Akademik:</strong> {tahunAkademik} <br />
-                      <strong>Nama Pemohon:</strong> {namaPemohon} <br />
-                      <strong>Jabatan:</strong> {jabatan} <br />
-                      <strong>Unit:</strong> {unit}
+                <div className="step-pane active confirm-pane">
+                  <div className="confirm-card">
+                    <h3 className="confirm-title">Konfirmasi Pengajuan</h3>
+                    <p className="confirm-subtitle">
+                      Mohon periksa kembali data sebelum pengajuan dikirim
                     </p>
 
-                    <h5>Item yang diajukan:</h5>
-                    {items.length === 0 ? (
-                      <p>Tidak ada item.</p>
-                    ) : (
-                      <ul>
-                        {items.map((i) => (
-                          <li key={i.id}>
-                            {i.nama} — kebutuhan {i.kebutuhanTotal}, sisa stok{" "}
-                            {i.sisaStok},{" "}
-                            <strong>diajukan {i.jumlahDiajukan}</strong>{" "}
-                            {i.satuan}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
+                    {/* DATA PEMOHON */}
+                    <div className="confirm-section">
+                      <h4>Data Pemohon</h4>
+                      <div className="confirm-grid">
+                        <div><span>Tahun Akademik</span><strong>{tahunAkademik}</strong></div>
+                        <div><span>Nama Pemohon</span><strong>{namaPemohon}</strong></div>
+                        <div><span>Jabatan</span><strong>{jabatan}</strong></div>
+                        <div><span>Unit</span><strong>{unit}</strong></div>
+                      </div>
+                    </div>
 
-                    <h5>Ringkasan jumlah & nilai:</h5>
-                    <p>
-                      Total jumlah diajukan:{" "}
+                    {/* ITEM */}
+                    <div className="confirm-section">
+                      <h4>Item yang Diajukan</h4>
+
+                      {items.length === 0 ? (
+                        <p className="empty-text">Tidak ada item.</p>
+                      ) : (
+                        <ul className="confirm-item-list">
+                          {items.map((i) => (
+                            <li key={i.id}>
+                              <span className="item-name">{i.nama}</span>
+                              <span className="item-meta">
+                                Diajukan <strong>{i.jumlahDiajukan}</strong> {i.satuan}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+
+                    {/* RINGKASAN */}
+                    <div className="confirm-summary">
+                      <div>
+                        <span>Total Jumlah</span>
                         <strong>{totalJumlahDiajukan}</strong>
-                      <br />
-                      Total nilai pengajuan:{" "}
-                      <strong>
-                        Rp {totalNilai.toLocaleString("id-ID")}
-                      </strong>
-                    </p>
+                      </div>
+                      <div>
+                        <span>Total Nilai</span>
+                        <strong>Rp {totalNilai.toLocaleString("id-ID")}</strong>
+                      </div>
+                    </div>
 
-                    <div className="actions">
+                    {/* ACTION */}
+                    <div className="actions confirm-actions">
                       <button
                         type="button"
                         className="btn"
@@ -777,7 +789,9 @@ function Pengajuan() {
                       </button>
                     </div>
                   </div>
-                )}
+                </div>
+              )}
+
               </form>
             </>
           )}

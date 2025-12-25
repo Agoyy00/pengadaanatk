@@ -1,3 +1,147 @@
+
+.confirm-pane {
+  display: flex;
+  justify-content: center;
+}
+
+/* CARD */
+.confirm-card {
+  width: 100%;
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 22px 26px; /* ⬅ lebih ramping */
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+}
+
+/* ===== TITLE ===== */
+.confirm-title {
+  font-size: 16px; /* dari 20 */
+  font-weight: 600;
+  color: #000000;
+  margin-bottom: 2px;
+}
+
+.confirm-subtitle {
+  font-size: 12px; /* dari 14 */
+  color: #000000;
+  opacity: 0.7;
+  margin-bottom: 18px;
+}
+
+/* ===== SECTION ===== */
+.confirm-section {
+  margin-bottom: 20px;
+}
+
+.confirm-section h4 {
+  font-size: 13px; /* dari 15 */
+  font-weight: 600;
+  color: #000000;
+  margin-bottom: 10px;
+}
+
+/* ===== GRID DATA PEMOHON ===== */
+.confirm-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px 18px;
+}
+
+.confirm-grid div {
+  display: flex;
+  flex-direction: column;
+  background: #f9fafb;
+  padding: 10px 12px; /* lebih compact */
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.confirm-grid span {
+  font-size: 11px; /* dari 12 */
+  color: #000000;
+  opacity: 0.65;
+}
+
+.confirm-grid strong {
+  font-size: 13px; /* dari 14 */
+  color: #000000;
+}
+
+/* ===== ITEM LIST ===== */
+.confirm-item-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.confirm-item-list li {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 12px; /* lebih kecil */
+  border-radius: 8px;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  margin-bottom: 8px;
+}
+
+.item-name {
+  font-weight: 500;
+  font-size: 13px; /* ⬅ diturunin */
+  color: #000000;
+}
+
+.item-meta {
+  font-size: 12px; /* dari 13 */
+  color: #000000;
+  opacity: 0.8;
+}
+
+/* ===== SUMMARY (KEEP COLOR) ===== */
+.confirm-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  background: linear-gradient(135deg, #0f766e, #0891b2);
+  color: #ffffff;
+
+  padding: 14px 18px; /* lebih ramping */
+  border-radius: 12px;
+  margin-top: 20px;
+}
+
+/* label */
+.confirm-summary span {
+  font-size: 12px; /* dari 13 */
+  opacity: 0.9;
+}
+
+/* value */
+.confirm-summary strong {
+  font-size: 16px; /* dari 18 */
+  font-weight: 600;
+}
+
+/* rapihin teks + kasih ":" */
+.confirm-summary div {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+}
+
+.confirm-summary div span::after {
+  content: " :";
+}
+
+/* ===== ACTION ===== */
+.confirm-actions {
+  margin-top: 24px;
+  display: flex;
+  justify-content: space-between;
+}
+
+
 .stepper {
     display: flex;
     align-items: center;
@@ -820,4 +964,46 @@ th {
 .revisi-note {
   font-size: 11px;
   color: #b91c1c;
+}
+
+/* Ini punya tambah user*/
+
+.input-text{
+  color: #000000;
+}
+
+/* ===== PASSWORD FIELD WITH EYE ICON ===== */
+.form-group {
+  position: relative;
+}
+
+.form-group .input-text {
+  padding-right: 42px; /* kasih ruang buat icon mata */
+}
+
+/* tombol eye */
+.show-password-btn-small {
+  position: absolute;
+  right: 12px;
+
+  top: calc(65% + 2px); /* 🔽 turunin dikit */
+  transform: translateY(-50%);
+
+  background: none;
+  border: none;
+  padding: 0;
+
+  cursor: pointer;
+  color: #6b7280;
+  font-size: 16px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+/* hover efek */
+.show-password-btn-small:hover {
+  color: #111827;
 }

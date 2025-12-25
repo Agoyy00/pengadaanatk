@@ -1,52 +1,92 @@
-// src/components/Approval.jsx
-import React from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import "../css/Pengajuan.css";
+import "../css/Approval.css";
+
+
+const API_BASE = "http://127.0.0.1:8000/api";
 
 export default function Approval() {
   const navigate = useNavigate();
+  const [pengajuan, setPengajuan] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [processingId, setProcessingId] = useState(null);
 
   const storedUser = localStorage.getItem("user");
   const currentUser = storedUser ? JSON.parse(storedUser) : null;
 
+  const sidebarMenus = useMemo(() => [
+    { label: "Dashboard Super Admin", to: "/dashboardsuperadmin" },
+    { label: "Approval", to: "/approval", active: true },
+    { label: "Tambah User", to: "/tambahuser" },
+    { label: "Atur Periode", to: "/periode" },
+    { label: "Grafik & Analisis Data", to: "/grafik" },
+  ], []);
+
+  useEffect(() => {
+    fetchPengajuan();
+  }, []);
+
+  const fetchPengajuan = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch(`${API_BASE}/pengajuan`);
+      const json = await res.json();
+      // Ambil semua pengajuan yang diverifikasi admin atau sudah disetujui/ditolak
+      setPengajuan(json.filter(p => ["diverifikasi_admin", "disetujui", "ditolak_admin"].includes(p.status)));
+    } catch (err) {
+      console.error("Gagal memuat pengajuan:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleStatusUpdate = async (id, newStatus) => {
+    if (!window.confirm(`Ubah status pengajuan #${id} menjadi "${newStatus}"?`)) return;
+    try {
+      setProcessingId(id);
+
+      const res = await fetch(`${API_BASE}/pengajuan/${id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      const json = await res.json();
+
+      if (!res.ok || !json.success) {
+        alert(json.message || "Gagal update status");
+        return;
+      }
+
+      // update status di state tanpa hapus dari list
+      setPengajuan(prev => prev.map(p => p.id === id ? { ...p, status: newStatus } : p));
+      alert("Status berhasil diubah");
+    } catch (err) {
+      console.error(err);
+      alert("Kesalahan jaringan");
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
   return (
+    
     <div className="layout">
-      {/* SIDEBAR */}
-      <aside className="sidebar">
-        <div>
+      <aside className= "sidebar">
           <div className="sidebar-logo">Sistem Pengajuan ATK</div>
           <div className="sidebar-subtitle">Universitas Yarsi</div>
-        </div>
-
+       
         <nav className="sidebar-menu">
-          <div className="menu-item disabled" style={{ cursor: "default" }}>
-            Dashboard Super Admin
-          </div>
-
-          <div
-            className="menu-item"
-            style={{ cursor: "pointer" }}
-            onClick={() => navigate("/tambahuser")}
-          >
-            Tambah User
-          </div>
-
-          {/* ✅ MENU BARU */}
-          <div
-            className="menu-item"
-            style={{ cursor: "pointer" }}
-            onClick={() => navigate("/kelola-harga")}
-          >
-            Kelola Harga ATK
-          </div>
-
-          <div
-            className="menu-item"
-            style={{ cursor: "pointer" }}
-            onClick={() => navigate("/periode")}
-          >
-            Atur Periode
-          </div>
+          {sidebarMenus.map((m) => (
+            <div
+              key={m.label}
+              className={`menu-item ${m.active ? "disabled" : ""}`}
+              style={{ cursor: m.active ? "default" : "pointer" }}
+              onClick={() => { if (!m.active) navigate(m.to); }}
+            >
+              {m.label}
+            </div>
+          ))}
         </nav>
 
         <div
@@ -61,11 +101,10 @@ export default function Approval() {
         </div>
       </aside>
 
-      {/* MAIN */}
       <main className="main">
         <header className="topbar">
           <div>
-            <div className="topbar-title">Dashboard Super Admin</div>
+            <div className="topbar-title">Approval</div>
             <div className="topbar-sub">
               Selamat datang: {currentUser?.name || "Super Admin ATK"}
             </div>
@@ -78,19 +117,74 @@ export default function Approval() {
 
         <section className="main-content">
           <div className="card">
-            <div className="card-title">Panel Super Admin</div>
-            <p>
-              Super Admin dapat mengelola user, mengatur periode pengajuan,
-              serta mengelola <strong>harga ATK</strong>.
-            </p>
-            <div
-  className="menu-item"
-  style={{ cursor: "pointer" }}
-  onClick={() => navigate("/kelola-barang")}
->
-  Kelola Barang ATK
-</div>
+            <div className="card-title">Pengajuan Diverifikasi Admin</div>
+            {loading && <p>Sedang memuat...</p>}
+            {!loading && pengajuan.length === 0 && <p>Belum ada pengajuan.</p>}
 
+            {!loading && pengajuan.length > 0 && (
+              <div className="table-wrapper">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Pemohon</th>
+                      <th>Unit</th>
+                      <th>Jabatan</th>
+                      <th>Tahun</th>
+                      <th>Total Jumlah</th>
+                      <th>Status</th>
+                      <th>Aksi</th>
+                      <th>PDF</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pengajuan.map((p) => (
+                      <tr key={p.id}>
+                        <td>{p.id}</td>
+                        <td>{p.nama_pemohon}</td>
+                        <td>{p.unit}</td>
+                        <td>{p.jabatan}</td>
+                        <td>{p.tahun_akademik}</td>
+                        <td>{p.total_jumlah_diajukan}</td>
+                        <td>{p.status}</td>
+                        <td>
+                          {p.status === "diverifikasi_admin" ? (
+                            <>
+                              <button
+                                disabled={processingId === p.id}
+                                onClick={() => handleStatusUpdate(p.id, "disetujui")}
+                              >
+                                {processingId === p.id ? "Memproses..." : "Approve"}
+                              </button>
+                              <button
+                                disabled={processingId === p.id}
+                                onClick={() => handleStatusUpdate(p.id, "ditolak_admin")}
+                                style={{ marginLeft: 6 }}
+                              >
+                                {processingId === p.id ? "Memproses..." : "Tolak"}
+                              </button>
+                            </>
+                          ) : (
+                            <span>Tidak ada aksi</span>
+                          )}
+                        </td>
+                        <td>
+                          {["disetujui", "ditolak_admin"].includes(p.status) && (
+                            <a
+                              href={`${API_BASE}/pengajuan/${p.id}/pdf`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              Download PDF
+                            </a>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </section>
       </main>

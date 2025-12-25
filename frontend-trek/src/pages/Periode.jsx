@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import "../css/Pengajuan.css";
 
@@ -111,6 +111,16 @@ export default function Periode() {
     }
   }
 
+  const sidebarMenus = useMemo(() => {
+    return [
+    { label: "Dashboard Super Admin", to: "/dashboardsuperadmin"},
+    { label: "Approval", to: "/approval" },
+    { label: "Tambah User", to: "/tambahuser" },
+    { label: "Atur Periode", to: "/periode", active: true },
+    { label: "Grafik & Analisis Data", to: "/grafik" },
+    ];
+    }, []);
+
   return (
     <div className="layout">
       {/* SIDEBAR */}
@@ -120,15 +130,22 @@ export default function Periode() {
           <div className="sidebar-subtitle">Universitas Yarsi</div>
         </div>
 
-        <nav className="sidebar-menu">
-          <div className="menu-item" onClick={() => navigate("/dashboardadmin")}>
-            Dashboard
+         <nav className="sidebar-menu">
+        {sidebarMenus.map((m) => (
+          <div
+            key={m.label}
+            className={`menu-item ${m.active ? "disabled" : ""}`}
+            style={{ cursor: m.active ? "default" : "pointer" }}
+            onClick={() => {
+              if (!m.active) {
+                navigate(m.to);
+              }
+            }}
+          >
+            {m.label}
           </div>
-          <div className="menu-item" onClick={() => navigate("/verifikasi")}>
-            Verifikasi
-          </div>
-          <div className="menu-item disabled">Atur Periode</div>
-        </nav>
+        ))}
+      </nav>
 
         <div className="logout" onClick={() => navigate("/")}>
           Log Out

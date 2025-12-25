@@ -69,3 +69,11 @@ Route::get('/periode/active', [PeriodeController::class, 'active']);
 Route::post('/periode', [PeriodeController::class, 'storeOrUpdate']);
 Route::get('/periode', [PeriodeController::class, 'index']);
 Route::delete('/periode/{periode}', [PeriodeController::class, 'destroy']);
+Route::patch('/pengajuan/{pengajuan}/status', [PengajuanController::class, 'updateStatus']);
+Route::get('/approval', [PengajuanController::class, 'approvalList']);
+Route::patch('/approval/{pengajuan}', [PengajuanController::class, 'approveBySuperAdmin']);
+Route::get('/approval/{pengajuan}/pdf', [PengajuanController::class, 'downloadPdf']);
+Route::patch('/pengajuan/{pengajuan}/revisi', [PengajuanController::class, 'revisiItems']);
+Route::get('/pengajuan/approval', [PengajuanController::class, 'approvalList']);
+Route::get('/pengajuan/{pengajuan}/pdf', [PengajuanController::class, 'downloadPdf']);
+    

@@ -2,6 +2,8 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../css/Pengajuan.css";
+import DetailVerifikasi from "../components/DetailVerifikasi";
+
 
 const API_BASE = "http://127.0.0.1:8000/api";
 
@@ -34,17 +36,17 @@ export default function Verifikasi() {
 
   const renderStatusBadge = (status) => {
     if (status === "diajukan") {
-      return <span className="status-badge status-diajukan">Diajukan</span>;
+  return <span className="status-badge status-diajukan">Diajukan</span>;
     }
     if (status === "diverifikasi") {
-      return <span className="status-badge status-diverifikasi">Diverifikasi</span>;
+      return <span className="status-badge status-diverifikasi">Diverifikasi Admin</span>;
     }
     if (status === "ditolak") {
-      return <span className="status-badge status-ditolak">Ditolak</span>;
+      return <span className="status-badge status-ditolak">Ditolak Admin</span>;
     }
     if (status === "disetujui") {
-      return <span className="status-badge status-disetujui">Disetujui</span>;
-    }
+      return <span className="status-badge status-disetujui">Disetujui Admin</span>;
+    } 
     return <span className="status-badge">{status}</span>;
   };
 
@@ -75,7 +77,7 @@ export default function Verifikasi() {
 
       setData((prev) =>
         prev.map((p) =>
-          p.id === pengajuanId ? { ...p, status: newStatus } : p
+          p.id === pengajuanId ? { ...p, status: "diverifikasi" } : p
         )
       );
     } catch (err) {
@@ -166,6 +168,68 @@ export default function Verifikasi() {
       ? data
       : data.filter((p) => p.status === filterStatus);
 
+      const sidebarMenus = [
+      { label: "Dashboard Admin", to: "/approval"},
+      { label: "Verifikasi", to: "/verifikasi", active: true  },
+      { label: "Kelola Barang ATK", to: "/kelola-barang" },
+      { label: "Kelola Harga ATK", to: "/kelola-harga" },
+      ];
+
+      const [editingId, setEditingId] = useState(null);
+      const [draftItems, setDraftItems] = useState({});
+
+      const startEdit = (pengajuan) => {
+      setEditingId(pengajuan.id);
+
+      const initial = {};
+      pengajuan.items.forEach((item) => {
+        initial[item.id] = {
+          jumlah_disetujui: item.jumlah_disetujui ?? item.jumlah_diajukan,
+          catatan_revisi: item.catatan_revisi ?? "",
+        };
+      });
+
+  setDraftItems(initial);
+};
+
+const submitVerifikasi = async (pengajuanId) => {
+  try {
+    setProcessingId(pengajuanId);
+
+    // 1. simpan revisi (kalau ada)
+    const items = Object.entries(draftItems).map(([id, v]) => ({
+      id,
+      jumlah_disetujui: v.jumlah_disetujui,
+      catatan_revisi: v.catatan_revisi,
+    }));
+
+    if (items.length > 0) {
+      await fetch(`${API_BASE}/pengajuan/${pengajuanId}/revisi`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items }),
+      });
+    }
+
+    // 2. update status (FLOW LAMA)
+   await fetch(`${API_BASE}/pengajuan/${pengajuanId}/status`, {
+  method: "PATCH",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ status: "diverifikasi" }),
+});
+
+
+    setEditingId(null);
+  } catch (err) {
+    alert("Gagal submit verifikasi");
+  } finally {
+    setProcessingId(null);
+  }
+};
+
+const [selectedPengajuan, setSelectedPengajuan] = useState(null);
+
+
   return (
     <div className="layout">
       {/* SIDEBAR */}
@@ -176,21 +240,18 @@ export default function Verifikasi() {
         </div>
 
         <nav className="sidebar-menu">
-          <div
-            className="menu-item"
-            style={{ cursor: "pointer" }}
-            onClick={() => navigate("/dashboardadmin")}
-          >
-            Dashboard
-          </div>
-          <div className="menu-item disabled">Verifikasi</div>
-          <div
-            className="menu-item"
-            style={{ cursor: "pointer" }}
-            onClick={() => navigate("/periode")}
-          >
-            Atur Periode
-          </div>
+          {sidebarMenus.map((m) => (
+            <div
+              key={m.label}
+              className={`menu-item ${m.active ? "disabled" : ""}`}
+              style={{ cursor: m.active ? "default" : "pointer" }}
+              onClick={() => {
+                if (!m.active) navigate(m.to);
+              }}
+            >
+              {m.label}
+            </div>
+          ))}
         </nav>
 
         <div
@@ -231,11 +292,9 @@ export default function Verifikasi() {
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
               >
-                <option value="semua">Semua</option>
                 <option value="diajukan">Diajukan</option>
-                <option value="diverifikasi">Diverifikasi</option>
-                <option value="ditolak">Ditolak</option>
-                <option value="disetujui">Disetujui</option>
+                <option value="diverifikasi_admin">Diverifikasi Admin</option>
+                <option value="ditolak_admin">Ditolak Admin</option>
               </select>
             </div>
 
@@ -278,55 +337,67 @@ export default function Verifikasi() {
                             </td>
                             <td>
                               {(!p.items || p.items.length === 0) && <span>-</span>}
-                              {p.items && p.items.length > 0 && (
-                                <ul style={{ paddingLeft: 18, margin: 0 }}>
-                                  {p.items.map((item) => {
-                                    const namaBarang = item.barang?.nama ?? "Barang";
-                                    const satuan = item.barang?.satuan ?? "";
-                                    const diajukan = item.jumlah_diajukan;
-                                    const disetujui =
-                                      item.jumlah_disetujui ?? item.jumlah_diajukan;
+                              {p.items.map((item) => {
+                              const namaBarang = item.barang?.nama ?? "Barang";
+                              const satuan = item.barang?.satuan ?? "";
+                              const diajukan = item.jumlah_diajukan;
+                              const disetujui =
+                                item.jumlah_disetujui !== null
+                                  ? item.jumlah_disetujui
+                                  : item.jumlah_diajukan;
 
-                                    return (
-                                      <li key={item.id}>
-                                        {namaBarang} — diajukan{" "}
-                                        <strong>{diajukan} {satuan}</strong>
-                                        {item.jumlah_disetujui != null &&
-                                          item.jumlah_disetujui !== item.jumlah_diajukan && (
-                                            <>
-                                              {" , "}
-                                              disetujui{" "}
-                                              <strong>
-                                                {disetujui} {satuan}
-                                              </strong>{" "}
-                                              (direvisi)
-                                            </>
-                                          )}
-                                        {item.catatan_revisi && (
-                                          <div className="revisi-note">
-                                            Catatan revisi: {item.catatan_revisi}
-                                          </div>
-                                        )}
-                                      </li>
-                                    );
-                                  })}
-                                </ul>
-                              )}
+                              const isRevisi =
+                                item.jumlah_disetujui !== null &&
+                                item.jumlah_disetujui !== item.jumlah_diajukan;
+
+                              return (
+                                <li key={item.id}>
+                                  {namaBarang} —{" "}
+                                  <span>
+                                    diajukan{" "}
+                                    <strong>
+                                      {diajukan} {satuan}
+                                    </strong>
+                                  </span>
+
+                                  {isRevisi && (
+                                    <>
+                                      {" , "}
+                                      <span className="text-revisi">
+                                        disetujui{" "}
+                                        <strong>
+                                          {disetujui} {satuan}
+                                        </strong>{" "}
+                                        (direvisi)
+                                      </span>
+                                    </>
+                                  )}
+                                  {item.catatan_revisi && (
+                                    <div className="revisi-note">
+                                      Catatan: {item.catatan_revisi}
+                                    </div>
+                                  )}
+                                </li>
+                              );
+                            })}
                             </td>
                             <td>
                               {p.status === "diajukan" && (
                                 <>
                                   <button
-                                    className="btn-status-verif"
-                                    disabled={processingId === p.id}
-                                    onClick={() =>
-                                      handleUpdateStatus(p.id, "diverifikasi")
-                                    }
-                                  >
-                                    {processingId === p.id
-                                      ? "Memproses..."
-                                      : "Verifikasi"}
-                                  </button>
+                                  className="btn-status-verif"
+                                  onClick={() => setSelectedPengajuan(p)}
+                                >
+                                  Verifikasi
+                                </button> 
+                                {editingId === p.id && (
+                                <button
+                                  className="btn-status-verif"
+                                  onClick={() => submitVerifikasi(p.id)}
+                                >
+                                  Submit Verifikasi
+                                </button>
+                              )}  
                                   <button
                                     className="btn-status-tolak"
                                     disabled={processingId === p.id}
@@ -338,18 +409,8 @@ export default function Verifikasi() {
                                       ? "Memproses..."
                                       : "Tolak"}
                                   </button>
-                                  <button
-                                    className="btn-status-revisi"
-                                    disabled={processingId === p.id}
-                                    onClick={() => handleRevisi(p)}
-                                  >
-                                    {processingId === p.id
-                                      ? "Memproses..."
-                                      : "Revisi & Setujui"}
-                                  </button>
                                 </>
                               )}
-
                               {p.status === "diverifikasi" && (
                                 <span className="status-text done">
                                   ✓ Sudah diverifikasi
@@ -379,6 +440,13 @@ export default function Verifikasi() {
           </div>
         </section>
       </main>
+      {selectedPengajuan && (
+        <DetailVerifikasi
+          pengajuan={selectedPengajuan}
+          onClose={() => setSelectedPengajuan(null)}
+          onSuccess={() => window.location.reload()}
+        />
+      )}
     </div>
   );
 }

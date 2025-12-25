@@ -4,6 +4,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import "./App.css";
 
 import yarsi from "./gambar/yarsi.png";
+import DetailVerifikasi from "./components/DetailVerifikasi";
 
 import Login from "./components/Login";
 import Navbar from "./components/Navbar";
@@ -13,14 +14,16 @@ import DashboardUser from "./pages/DashboardUser";
 import Pengajuan from "./pages/Pengajuan";
 import Periode from "./pages/Periode";
 import Verifikasi from "./pages/Verifikasi";
+import DashboardSuperAdmin from "./pages/DashboardSuperAdmin";
 
 import Approval from "./pages/Approval";
 import Riwayat from "./pages/Riwayat";
 import TambahUser from "./pages/TambahUser";
+import Grafik from "./pages/Grafik";
 
 // ✅ HALAMAN BARU
 import KelolaBarangATK from "./pages/KelolaBarangATK"; // ✅ ROUTE BARU
-import KelolaHargaATK from "./pages/KelolaHargaATK";
+import KelolaHargaATK from "./pages/KelolaHargaATK";// SidebarContext.js
 
 const API_BASE = "http://127.0.0.1:8000/api";
 
@@ -41,7 +44,8 @@ function RequireAuth({ children, allowRoles = [] }) {
 
   if (allow.length > 0 && !allow.includes(role)) {
     // kalau role tidak sesuai, lempar ke dashboard masing-masing
-    if (role === "superadmin") return <Navigate to="/approval" replace />;
+    if (role === "superadmin") return <Navigate to="/dashboardsuperadmin" replace />;
+
     if (role === "admin") return <Navigate to="/dashboardadmin" replace />;
     return <Navigate to="/dashboarduser" replace />;
   }
@@ -180,7 +184,7 @@ function App() {
                       Pengajuan alat tulis kantor terintegrasi, transparan, dan efisien
                     </span>
                     <div className="landing-divider"></div>
-                    <button className="landing-btn" onClick={() => setShowLogin(true)}> Masuk ke Sistem</button>
+                    <button className="landing-btn" onClick={() => setShowLogin(true)}> Login </button>
                   </div>
                 </div>
               </div>
@@ -245,7 +249,7 @@ function App() {
         <Route
           path="/periode"
           element={
-            <RequireAuth allowRoles={["admin", "superadmin"]}>
+            <RequireAuth allowRoles={["superadmin"]}>
               <Periode />
             </RequireAuth>
           }
@@ -277,7 +281,7 @@ function App() {
         <Route
           path="/kelola-harga"
           element={
-            <RequireAuth allowRoles={["admin", "superadmin"]}>
+            <RequireAuth allowRoles={["admin"]}>
               <KelolaHargaATK />
             </RequireAuth>
           }
@@ -287,11 +291,31 @@ function App() {
         <Route
           path="/kelola-barang"
           element={
-            <RequireAuth allowRoles={["admin", "superadmin"]}>
+            <RequireAuth allowRoles={["admin"]}>
               <KelolaBarangATK />
             </RequireAuth>
           }
         />
+
+        <Route
+          path="/grafik"
+          element={
+            <RequireAuth allowRoles={["superadmin"]}>
+              <Grafik />
+            </RequireAuth>
+          }
+        />
+
+         <Route
+          path="/dashboardsuperadmin"
+          element={
+            <RequireAuth allowRoles={["superadmin"]}>
+              <DashboardSuperAdmin />
+            </RequireAuth>
+          }
+        />
+
+          <Route path="/verifikasi/:id" element={<DetailVerifikasi />} />
 
         {/* fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />

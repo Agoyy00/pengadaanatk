@@ -86,6 +86,13 @@ export default function DashboardSuperAdmin() {
   // Hitung jumlah unread
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
+  const sidebarMenus = [
+  { label: "Dashboard Admin", to: "/dashboardadmin", active: true },
+  { label: "Verifikasi", to: "/verifikasi" },
+  { label: "Kelola Barang ATK", to: "/kelola-barang" },
+  { label: "Kelola Harga ATK", to: "/kelola-harga" },
+];
+
   return (
     <div className="layout">
       <aside className="sidebar">
@@ -95,47 +102,18 @@ export default function DashboardSuperAdmin() {
         </div>
 
         <nav className="sidebar-menu">
-          <div className="menu-item disabled" style={{ cursor: "default" }}>
-            Dashboard Super Admin
-          </div>
-          
-
-          {/* Menu analisis data (sesuaikan route kamu) */}
-          <div
-            className="menu-item"
-            onClick={() => navigate("/approval")}
-            style={{ cursor: "pointer" }}
-          >
-            Analisis Data
-          </div>
-
-
-          {/* Menu tambah user */}
-          <div
-            className="menu-item"
-            onClick={() => navigate("/tambahuser")}
-            style={{ cursor: "pointer" }}
-          >
-            Tambah User
-          </div>
-
-          {/* Menu atur periode */}
-          <div
-            className="menu-item"
-            onClick={() => navigate("/periode")}
-            style={{ cursor: "pointer" }}
-          >
-            Atur Periode
-          </div>
-
-          {/* ✅ MENU BARU: Kelola Harga ATK */}
-          <div
-            className="menu-item"
-            onClick={() => navigate("/kelola-harga")}
-            style={{ cursor: "pointer" }}
-          >
-            Kelola Harga ATK
-          </div>
+          {sidebarMenus.map((m) => (
+            <div
+              key={m.label}
+              className={`menu-item ${m.active ? "disabled" : ""}`}
+              style={{ cursor: m.active ? "default" : "pointer" }}
+              onClick={() => {
+                if (!m.active) navigate(m.to);
+              }}
+            >
+              {m.label}
+            </div>
+          ))}
         </nav>
 
         <div
@@ -153,7 +131,7 @@ export default function DashboardSuperAdmin() {
       <main className="main">
         <header className="topbar">
           <div>
-            <div className="topbar-title">Dashboard Super Admin</div>
+            <div className="topbar-title">Dashboard Admin</div>
             <div className="topbar-sub">
               Selamat datang: {user?.name || "Super Admin"}
             </div>

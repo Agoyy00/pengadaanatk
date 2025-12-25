@@ -37,25 +37,33 @@ export default function KelolaBarangATK() {
     harga_satuan: "",
   });
 
-  const [errors, setErrors] = useState({});
+  const generateKodeATK = () => {
+  const atkItems = barangs.filter(
+    (b) => typeof b.kode === "string" && b.kode.startsWith("ATK-")
+  );
 
-  const sidebarMenus = useMemo(() => {
-    if (role === "superadmin") {
-      return [
-        { label: "Dashboard Super Admin", to: "/approval" },
-        { label: "Tambah User", to: "/tambahuser" },
-        { label: "Kelola Barang ATK", to: "/kelola-barang", active: true },
-        { label: "Kelola Harga ATK", to: "/kelola-harga" },
-      ];
-    }
-    return [
-      { label: "Dashboard Admin", to: "/dashboardadmin" },
-      { label: "Verifikasi", to: "/verifikasi" },
-      { label: "Atur Periode", to: "/periode" },
-      { label: "Kelola Barang ATK", to: "/kelola-barang", active: true },
-      { label: "Kelola Harga ATK", to: "/kelola-harga" },
-    ];
-  }, [role]);
+  let max = 0;
+
+  atkItems.forEach((b) => {
+    const num = parseInt(b.kode.replace("ATK-", ""), 10);
+    if (!Number.isNaN(num) && num > max) max = num;
+  });
+
+  const next = String(max + 1).padStart(3, "0");
+  return `ATK-${next}`;
+};
+
+const [errors, setErrors] = useState({});
+
+ const sidebarMenus = useMemo(() => {
+  return [
+    { label: "Dashboard Admin", to: "/dashboardadmin" },
+    { label: "Verifikasi", to: "/verifikasi" },
+    { label: "Kelola Barang ATK", to: "/kelola-barang", active: true },
+    { label: "Kelola Harga ATK", to: "/kelola-harga" },
+  ];
+}, []);
+
 
   const loadBarang = async () => {
     setLoading(true);
@@ -114,12 +122,18 @@ export default function KelolaBarangATK() {
   };
 
   const openCreate = () => {
-    setMode("create");
-    setSelected(null);
-    setForm({ nama: "", kode: "", satuan: "", harga_satuan: "" });
-    setErrors({});
-    setModalOpen(true);
-  };
+  setMode("create");
+  setSelected(null);
+  setForm({
+    nama: "",
+    kode: generateKodeATK(), // ⬅️ auto
+    satuan: "",
+    harga_satuan: "",
+  });
+  setErrors({});
+  setModalOpen(true);
+};
+
 
   const openEdit = (item) => {
     setMode("edit");
