@@ -357,7 +357,7 @@ function Pengajuan() {
             </div>
           </div>
           <div className="topbar-right">
-            <span>Role: User</span>
+            <span>Role: </span>
             <span className="role-pill">User</span>
           </div>
         </header>

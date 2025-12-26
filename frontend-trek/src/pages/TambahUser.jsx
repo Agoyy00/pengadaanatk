@@ -3,6 +3,7 @@ import { FaEye, FaEyeSlash } from "react-icons/fa";
   import React, { useState, useMemo} from "react";
   import { useNavigate } from "react-router-dom";
   import "../css/Pengajuan.css";   // pakai layout yang sama
+  import "../css/User.css";
 
   const API_BASE = "http://127.0.0.1:8000/api";
 
