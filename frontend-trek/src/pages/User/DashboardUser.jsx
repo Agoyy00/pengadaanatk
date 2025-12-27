@@ -1,16 +1,17 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import "../css/DashboardUser.css";
-import "../css/layout.css";
+import "../../css/DashboardUser.css";
+import "../../css/layout.css";
 
 const API_BASE = "http://127.0.0.1:8000/api";
 
 export default function DashboardUser() {
   const navigate = useNavigate();
-
   const storedUser = localStorage.getItem("user");
   const currentUser = storedUser ? JSON.parse(storedUser) : null;
-  const userId = currentUser?.id;
+  const user = currentUser;
+  const userId = user?.id;
+
 
   const [loading, setLoading] = useState(true);
   const [latestPengajuan, setLatestPengajuan] = useState(null);
@@ -143,8 +144,8 @@ export default function DashboardUser() {
             </div>
           </div>
           <div className="topbar-right">
-            <span>Role: User</span>
-            <span className="role-pill">User</span>
+            <span>Role:</span>
+          <span className="role-pill"> {user?.role ? user.role.toUpperCase() : "UNKNOWN"} </span>
           </div>
         </header>
 

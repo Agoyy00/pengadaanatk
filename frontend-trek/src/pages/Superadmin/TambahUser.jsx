@@ -1,9 +1,8 @@
-
-import { FaEye, FaEyeSlash } from "react-icons/fa";
+  import { FaEye, FaEyeSlash } from "react-icons/fa";
   import React, { useState, useMemo} from "react";
   import { useNavigate } from "react-router-dom";
-  import "../css/Pengajuan.css";   // pakai layout yang sama
-  import "../css/User.css";
+  import "../../css/User.css";
+  import "../../css/layout.css";
 
   const API_BASE = "http://127.0.0.1:8000/api";
 
@@ -36,7 +35,7 @@ import { FaEye, FaEyeSlash } from "react-icons/fa";
         const res = await fetch(`${API_BASE}/users`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, email, password, role }),
+          body: JSON.stringify({ name, email, password, role, }),
         });
 
         const data = await res.json();
@@ -141,7 +140,7 @@ import { FaEye, FaEyeSlash } from "react-icons/fa";
                     maxWidth: 400,
                   }}
                 >
-                  <div className="form-group">
+                  <div className="form-group1">
                     <label>Nama</label>
                     <input
                       type="text"
@@ -151,7 +150,7 @@ import { FaEye, FaEyeSlash } from "react-icons/fa";
                     />
                   </div>
 
-                  <div className="form-group">
+                  <div className="form-group2">
                     <label>Email</label>
                     <input
                       type="email"
@@ -161,7 +160,7 @@ import { FaEye, FaEyeSlash } from "react-icons/fa";
                     />
                   </div>
 
-                  <div className="form-group">
+                  <div className="form-group3">
                     <label>Password Awal</label>
                     <input
                     type={showPassword ? "text" : "password"}
@@ -173,7 +172,7 @@ import { FaEye, FaEyeSlash } from "react-icons/fa";
                     {/* Show/hide password */}
                   <button
                     type="button"
-                    className="show-password-btn-small"
+                    className="show-password-btn-small1"
                     onClick={() => setShowPassword(!showPassword)}
                   >
                     {showPassword ? <FaEye /> : <FaEyeSlash />}

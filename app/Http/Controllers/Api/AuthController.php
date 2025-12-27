@@ -28,15 +28,18 @@ class AuthController extends Controller
             ], 401);
         }
 
+        $user->load('role');
+
+
         // Kalau berhasil login, kirim data user
-        return response()->json([
+       return response()->json([
             'success' => true,
-            'message' => 'Login berhasil',
             'user' => [
-                'id'    => $user->id,
-                'name'  => $user->name,
-                'email' => $user->email,
-                'role'  => $user->role,   // "superadmin" / "admin" / "user"
+                'id'      => $user->id,
+                'name'    => $user->name,
+                'email'   => $user->email,
+                'role'    => $user->role->name, // ⬅️ STRING
+                'role_id' => $user->role_id,
             ],
         ]);
     }

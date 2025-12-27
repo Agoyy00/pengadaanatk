@@ -1,6 +1,6 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import "../css/Pengajuan.css";
+import "../../css/Pengajuan.css";
 
 const API_BASE = "http://127.0.0.1:8000/api";
 
@@ -86,42 +86,35 @@ export default function DashboardSuperAdmin() {
   // Hitung jumlah unread
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
-  const sidebarMenus = useMemo(() => {
-  return [
-    { label: "Dashboard Super Admin", to: "/dashboardsuperadmin", active: true },
-    { label: "Approval", to: "/approval" },
-    { label: "Tambah User", to: "/tambahuser" },
-    { label: "Atur Periode", to: "/periode" },
-    { label: "Grafik & Analisis Data", to: "/grafik" },
-    ];
-    }, []);
-
+  const sidebarMenus = [
+  { label: "Dashboard Admin", to: "/dashboardadmin", active: true },
+  { label: "Verifikasi", to: "/verifikasi" },
+  { label: "Kelola Barang ATK", to: "/kelola-barang" },
+  { label: "Kelola Harga ATK", to: "/kelola-harga" },
+];
 
   return (
     <div className="layout">
-      {/* SIDEBAR */}
       <aside className="sidebar">
         <div>
           <div className="sidebar-logo">Sistem Pengajuan ATK</div>
           <div className="sidebar-subtitle">Universitas Yarsi</div>
         </div>
 
-       <nav className="sidebar-menu">
-        {sidebarMenus.map((m) => (
-          <div
-            key={m.label}
-            className={`menu-item ${m.active ? "disabled" : ""}`}
-            style={{ cursor: m.active ? "default" : "pointer" }}
-            onClick={() => {
-              if (!m.active) {
-                navigate(m.to);
-              }
-            }}
-          >
-            {m.label}
-          </div>
-        ))}
-      </nav>
+        <nav className="sidebar-menu">
+          {sidebarMenus.map((m) => (
+            <div
+              key={m.label}
+              className={`menu-item ${m.active ? "disabled" : ""}`}
+              style={{ cursor: m.active ? "default" : "pointer" }}
+              onClick={() => {
+                if (!m.active) navigate(m.to);
+              }}
+            >
+              {m.label}
+            </div>
+          ))}
+        </nav>
 
         <div
           className="logout"
@@ -135,24 +128,22 @@ export default function DashboardSuperAdmin() {
         </div>
       </aside>
 
-      {/* MAIN CONTENT */}
       <main className="main">
-        {/* TOPBAR */}
         <header className="topbar">
           <div>
-            <div className="topbar-title">Dashboard Super Admin</div>
+            <div className="topbar-title">Dashboard Admin</div>
             <div className="topbar-sub">
               Selamat datang: {user?.name || "Super Admin"}
             </div>
           </div>
 
           <div className="topbar-right">
-            <span>Role: Super Admin</span>
-            <span className="role-pill">SuperAdmin</span>
+            <span>Role: Admin</span>
+            <span className="role-pill"> {user?.role ? user.role.toUpperCase() : "UNKNOWN"} </span>
           </div>
+          
         </header>
 
-        {/* ISI DASHBOARD */}
         <section className="main-content">
           {/* Ringkasan */}
           <div className="card">

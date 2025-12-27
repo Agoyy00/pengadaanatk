@@ -35,9 +35,15 @@ function Login({ onClose }) {
       }
 
       localStorage.setItem("user", JSON.stringify(data.user));
+      
+      if (data.user.role === "superadmin") {
+        navigate("/dashboardsuperadmin");
+      } else if (data.user.role === "admin") {
+        navigate("/dashboardadmin");
+      } else {
+        navigate("/dashboarduser");
+      }
 
-      if (data.user.role === "admin") navigate("/dashboardadmin");
-      else navigate("/dashboarduser");
 
       if (onClose) onClose();
     } catch (error) {

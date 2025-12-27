@@ -9,21 +9,22 @@ import DetailVerifikasi from "./components/DetailVerifikasi";
 import Login from "./components/Login";
 import Navbar from "./components/Navbar";
 
-import DashboardAdmin from "./pages/DashboardAdmin";
-import DashboardUser from "./pages/DashboardUser";
-import Pengajuan from "./pages/Pengajuan";
-import Periode from "./pages/Periode";
-import Verifikasi from "./pages/Verifikasi";
-import DashboardSuperAdmin from "./pages/DashboardSuperAdmin";
+import Pengajuan from "./pages/User/Pengajuan";
+import DashboardUser from "./pages/User/DashboardUser";
+import Riwayat from "./pages/User/Riwayat";
 
-import Approval from "./pages/Approval";
-import Riwayat from "./pages/Riwayat";
-import TambahUser from "./pages/TambahUser";
-import Grafik from "./pages/Grafik";
 
-// ✅ HALAMAN BARU
-import KelolaBarangATK from "./pages/KelolaBarangATK"; // ✅ ROUTE BARU
-import KelolaHargaATK from "./pages/KelolaHargaATK";// SidebarContext.js
+import DashboardAdmin from "./pages/Admin/DashboardAdmin";
+import Verifikasi from "./pages/Admin/Verifikasi";
+import KelolaBarangATK from "./pages/Admin/KelolaBarangATK";
+import KelolaHargaATK from "./pages/Admin/KelolaHargaATK";
+
+import Periode from "./pages/Superadmin/Periode";
+import DashboardSuperAdmin from "./pages/Superadmin/DashboardSuperAdmin";
+import Approval from "./pages/Superadmin/Approval";
+import TambahUser from "./pages/Superadmin/TambahUser";
+import Grafik from "./pages/Superadmin/Grafik";
+
 
 const API_BASE = "http://127.0.0.1:8000/api";
 

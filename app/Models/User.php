@@ -50,20 +50,19 @@ class User extends Authenticatable
         return $this->belongsTo(Role::class);
     }
 
-    /**
-     * Helper: apakah user ini admin?
-     */
-    public function isAdmin(): bool
+    public function isSuperAdmin(): bool
     {
-        // Bisa cek via role_id atau nama role
-        return $this->role_id === 1 || $this->role?->name === 'admin';
+        return $this->role_id === 1 || $this->role?->name === 'superadmin';
     }
 
-    /**
-     * Helper: apakah user ini user biasa?
-     */
+    public function isAdmin(): bool
+    {
+        return $this->role_id === 2 || $this->role?->name === 'admin';
+    }
+
     public function isUser(): bool
     {
-        return $this->role_id === 2 || $this->role?->name === 'user';
+        return $this->role_id === 3 || $this->role?->name === 'user';
     }
+
 }

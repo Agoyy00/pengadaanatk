@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import "../css/Pengajuan.css";
-
+import "../../css/Pengajuan.css";
 const API_BASE = "http://127.0.0.1:8000/api";
 
 const normalizeRole = (role) =>
@@ -29,6 +28,8 @@ export default function KelolaBarangATK() {
   const [modalOpen, setModalOpen] = useState(false);
   const [mode, setMode] = useState("create"); // create | edit
   const [selected, setSelected] = useState(null);
+  const [gambar, setGambar] = useState(null);
+
 
   const [form, setForm] = useState({
     nama: "",
@@ -519,16 +520,16 @@ const [errors, setErrors] = useState({});
                     Kode
                   </label>
                   <input
-                    style={{
-                      width: "100%",
-                      padding: 10,
-                      borderRadius: 10,
-                      border: `1px solid ${errors.kode ? "#ef4444" : "#ddd"}`,
-                    }}
-                    value={form.kode}
-                    onChange={(e) => setForm((p) => ({ ...p, kode: e.target.value }))}
-                    placeholder="Contoh: KRT-A4-80"
-                  />
+                  style={{
+                    width: "100%",
+                    padding: 10,
+                    borderRadius: 10,      // abu2 biar keliatan readonly
+                    border: `1px solid ${errors.kode ? "#ef4444" : "#ddd"}`,
+                    cursor: "not-allowed",
+                  }}
+                  value={form.kode}
+                  readOnly
+                />
                   {errors.kode && (
                     <div style={{ color: "#ef4444", marginTop: 6 }}>{errors.kode}</div>
                   )}
@@ -547,6 +548,40 @@ const [errors, setErrors] = useState({});
                     onChange={(e) => setForm((p) => ({ ...p, satuan: e.target.value }))}
                     placeholder="Contoh: rim / pcs / box"
                   />
+                  <label style={{ display: "block", marginTop: 10, marginBottom: 6 }}>
+                    Gambar Barang
+                  </label>
+
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (!file) return;
+
+                      // validasi ukuran max 2MB
+                      if (file.size > 2 * 1024 * 1024) {
+                        alert("Ukuran gambar maksimal 2MB");
+                        return;
+                      }
+
+                      setGambar(file);
+                    }}
+                  />
+
+                  {gambar && (
+                    <img
+                      src={URL.createObjectURL(gambar)}
+                      alt="preview"
+                      style={{
+                        marginTop: 10,
+                        maxWidth: 120,
+                        borderRadius: 8,
+                        border: "1px solid #ddd",
+                      }}
+                    />
+                  )}
+
                   {errors.satuan && (
                     <div style={{ color: "#ef4444", marginTop: 6 }}>{errors.satuan}</div>
                   )}
@@ -590,7 +625,6 @@ const [errors, setErrors] = useState({});
                         borderRadius: 10,
                         border: "1px solid #ddd",
                         cursor: "pointer",
-                        background: "white",
                         fontWeight: 700,
                       }}
                     >
