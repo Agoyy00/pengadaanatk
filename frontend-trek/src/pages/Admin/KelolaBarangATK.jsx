@@ -156,63 +156,61 @@ const [errors, setErrors] = useState({});
   };
 
   const onSubmit = async () => {
-    const e = validate(form);
-    setErrors(e);
-    if (Object.keys(e).length > 0) return;
+  const e = validate(form);
+  setErrors(e);
+  if (Object.keys(e).length > 0) return;
 
-    // ✅ actor_user_id WAJIB untuk audit log
-    const payload = {
-      actor_user_id: currentUser?.id,
-      nama: form.nama.trim(),
-      kode: form.kode.trim(),
-      satuan: form.satuan.trim(),
-      harga_satuan: Number(form.harga_satuan),
-    };
+  if (!currentUser?.id) {
+    alert("User login tidak terbaca.");
+    return;
+  }
 
-    if (!payload.actor_user_id) {
-      alert("User login tidak terbaca. Silakan login ulang.");
-      localStorage.removeItem("user");
-      window.location.href = "/";
+  const formData = new FormData();
+  formData.append("actor_user_id", currentUser.id);
+  formData.append("nama", form.nama.trim());
+  formData.append("kode", form.kode.trim());
+  formData.append("satuan", form.satuan.trim());
+  formData.append("harga_satuan", Number(form.harga_satuan));
+
+  if (gambar) {
+    formData.append("gambar", gambar);
+  }
+
+  setLoading(true);
+  try {
+    let url = `${API_BASE}/barang`;
+    let method = "POST";
+
+    if (mode === "edit" && selected?.id) {
+      url = `${API_BASE}/barang/${selected.id}`;
+      method = "POST"; // ⚠️ PATCH + FormData kadang bermasalah
+      formData.append("_method", "PATCH");
+    }
+
+    const res = await fetch(url, {
+      method,
+      body: formData,
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || !data.success) {
+      alert(data.message || "Gagal menyimpan data.");
       return;
     }
 
-    setLoading(true);
-    try {
-      let url = `${API_BASE}/barang`;
-      let method = "POST";
+    alert("Barang berhasil disimpan ✅");
+    closeModal();
+    setGambar(null);
+    await loadBarang();
+  } catch (err) {
+    console.error(err);
+    alert("Terjadi kesalahan server.");
+  } finally {
+    setLoading(false);
+  }
+};
 
-      if (mode === "edit" && selected?.id) {
-        url = `${API_BASE}/barang/${selected.id}`;
-        method = "PATCH";
-      }
-
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok || !data.success) {
-        alert(data.message || "Gagal menyimpan data barang.");
-        return;
-      }
-
-      alert(
-        mode === "create"
-          ? "Barang berhasil ditambahkan ✅"
-          : "Barang berhasil diubah ✅"
-      );
-      closeModal();
-      await loadBarang();
-    } catch (err) {
-      console.error(err);
-      alert("Terjadi kesalahan server.");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const onDelete = async (item) => {
     const ok = window.confirm(`Hapus barang "${item.nama}"?`);

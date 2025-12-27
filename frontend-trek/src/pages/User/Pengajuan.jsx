@@ -6,6 +6,8 @@ import "../../css/layout.css";
 function Pengajuan() {
   const [currentStep, setCurrentStep] = useState(1);
 
+  const STORAGE_URL = "http://127.0.0.1:8000/storage/barang";
+
   // STEP 1 – data pengajuan
   const [tahunAkademik, setTahunAkademik] = useState("");
   const [namaPemohon, setNamaPemohon] = useState("");
@@ -145,8 +147,8 @@ function Pengajuan() {
 
   // tambah barang ke daftar item
   const handleAddItem = (barang) => {
-    const exists = items.some((i) => i.id === barang.id);
-    if (exists) return;
+  const exists = items.some((i) => i.id === barang.id);
+  if (exists) return;   
 
     setItems((prev) => [
       ...prev,
@@ -166,6 +168,11 @@ function Pengajuan() {
     setSearchResults([]);
     setStep2Error("");
   };
+  
+  useEffect(() => {
+  console.log("ITEMS:", items);
+}, [items]);
+
 
   // hanya boleh angka (0–9) di keyboard
   const handleNumericKeyDown = (e) => {
@@ -614,78 +621,84 @@ function Pengajuan() {
                               <td colSpan="8">Belum ada item.</td>
                             </tr>
                           )}
+
                           {items.map((item) => (
-                            <tr key={item.id}>
-                              <td>
-                                <div className="barang-cell">
-                                  {item.foto && (
-                                    <img
-                                      src={`${BACKEND_BASE}${item.foto}`}
-                                      alt={item.nama}
-                                      className="barang-thumb barang-thumb-clickable"
-                                      onClick={() =>
-                                        setPreviewImage(
-                                          `${BACKEND_BASE}${item.foto}`
-                                        )
-                                      }
-                                    />
-                                  )}
-                                  <span>{item.nama}</span>
-                                </div>
-                              </td>
-                              <td>{item.satuan}</td>
-                              <td>
-                                Rp {item.estimasiNilai.toLocaleString("id-ID")}
-                              </td>
-                              <td>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  inputMode="numeric"
-                                  onKeyDown={handleNumericKeyDown}
-                                  className="input-number"
-                                  value={item.kebutuhanTotal}
-                                  onChange={(e) =>
-                                    handleChangeKebutuhan(
-                                      item.id,
-                                      e.target.value
-                                    )
-                                  }
-                                />
-                              </td>
-                              <td>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  inputMode="numeric"
-                                  onKeyDown={handleNumericKeyDown}
-                                  className="input-number"
-                                  value={item.sisaStok}
-                                  onChange={(e) =>
-                                    handleChangeSisaStok(
-                                      item.id,
-                                      e.target.value
-                                    )
-                                  }
-                                />
-                              </td>
-                              <td>{item.jumlahDiajukan}</td>
-                              <td>
-                                Rp{" "}
-                                {(
-                                  item.jumlahDiajukan * item.estimasiNilai
-                                ).toLocaleString("id-ID")}
-                              </td>
-                              <td>
-                                <span
-                                  className="aksi-hapus"
-                                  onClick={() => handleRemoveItem(item.id)}
-                                >
-                                  Hapus
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
+  <tr key={item.id}>
+    {/* BARANG + FOTO */}
+    <td>
+      <div className="barang-cell">
+        
+      {console.log("FOTO:", item.foto)}
+
+{item.foto ? (
+  <img
+    src={`${BACKEND_BASE}${item.foto}`}
+    alt={item.nama}
+    className="barang-thumb barang-thumb-clickable"
+    onClick={() => setPreviewImage(`${BACKEND_BASE}${item.foto}`)}
+  />
+) : (
+  <div className="barang-thumb placeholder" />
+)}
+
+
+
+        <span>{item.nama}</span>
+      </div>
+    </td>
+
+    <td>{item.satuan}</td>
+
+    <td>
+      Rp {item.estimasiNilai.toLocaleString("id-ID")}
+    </td>
+
+    <td>
+      <input
+        type="number"
+        min="0"
+        inputMode="numeric"
+        onKeyDown={handleNumericKeyDown}
+        className="input-number"
+        value={item.kebutuhanTotal}
+        onChange={(e) =>
+          handleChangeKebutuhan(item.id, e.target.value)
+        }
+      />
+    </td>
+
+    <td>
+      <input
+        type="number"
+        min="0"
+        inputMode="numeric"
+        onKeyDown={handleNumericKeyDown}
+        className="input-number"
+        value={item.sisaStok}
+        onChange={(e) =>
+          handleChangeSisaStok(item.id, e.target.value)
+        }
+      />
+    </td>
+
+    <td>{item.jumlahDiajukan}</td>
+
+    <td>
+      Rp{" "}
+      {(item.jumlahDiajukan * item.estimasiNilai).toLocaleString("id-ID")}
+    </td>
+
+    <td>
+      <span
+        className="aksi-hapus"
+        onClick={() => handleRemoveItem(item.id)}
+      >
+        Hapus
+      </span>
+    </td>
+  </tr>
+))}
+
                         </tbody>
                       </table>
                     </div>

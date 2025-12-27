@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Barang;
 use App\Models\BarangAuditLog;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+
 
 class BarangController extends Controller
 {
@@ -44,18 +46,31 @@ class BarangController extends Controller
 
     // GET /api/barang?q=
     public function index(Request $request)
-    {
-        $q = $request->query('q');
+{
+    $q = $request->q;
 
-        $query = Barang::query();
-        if ($q) {
-            $query->where('nama', 'like', "%{$q}%")
-                  ->orWhere('kode', 'like', "%{$q}%")
-                  ->orWhere('satuan', 'like', "%{$q}%");
-        }
+    $barang = Barang::where('nama', 'like', "%$q%")
+        ->get()
+        ->map(function ($b) {
+            return [
+                'id' => $b->id,
+                'nama' => $b->nama,
+                'kode' => $b->kode,
+                'stok' => $b->stok,
+                'satuan' => $b->satuan,
+                'harga_satuan' => $b->harga_satuan,
 
-        return response()->json($query->orderBy('nama')->get());
-    }
+                // 🔴 INI KUNCINYA
+                'foto' => $b->gambar
+                    ? '/storage/public/barang/' . $b->gambar
+                    : null,
+            ];
+        });
+
+    return response()->json($barang);
+}
+
+
 
     public function show(Barang $barang)
     {
@@ -86,6 +101,7 @@ class BarangController extends Controller
             'kode'          => 'required|string|max:50',
             'satuan'        => 'required|string|max:50',
             'harga_satuan'  => 'nullable|integer|min:0|max:1000000000',
+            'gambar'        => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
         $nama   = $this->normalizeNama($validated['nama']);
@@ -111,9 +127,19 @@ class BarangController extends Controller
             'kode'        => $kode,
             'satuan'      => $satuan,
             'harga_satuan'=> $harga,
+            
         ]);
 
-        // ✅ LOG CREATE
+        if ($request->hasFile('gambar')) {
+            $file = $request->file('gambar');
+            $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+
+            $file->storeAs('public/barang', $filename);
+
+            $barang->gambar = $filename;
+            $barang->save();
+        }
+
         $this->writeLog($barang->id, (int)$validated['actor_user_id'], 'create', null, $barang->toArray());
 
         return response()->json([
@@ -132,6 +158,7 @@ class BarangController extends Controller
             'kode'          => 'required|string|max:50',
             'satuan'        => 'required|string|max:50',
             'harga_satuan'  => 'nullable|integer|min:0|max:1000000000',
+            'gambar'        => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
         $old = $barang->toArray();
@@ -162,6 +189,21 @@ class BarangController extends Controller
         $barang->harga_satuan = $harga;
         $barang->save();
 
+        if ($request->hasFile('gambar')) {
+    // hapus gambar lama
+            if ($barang->gambar && Storage::exists('public/barang/' . $barang->gambar)) {
+                Storage::delete('public/barang/' . $barang->gambar);
+            }
+
+            $file = $request->file('gambar');
+            $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+            $file->storeAs('public/barang', $filename);
+
+            $barang->gambar = $filename;
+            $barang->save();
+        }
+
+
         // ✅ LOG UPDATE
         $this->writeLog($barang->id, (int)$validated['actor_user_id'], 'update', $old, $barang->toArray());
 
@@ -181,6 +223,11 @@ class BarangController extends Controller
 
         $old = $barang->toArray();
         $barangId = $barang->id;
+
+        if ($barang->gambar && Storage::exists('public/barang/' . $barang->gambar)) {
+            Storage::delete('public/barang/' . $barang->gambar);
+        }
+
 
         $barang->delete();
 
