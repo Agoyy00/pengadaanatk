@@ -24,6 +24,12 @@ import DashboardSuperAdmin from "./pages/Superadmin/DashboardSuperAdmin";
 import Approval from "./pages/Superadmin/Approval";
 import TambahUser from "./pages/Superadmin/TambahUser";
 import Grafik from "./pages/Superadmin/Grafik";
+import DaftarBarangATKSuperAdmin from "./pages/Superadmin/DaftarBarangATKSuperAdmin";
+import GrafikBelanjaSuperAdmin from "./pages/Superadmin/GrafikBelanjaSuperAdmin";
+
+
+// SUPER ADMIN - FITUR BARU
+
 
 
 const API_BASE = "http://127.0.0.1:8000/api";
@@ -275,6 +281,23 @@ function App() {
             </RequireAuth>
           }
         />
+        <Route
+          path="/superadmin/grafik-belanja"
+          element={
+           <RequireAuth allowRoles={["superadmin"]}>
+              <GrafikBelanjaSuperAdmin />
+           </RequireAuth>
+          }
+        />
+        <Route
+          path="/superadmin/daftar-barang"
+          element={
+          <RequireAuth allowRoles={["superadmin"]}>
+           <DaftarBarangATKSuperAdmin />
+          </RequireAuth>
+         }
+        />
+
 
         {/* =========================
             FITUR BARU

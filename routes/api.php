@@ -1,18 +1,13 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BarangController;
 use App\Http\Controllers\Api\PengajuanController;
 use App\Http\Controllers\Api\PeriodeController;
 use App\Http\Controllers\Api\UserManagementController;
-
-/*s
-|--------------------------------------------------------------------------
-| Login
-|--------------------------------------------------------------------------
-*/
-Route::post('/login', [AuthController::class, 'login']);
+use App\Http\Controllers\Api\LaporanController;
 
 /*
 |--------------------------------------------------------------------------
@@ -38,13 +33,12 @@ Route::get('/barang', [BarangController::class, 'index']);
 Route::get('/barang/{barang}', [BarangController::class, 'show']);
 Route::get('/barang/{barang}/logs', [BarangController::class, 'logs']);
 
-
-// ✅ CRUD barang (baru)
+// CRUD barang
 Route::post('/barang', [BarangController::class, 'store']);
 Route::patch('/barang/{barang}', [BarangController::class, 'update']);
 Route::delete('/barang/{barang}', [BarangController::class, 'destroy']);
 
-// ✅ update harga (kalau kamu sudah pakai ini)
+// update harga
 Route::patch('/barang/{barang}/harga', [BarangController::class, 'updateHarga']);
 
 /*
@@ -69,11 +63,19 @@ Route::get('/periode/active', [PeriodeController::class, 'active']);
 Route::post('/periode', [PeriodeController::class, 'storeOrUpdate']);
 Route::get('/periode', [PeriodeController::class, 'index']);
 Route::delete('/periode/{periode}', [PeriodeController::class, 'destroy']);
-Route::patch('/pengajuan/{pengajuan}/status', [PengajuanController::class, 'updateStatus']);
+
+/*
+|--------------------------------------------------------------------------
+| Approval (SuperAdmin)
+|--------------------------------------------------------------------------
+*/
 Route::get('/approval', [PengajuanController::class, 'approvalList']);
 Route::patch('/approval/{pengajuan}', [PengajuanController::class, 'approveBySuperAdmin']);
 Route::get('/approval/{pengajuan}/pdf', [PengajuanController::class, 'downloadPdf']);
-Route::patch('/pengajuan/{pengajuan}/revisi', [PengajuanController::class, 'revisiItems']);
-Route::get('/pengajuan/approval', [PengajuanController::class, 'approvalList']);
-Route::get('/pengajuan/{pengajuan}/pdf', [PengajuanController::class, 'downloadPdf']);
-    
+
+/*
+|--------------------------------------------------------------------------
+| Laporan (SuperAdmin)
+|--------------------------------------------------------------------------
+*/
+Route::get('/laporan/grafik-belanja', [LaporanController::class, 'grafikBelanja']);
