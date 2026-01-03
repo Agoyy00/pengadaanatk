@@ -8,17 +8,18 @@ use App\Http\Controllers\Api\PengajuanController;
 use App\Http\Controllers\Api\PeriodeController;
 use App\Http\Controllers\Api\UserManagementController;
 use App\Http\Controllers\Api\LaporanController;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 /*
 |--------------------------------------------------------------------------
-| Login
+| Auth
 |--------------------------------------------------------------------------
 */
 Route::post('/login', [AuthController::class, 'login']);
 
 /*
 |--------------------------------------------------------------------------
-| Manajemen User (Super Admin)
+| User Management (Super Admin)
 |--------------------------------------------------------------------------
 */
 Route::get('/users', [UserManagementController::class, 'index']);
@@ -26,7 +27,7 @@ Route::post('/users', [UserManagementController::class, 'store']);
 
 /*
 |--------------------------------------------------------------------------
-| Barang (Admin/SuperAdmin)
+| Barang
 |--------------------------------------------------------------------------
 */
 Route::get('/barang', [BarangController::class, 'index']);
@@ -48,20 +49,33 @@ Route::patch('/barang/{barang}/harga', [BarangController::class, 'updateHarga'])
 */
 Route::get('/pengajuan', [PengajuanController::class, 'index']);
 Route::post('/pengajuan', [PengajuanController::class, 'store']);
-Route::patch('/pengajuan/{pengajuan}/status', [PengajuanController::class, 'updateStatus']);
 Route::get('/pengajuan/check/{user}/{tahun}', [PengajuanController::class, 'checkUserPengajuan']);
-
-Route::get('/analisis-barang', [PengajuanController::class, 'analisisBarang']);
+Route::patch('/pengajuan/{pengajuan}/status', [PengajuanController::class, 'updateStatus']);
 Route::patch('/pengajuan/{pengajuan}/revisi', [PengajuanController::class, 'revisiItems']);
+Route::get('/pengajuan/{pengajuan}/pdf', [PengajuanController::class, 'downloadPdf']);
 
 /*
 |--------------------------------------------------------------------------
-| Periode Pengajuan
+| Approval (Super Admin)
 |--------------------------------------------------------------------------
 */
+Route::get('/pengajuan/approval', [PengajuanController::class, 'approvalList']);
+
+/*
+|--------------------------------------------------------------------------
+| Analisis
+|--------------------------------------------------------------------------
+*/
+Route::get('/analisis-barang', [PengajuanController::class, 'analisisBarang']);
+
+/*
+|--------------------------------------------------------------------------
+| Periode
+|--------------------------------------------------------------------------
+*/
+Route::get('/periode', [PeriodeController::class, 'index']);
 Route::get('/periode/active', [PeriodeController::class, 'active']);
 Route::post('/periode', [PeriodeController::class, 'storeOrUpdate']);
-Route::get('/periode', [PeriodeController::class, 'index']);
 Route::delete('/periode/{periode}', [PeriodeController::class, 'destroy']);
 
 /*
@@ -79,3 +93,4 @@ Route::get('/approval/{pengajuan}/pdf', [PengajuanController::class, 'downloadPd
 |--------------------------------------------------------------------------
 */
 Route::get('/laporan/grafik-belanja', [LaporanController::class, 'grafikBelanja']);
+Route::get('/test-qr', function () {return QrCode::size(200)->generate('VERIFIKASI YAYASAN');});

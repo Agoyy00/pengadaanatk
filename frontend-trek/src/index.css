@@ -76,11 +76,10 @@ body {
 
 a {
   font-weight: 500;
-  color: #ffffff;
   text-decoration: inherit;
 }
 a:hover {
-  color: #ffffff;
+  color: #041517;
 }
 
 body {

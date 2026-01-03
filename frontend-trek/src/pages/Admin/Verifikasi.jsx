@@ -35,20 +35,36 @@ export default function Verifikasi() {
   }, []);
 
   const renderStatusBadge = (status) => {
-    if (status === "diajukan") {
-  return <span className="status-badge status-diajukan">Diajukan</span>;
-    }
-    if (status === "diverifikasi") {
-      return <span className="status-badge status-diverifikasi">Diverifikasi Admin</span>;
-    }
-    if (status === "ditolak") {
-      return <span className="status-badge status-ditolak">Ditolak Admin</span>;
-    }
-    if (status === "disetujui") {
-      return <span className="status-badge status-disetujui">Disetujui Admin</span>;
-    } 
-    return <span className="status-badge">{status}</span>;
-  };
+  switch (status) {
+    case "diajukan":
+      return <span className="status-badge status-diajukan">Diajukan</span>;
+
+    case "diverifikasi_admin":
+      return (
+        <span className="status-badge status-diverifikasi">
+          Diverifikasi Admin
+        </span>
+      );
+
+    case "ditolak_admin":
+      return (
+        <span className="status-badge status-ditolak">
+          Ditolak Admin
+        </span>
+      );
+
+    case "disetujui":
+      return (
+        <span className="status-badge status-disetujui">
+          Disetujui Super Admin
+        </span>
+      );
+
+    default:
+      return <span className="status-badge">{status}</span>;
+  }
+};
+
 
   // PATCH status biasa
   const handleUpdateStatus = async (pengajuanId, newStatus) => {
@@ -184,40 +200,94 @@ export default function Verifikasi() {
       const initial = {};
       pengajuan.items.forEach((item) => {
         initial[item.id] = {
-          jumlah_disetujui: item.jumlah_disetujui ?? item.jumlah_diajukan,
-          catatan_revisi: item.catatan_revisi ?? "",
+          kebutuhan_total: item.kebutuhan_total,
+          sisa_stok: item.sisa_stok,
+          jumlah_diajukan: item.kebutuhan_total - item.sisa_stok,
         };
       });
 
-  setDraftItems(initial);
+      setDraftItems(initial);
+    };
+
+    const updateDraftItem = (itemId, field, value) => {
+  setDraftItems((prev) => {
+    const kebutuhan =
+      field === "kebutuhan_total"
+        ? Number(value)
+        : Number(prev[itemId].kebutuhan_total);
+
+    const sisa =
+      field === "sisa_stok"
+        ? Number(value)
+        : Number(prev[itemId].sisa_stok);
+
+    return {
+      ...prev,
+      [itemId]: {
+        kebutuhan_total: kebutuhan,
+        sisa_stok: sisa,
+        jumlah_diajukan: Math.max(kebutuhan - sisa, 0),
+      },
+    };
+  });
 };
+
+
 
 const submitVerifikasi = async (pengajuanId) => {
   try {
     setProcessingId(pengajuanId);
 
-    // 1. simpan revisi (kalau ada)
-    const items = Object.entries(draftItems).map(([id, v]) => ({
-      id,
-      jumlah_disetujui: v.jumlah_disetujui,
-      catatan_revisi: v.catatan_revisi,
-    }));
+    const items = [];
 
-    if (items.length > 0) {
-      await fetch(`${API_BASE}/pengajuan/${pengajuanId}/revisi`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items }),
-      });
+    for (const p of data) {
+      if (p.id !== pengajuanId) continue;
+
+      for (const item of p.items) {
+        const v = draftItems[item.id];
+        if (!v) continue;
+
+        const namaBarang = item.barang?.nama ?? "Barang";
+        const kebutuhan = item.kebutuhan_total ?? 0;
+        const stok = item.stok_saat_ini ?? 0;
+
+        const jumlahDiajukan = Math.max(kebutuhan - stok, 0);
+        const jumlahDisetujui = Number(v.jumlah_disetujui);
+
+        // ❌ VALIDASI
+        if (jumlahDisetujui < 0) {
+          alert(`Jumlah disetujui ${namaBarang} tidak boleh negatif`);
+          return;
+        }
+
+        if (jumlahDisetujui > kebutuhan) {
+          alert(
+            `Jumlah disetujui ${namaBarang} melebihi kebutuhan (${kebutuhan})`
+          );
+          return;
+        }
+
+        items.push({
+          id: item.id,
+          jumlah_disetujui: jumlahDisetujui,
+          catatan_revisi: v.catatan_revisi || "",
+        });
+      }
     }
 
-    // 2. update status (FLOW LAMA)
-   await fetch(`${API_BASE}/pengajuan/${pengajuanId}/status`, {
-  method: "PATCH",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ status: "diverifikasi" }),
-});
+    // 🚀 kirim ke backend
+    await fetch(`${API_BASE}/pengajuan/${pengajuanId}/revisi`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ items }),
+    });
 
+    // update status
+    await fetch(`${API_BASE}/pengajuan/${pengajuanId}/status`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "diverifikasi" }),
+    });
 
     setEditingId(null);
   } catch (err) {
@@ -226,6 +296,8 @@ const submitVerifikasi = async (pengajuanId) => {
     setProcessingId(null);
   }
 };
+
+
 
 const [selectedPengajuan, setSelectedPengajuan] = useState(null);
 
@@ -318,7 +390,7 @@ const [selectedPengajuan, setSelectedPengajuan] = useState(null);
                           <th>Status</th>
                           <th>Tanggal</th>
                           <th>Barang</th>
-                          <th>Aksi</th>
+                          <th style={{ textAlign: "center" }}>Aksi</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -336,50 +408,49 @@ const [selectedPengajuan, setSelectedPengajuan] = useState(null);
                                 : "-"}
                             </td>
                             <td>
-                              {(!p.items || p.items.length === 0) && <span>-</span>}
                               {p.items.map((item) => {
-                              const namaBarang = item.barang?.nama ?? "Barang";
-                              const satuan = item.barang?.satuan ?? "";
-                              const diajukan = item.jumlah_diajukan;
-                              const disetujui =
-                                item.jumlah_disetujui !== null
-                                  ? item.jumlah_disetujui
-                                  : item.jumlah_diajukan;
+  const kebutuhan = item.kebutuhan_total;
+  const sisa = item.sisa_stok;
+  const diajukan = item.jumlah_diajukan;
+  const disetujui =
+    item.jumlah_disetujui !== null
+      ? item.jumlah_disetujui
+      : diajukan;
 
-                              const isRevisi =
-                                item.jumlah_disetujui !== null &&
-                                item.jumlah_disetujui !== item.jumlah_diajukan;
+  return (
+    <li key={item.id}>
+      <strong>{item.barang?.nama}</strong>
 
-                              return (
-                                <li key={item.id}>
-                                  {namaBarang} —{" "}
-                                  <span>
-                                    diajukan{" "}
-                                    <strong>
-                                      {diajukan} {satuan}
-                                    </strong>
-                                  </span>
+      {/* 🔹 SAAT MASIH DIAJUKAN */}
+      {p.status === "diajukan" && (
+        <div className="item-meta">
+          Kebutuhan total:{" "}
+          <b>{kebutuhan} {item.barang?.satuan}</b><br />
+          Sisa stok saat ini:{" "}
+          <b>{sisa} {item.barang?.satuan}</b><br />
+          Jumlah diajukan:{" "}
+          <b>{diajukan} {item.barang?.satuan}</b>
+        </div>
+      )}
 
-                                  {isRevisi && (
-                                    <>
-                                      {" , "}
-                                      <span className="text-revisi">
-                                        disetujui{" "}
-                                        <strong>
-                                          {disetujui} {satuan}
-                                        </strong>{" "}
-                                        (direvisi)
-                                      </span>
-                                    </>
-                                  )}
-                                  {item.catatan_revisi && (
-                                    <div className="revisi-note">
-                                      Catatan: {item.catatan_revisi}
-                                    </div>
-                                  )}
-                                </li>
-                              );
-                            })}
+      {/* 🔹 SETELAH DIVERIFIKASI ADMIN */}
+      {p.status !== "diajukan" && (
+        <div className="item-meta">
+          Jumlah disetujui:{" "}
+          <b>{disetujui} {item.barang?.satuan}</b>
+        </div>
+      )}
+
+      {item.catatan_revisi && (
+        <div className="revisi-note">
+          Catatan: {item.catatan_revisi}
+        </div>
+      )}
+    </li>
+  );
+})}
+
+
                             </td>
                             <td>
                               {p.status === "diajukan" && (
@@ -411,11 +482,13 @@ const [selectedPengajuan, setSelectedPengajuan] = useState(null);
                                   </button>
                                 </>
                               )}
-                              {p.status === "diverifikasi" && (
-                                <span className="status-text done">
-                                  ✓ Sudah diverifikasi
-                                </span>
-                              )}
+                              {p.status === "diverifikasi_admin" && (
+  <span className="status-text done">
+    ✓ Pengajuan diverifikasi
+  </span>
+)}
+
+
 
                               {p.status === "ditolak" && (
                                 <span className="status-text rejected">

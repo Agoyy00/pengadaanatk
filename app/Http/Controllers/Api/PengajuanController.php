@@ -10,6 +10,7 @@ use App\Models\Periode;
 use App\Models\Notification;
 use App\Models\User;
 
+
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -308,11 +309,10 @@ class PengajuanController extends Controller
     Log::info('REVISI MASUK', $request->all());
 
     $validated = $request->validate([
-        'items'                   => 'required|array|min:1',
-        'items.*.id'              => 'required|integer|exists:pengajuan_items,id',
-        'items.*.jumlah_diajukan' => 'required|integer|min:0',
-        'items.*.sisa_stok'       => 'required|integer|min:0',
-        'items.*.catatan_revisi'  => 'nullable|string',
+        'items'                     => 'required|array|min:1',
+        'items.*.id'                => 'required|integer|exists:pengajuan_items,id',
+        'items.*.jumlah_disetujui'  => 'required|integer|min:0',
+        'items.*.catatan_revisi'    => 'nullable|string',
     ]);
 
     if ($pengajuan->status !== 'diajukan') {
@@ -326,21 +326,22 @@ class PengajuanController extends Controller
         PengajuanItem::where('pengajuan_id', $pengajuan->id)
             ->where('id', $rev['id'])
             ->update([
-                'jumlah_diajukan' => $rev['jumlah_diajukan'],
-                'sisa_stok'       => $rev['sisa_stok'],
-                'catatan_revisi'  => $rev['catatan_revisi'] ?? null,
+                // ⬇️ jumlah_disetujui = FINAL
+                'jumlah_disetujui' => $rev['jumlah_disetujui'],
+                'catatan_revisi'   => $rev['catatan_revisi'] ?? null,
             ]);
     }
 
-    // hitung ulang total
+    // 🔁 hitung ulang total berdasarkan jumlah_disetujui
     $items = PengajuanItem::where('pengajuan_id', $pengajuan->id)->get();
 
     $totalJumlah = 0;
     $totalNilai  = 0;
 
     foreach ($items as $it) {
-        $totalJumlah += $it->jumlah_diajukan;
-        $totalNilai  += $it->jumlah_diajukan * $it->harga_satuan;
+        $qty = $it->jumlah_disetujui ?? 0;
+        $totalJumlah += $qty;
+        $totalNilai  += $qty * $it->harga_satuan;
     }
 
     $pengajuan->update([
@@ -354,6 +355,9 @@ class PengajuanController extends Controller
         'pengajuan' => $pengajuan->load('items.barang'),
     ]);
 }
+
+
+
 
 /**
  * GET /api/pengajuan/approval
@@ -371,19 +375,23 @@ class PengajuanController extends Controller
     
     public function downloadPdf(Pengajuan $pengajuan)
 {
-    if ($pengajuan->status !== 'disetujui') {
-        return response()->json([
-            'message' => 'Pengajuan belum disetujui'
-        ], 403);
-    }
+    $pengajuan->load('items.barang');
 
-    $pengajuan->load('items.barang', 'user');
+    // 🔐 DATA VALIDASI (nanti dipakai QR)
+    $payload = json_encode([
+        'pengajuan_id' => $pengajuan->id,
+        'status' => $pengajuan->status,
+        'tanggal' => $pengajuan->updated_at->toIso8601String(),
+    ]);
 
-    $pdf = PDF::loadView('pdf.pengajuan', compact('pengajuan'));
+    // ⚠️ DUMMY QR (sementara, biar blade gak error)
+    $qr = null;
 
-    return $pdf->download(
-        'pengajuan-'.$pengajuan->id.'.pdf'
-    );
+    $pdf = Pdf::loadView('pdf.pengajuan', [
+        'pengajuan' => $pengajuan,
+        'qr'        => $qr, // ⬅️ INI YANG HILANG
+    ])->setPaper('A4', 'portrait');
+
+    return $pdf->download('Pengajuan-ATK-'.$pengajuan->id.'.pdf');
 }
-
 }

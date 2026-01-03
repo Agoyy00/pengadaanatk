@@ -7,40 +7,66 @@ export default function DetailVerifikasi({ pengajuan, onClose, onSuccess }) {
   const [processing, setProcessing] = useState(false);
 
   const [draftItems, setDraftItems] = useState(() => {
-    const initial = {};
-    pengajuan.items.forEach((item) => {
-      initial[item.id] = {
-        jumlah_diajukan: item.jumlah_diajukan,
-        sisa_stok: item.sisa_stok,
-        catatan_revisi: item.catatan_revisi || "",
-      };
-    });
-    return initial;
+  const initial = {};
+  pengajuan.items.forEach((item) => {
+    initial[item.id] = {
+      kebutuhan_total: item.kebutuhan_total,
+      sisa_stok: item.sisa_stok,
+      catatan_revisi: item.catatan_revisi || "",
+    };
   });
+  return initial;
+});
+
 
   const handleSubmit = async () => {
   if (!window.confirm("Submit verifikasi pengajuan ini?")) return;
+  for (const item of pengajuan.items) {
+  const v = draftItems[item.id];
+  const namaBarang = item.barang?.nama ?? "Barang";
+
+  if (v.kebutuhan_total < 0 || v.sisa_stok < 0) {
+    alert(`${namaBarang}: nilai tidak boleh negatif`);
+    return;
+  }
+
+  if (v.sisa_stok > v.kebutuhan_total) {
+    alert(`${namaBarang}: sisa stok melebihi kebutuhan`);
+    return;
+  }
+}
+
 
   try {
     setProcessing(true);
 
-    const items = Object.entries(draftItems).map(([id, v]) => ({
-      id,
-      jumlah_diajukan: v.jumlah_diajukan,
-      sisa_stok: v.sisa_stok,
-      catatan_revisi: v.catatan_revisi,
-    }));
+   const items = Object.entries(draftItems).map(([id, v]) => ({
+  id: Number(id),
+  jumlah_disetujui: Math.max(
+    v.kebutuhan_total - v.sisa_stok,
+    0
+  ),
+  catatan_revisi: v.catatan_revisi || "",
+}));
 
     console.log("KIRIM ITEMS:", items);
+    console.log(
+  `${API_BASE}/pengajuan/${pengajuan.id}/revisi`
+);
+
 
     const resRevisi = await fetch(
-      `${API_BASE}/pengajuan/${pengajuan.id}/revisi`,
-      {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items }),
-      }
-    );
+  `${API_BASE}/pengajuan/${pengajuan.id}/revisi`,
+  {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      "Accept": "application/json",
+    },
+    body: JSON.stringify({ items }),
+  }
+);
+
 
     const revisiJson = await resRevisi.json();
     console.log("RESP REVISI:", revisiJson);
@@ -51,13 +77,17 @@ export default function DetailVerifikasi({ pengajuan, onClose, onSuccess }) {
     }
 
     const resStatus = await fetch(
-      `${API_BASE}/pengajuan/${pengajuan.id}/status`,
-      {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "diverifikasi_admin" }),
-      }
-    );
+  `${API_BASE}/pengajuan/${pengajuan.id}/status`,
+  {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      "Accept": "application/json",
+    },
+    body: JSON.stringify({ status: "diverifikasi_admin" }),
+  }
+);
+
 
     const statusJson = await resStatus.json();
     console.log("RESP STATUS:", statusJson);
@@ -100,40 +130,54 @@ export default function DetailVerifikasi({ pengajuan, onClose, onSuccess }) {
             </div>
 
             <div className="item-row">
-              <label>Jumlah Diajukan</label>
-              <input
-                type="number"
-                min="0"
-                value={draftItems[item.id].jumlah_diajukan}
-                onChange={(e) =>
-                  setDraftItems((prev) => ({
-                    ...prev,
-                    [item.id]: {
-                      ...prev[item.id],
-                      jumlah_diajukan: Number(e.target.value),
-                    },
-                  }))
-                }
-              />
-            </div>
+  <label>Kebutuhan Total</label>
+  <input
+    type="number"
+    min="0"
+    value={draftItems[item.id].kebutuhan_total}
+    onChange={(e) =>
+      setDraftItems((prev) => ({
+        ...prev,
+        [item.id]: {
+          ...prev[item.id],
+          kebutuhan_total: Number(e.target.value),
+        },
+      }))
+    }
+  />
+</div>
 
-            <div className="item-row">
-              <label>Sisa Stok Saat Ini</label>
-              <input
-                type="number"
-                min="0"
-                value={draftItems[item.id].sisa_stok}
-                onChange={(e) =>
-                  setDraftItems((prev) => ({
-                    ...prev,
-                    [item.id]: {
-                      ...prev[item.id],
-                      sisa_stok: Number(e.target.value),
-                    },
-                  }))
-                }
-              />
-            </div>
+<div className="item-row">
+  <label>Sisa Stok Saat Ini</label>
+  <input
+    type="number"
+    min="0"
+    value={draftItems[item.id].sisa_stok}
+    onChange={(e) =>
+      setDraftItems((prev) => ({
+        ...prev,
+        [item.id]: {
+          ...prev[item.id],
+          sisa_stok: Number(e.target.value),
+        },
+      }))
+    }
+  />
+</div>
+
+{/* AUTO HITUNG */}
+<div className="item-row readonly">
+  <label>Jumlah Diajukan</label>
+  <div className="auto-value">
+    {Math.max(
+      draftItems[item.id].kebutuhan_total -
+      draftItems[item.id].sisa_stok,
+      0
+    )}{" "}
+    {item.barang?.satuan}
+  </div>
+</div>
+
 
             <div className="item-row">
               <label>Catatan (opsional)</label>

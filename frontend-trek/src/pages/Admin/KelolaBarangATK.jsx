@@ -535,18 +535,51 @@ const [errors, setErrors] = useState({});
                   <label style={{ display: "block", marginTop: 10, marginBottom: 6 }}>
                     Satuan
                   </label>
-                  <input
+                  <select
                     style={{
                       width: "100%",
                       padding: 10,
                       borderRadius: 10,
                       border: `1px solid ${errors.satuan ? "#ef4444" : "#ddd"}`,
+                      cursor: "pointer",
                     }}
                     value={form.satuan}
                     onChange={(e) => setForm((p) => ({ ...p, satuan: e.target.value }))}
-                    placeholder="Contoh: rim / pcs / box"
-                  />
+                  >
+                    <option value="rim">Rim</option>
+                    <option value="pcs">Pcs</option>
+                    <option value="dus">Dus</option>
+                  </select>
+
+                  {errors.satuan && (
+                    <div style={{ color: "#ef4444", marginTop: 6 }}>{errors.satuan}</div>
+                  )}
+
                   <label style={{ display: "block", marginTop: 10, marginBottom: 6 }}>
+                    Harga Satuan (Rp)
+                  </label>
+                  <input
+                    style={{
+                      width: "100%",
+                      padding: 10,
+                      borderRadius: 10,
+                      border: `1px solid ${errors.harga_satuan ? "#ef4444" : "#ddd"}`,
+                    }}
+                    value={form.harga_satuan}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      if (!/^\d*$/.test(v)) return;
+                      setForm((p) => ({ ...p, harga_satuan: v }));
+                    }}
+                    placeholder="Contoh: 15000"
+                  />
+                  {errors.harga_satuan && (
+                    <div style={{ color: "#ef4444", marginTop: 6 }}>
+                      {errors.harga_satuan}
+                    </div>
+                  )}
+
+                   <label style={{ display: "block", marginTop: 10, marginBottom: 6 }}>
                     Gambar Barang
                   </label>
 
@@ -578,34 +611,6 @@ const [errors, setErrors] = useState({});
                         border: "1px solid #ddd",
                       }}
                     />
-                  )}
-
-                  {errors.satuan && (
-                    <div style={{ color: "#ef4444", marginTop: 6 }}>{errors.satuan}</div>
-                  )}
-
-                  <label style={{ display: "block", marginTop: 10, marginBottom: 6 }}>
-                    Harga Satuan (Rp)
-                  </label>
-                  <input
-                    style={{
-                      width: "100%",
-                      padding: 10,
-                      borderRadius: 10,
-                      border: `1px solid ${errors.harga_satuan ? "#ef4444" : "#ddd"}`,
-                    }}
-                    value={form.harga_satuan}
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      if (!/^\d*$/.test(v)) return;
-                      setForm((p) => ({ ...p, harga_satuan: v }));
-                    }}
-                    placeholder="Contoh: 15000"
-                  />
-                  {errors.harga_satuan && (
-                    <div style={{ color: "#ef4444", marginTop: 6 }}>
-                      {errors.harga_satuan}
-                    </div>
                   )}
 
                   <div

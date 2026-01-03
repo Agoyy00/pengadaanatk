@@ -42,6 +42,9 @@ function Pengajuan() {
   const storedUser = localStorage.getItem("user");
   const currentUser = storedUser ? JSON.parse(storedUser) : null;
   const userId = currentUser?.id;
+  const [confirmId, setConfirmId] = useState(null);
+  
+
 
   const getStepperLabel = () =>
     "Stepper: Data Pengajuan → Input Barang → Konfirmasi";
@@ -211,6 +214,7 @@ function Pengajuan() {
 
   const handleRemoveItem = (id) => {
     setItems((prev) => prev.filter((i) => i.id !== id));
+    setConfirmId(null);
   };
 
   // total nilai semua item
@@ -612,7 +616,8 @@ function Pengajuan() {
                             <th>Sisa stok saat ini</th>
                             <th>Jumlah Diajukan</th>
                             <th>Harga Total</th>
-                            <th>Aksi</th>
+                            <th style={{borderBottom: "1px solid #eee", textAlign: "center",
+  }}>Aksi</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -627,7 +632,7 @@ function Pengajuan() {
     {/* BARANG + FOTO */}
     <td>
       <div className="barang-cell">
-        
+
       {console.log("FOTO:", item.foto)}
 
 {item.foto ? (
@@ -689,13 +694,54 @@ function Pengajuan() {
     </td>
 
     <td>
-      <span
+  {confirmId === item.id ? (
+    <div style={{ display: "flex", gap: 8 }}>
+      <button
         className="aksi-hapus"
         onClick={() => handleRemoveItem(item.id)}
       >
-        Hapus
-      </span>
-    </td>
+        Ya, hapus
+      </button>
+
+      <button
+        onClick={() => setConfirmId(null)}
+        style={{
+          padding: "6px 12px",
+          borderRadius: 999,
+          border: "1px solid #ddd",
+          cursor: "pointer",
+          fontWeight: 600,
+        }}
+      >
+        Batal
+      </button>
+    </div>
+  ) : (
+    <span
+      className="aksi-hapus"
+      onClick={() => setConfirmId(item.id)}
+    >
+      <svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <polyline points="3 6 5 6 21 6" />
+        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+        <path d="M10 11v6" />
+        <path d="M14 11v6" />
+        <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+      </svg>
+      Hapus
+    </span>
+  )}
+</td>
+
   </tr>
 ))}
 
