@@ -21,12 +21,12 @@ export default function DaftarBarangATKSuperAdmin() {
 
   const sidebarMenus = useMemo(() => {
     return [
-      { label: "Dashboard SuperAdmin", to: "/dashboardsuperadmin" },
-      { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang", active: true },
-      { label: "Grafik Belanja Unit", to: "/superadmin/grafik-belanja" },
-      { label: "Kelola User", to: "/tambah-user" }, // sesuaikan route kamu
-      { label: "Periode", to: "/periode" },
+      { label: "Dashboard Super Admin", to: "/dashboardsuperadmin"},
       { label: "Approval", to: "/approval" },
+      { label: "Tambah User", to: "/tambahuser" },
+      { label: "Atur Periode", to: "/periode" },
+      { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang", active: true  },
+      { label: "Grafik Belanja Unit", to: "/superadmin/grafik-belanja" },
     ];
   }, []);
 
@@ -50,6 +50,16 @@ export default function DaftarBarangATKSuperAdmin() {
       setLoading(false);
     }
   }
+
+  const formatRole = (role) => {
+  if (!role) return "-";
+
+  return role
+    .toLowerCase()
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+};
+
 
   useEffect(() => {
     loadBarangs("");
@@ -96,10 +106,10 @@ export default function DaftarBarangATKSuperAdmin() {
               Selamat datang: {currentUser?.name || "SuperAdmin"}
             </div>
           </div>
-          <div className="topbar-right">
-            <span>Role: {currentUser?.role || "-"}</span>
-            <span className="role-pill">{String(currentUser?.role || "-").toUpperCase()}</span>
-          </div>
+         <div className="topbar-right">
+          <span>Role: </span>
+          <span className="role-pill">{formatRole(currentUser?.role)}</span>
+        </div>
         </header>
 
         <section className="main-content">

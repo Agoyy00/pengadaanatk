@@ -503,9 +503,7 @@ th {
 .aksi-hapus:hover::after {
     opacity: 1;
 }
-
-
-
+/* FORM INPUT TEXT (PROFESSIONAL STYLE) */
 /* PESAN ERROR */
 .error-text {
     color: #d93025;

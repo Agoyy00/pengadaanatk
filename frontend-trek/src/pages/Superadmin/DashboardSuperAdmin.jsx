@@ -13,6 +13,9 @@ export default function DashboardSuperAdmin() {
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const userId = user?.id;
   const userRole = (user?.role || "").toLowerCase();
+  
+  const storedUser = localStorage.getItem("user");
+  const currentUser = storedUser ? JSON.parse(storedUser) : null;
 
   // =========================
   // SECURITY GUARD
@@ -113,19 +116,22 @@ export default function DashboardSuperAdmin() {
   const sidebarMenus = useMemo(() => {
     return [
       { label: "Dashboard Super Admin", to: "/dashboardsuperadmin", active: true },
-
       { label: "Approval", to: "/approval" },
       { label: "Tambah User", to: "/tambahuser" },
       { label: "Atur Periode", to: "/periode" },
-
-      // ✅ MENU BARU SUPERADMIN
       { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang" },
       { label: "Grafik Belanja Unit", to: "/superadmin/grafik-belanja" },
-
-      // menu lama (kalau masih dipakai)
-      { label: "Grafik & Analisis Data", to: "/grafik" },
     ];
   }, []);
+
+  const formatRole = (role) => {
+    if (!role) return "-";
+
+    return role
+      .toLowerCase()
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+  };
 
   return (
     <div className="layout">
@@ -175,11 +181,9 @@ export default function DashboardSuperAdmin() {
           </div>
 
           <div className="topbar-right">
-            <span>Role:</span>
-            <span className="role-pill">
-              {user?.role ? String(user.role).toUpperCase() : "UNKNOWN"}
-            </span>
-          </div>
+          <span>Role: </span>
+          <span className="role-pill">{formatRole(currentUser?.role)}</span>
+        </div>  
         </header>
 
         {/* CONTENT */}

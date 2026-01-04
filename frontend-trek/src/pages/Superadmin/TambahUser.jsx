@@ -1,5 +1,5 @@
   import { FaEye, FaEyeSlash } from "react-icons/fa";
-  import React, { useState, useMemo} from "react";
+  import React, { useState, useMemo, useEffect} from "react";
   import { useNavigate } from "react-router-dom";
   import "../../css/User.css";
   import "../../css/layout.css";
@@ -16,6 +16,9 @@
     const [message, setMessage] = useState("");
     const [errorMsg, setErrorMsg] = useState("");
     const [showPassword, setShowPassword] = useState(false);
+    const [users, setUsers] = useState([]);
+    const [loadingUsers, setLoadingUsers] = useState(false);
+
 
     // Ambil user login (harusnya superadmin)
     const storedUser = localStorage.getItem("user");
@@ -53,21 +56,70 @@
         setEmail("");
         setPassword("");
         setRole("user");
+        await loadUsers();
       } catch (err) {
         console.error("Error jaringan:", err);
         setErrorMsg("Terjadi kesalahan jaringan.");
       }
     }
 
-      const sidebarMenus = useMemo(() => {
-      return [
-        { label: "Dashboard Super Admin", to: "/dashboardsuperadmin"},
-        { label: "Approval", to: "/approval" },
-        { label: "Tambah User", to: "/tambahuser", active: true },
-        { label: "Atur Periode", to: "/periode" },
-        { label: "Grafik & Analisis Data", to: "/grafik" },
-        ];
-        }, []);
+  const formatRole = (role) => {
+    if (!role) return "-";
+
+    return role
+      .toLowerCase()
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+  };
+
+   async function loadUsers() {
+    setLoadingUsers(true);
+    const res = await fetch(`${API_BASE}/users`);
+    const data = await res.json();
+    setUsers(data);
+    setLoadingUsers(false);
+  }
+
+  useEffect(() => {
+  loadUsers();
+}, []);
+
+async function deleteUser(user) {
+  if (user.role?.name === "superadmin") {
+    alert("Super Admin tidak boleh dihapus");
+    return;
+  }
+
+  const confirmText =
+    user.role?.name === "admin"
+      ? "Ini akun ADMIN. Yakin mau hapus?"
+      : "Yakin hapus user ini?";
+
+  if (!window.confirm(confirmText)) return;
+
+  const res = await fetch(`${API_BASE}/users/${user.id}`, {
+    method: "DELETE",
+  });
+
+  const data = await res.json();
+
+  if (!res.ok || !data.success) {
+    alert(data.message || "Gagal menghapus user");
+    return;
+  }
+
+  setUsers((prev) => prev.filter((u) => u.id !== user.id));
+}
+    const sidebarMenus = useMemo(() => {
+    return [
+      { label: "Dashboard Super Admin", to: "/dashboardsuperadmin"},
+      { label: "Approval", to: "/approval" },
+      { label: "Tambah User", to: "/tambahuser", active: true  },
+      { label: "Atur Periode", to: "/periode" },
+      { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang" },
+      { label: "Grafik Belanja Unit", to: "/superadmin/grafik-belanja" },
+    ];
+  }, []);
 
     return (
       <div className="layout">
@@ -117,10 +169,8 @@
               </div>
             </div>
             <div className="topbar-right">
-              <span>Role: {currentUser?.role || "superadmin"}</span>
-              <span className="role-pill">
-                {currentUser?.role || "superadmin"}
-              </span>
+              <span>Role: </span>
+              <span className="role-pill">{formatRole(currentUser?.role)}</span>
             </div>
           </header>
 
@@ -128,7 +178,7 @@
             <div className="card">
               <div className="card-title">Form Tambah User</div>
               <div className="card-subtitle">
-                Isi data user yang akan dibuat.
+                Isi data user yang akan dibuat. 
               </div>
 
               <form onSubmit={handleSubmit}>
@@ -206,6 +256,42 @@
                   )}
                 </div>
               </form>
+            </div>
+            <div className="card" style={{ marginTop: 24 }}>
+              <div className="card-title">Daftar User</div>
+              {loadingUsers ? (
+                <p>Memuat user...</p>
+              ) : (
+                <div style={{ overflowX: "auto" }}>
+                  <table className="table" style={{ width: "100%" }}>
+                    <thead>
+                      <tr>
+                        <th>Nama</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th style={{ textAlign: "center" }}>Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {users.map((u) => (
+                        <tr key={u.id}>
+                          <td>{u.name}</td>
+                          <td>{u.email}</td>
+                          <td><span className={`role-badge role-${u.role?.name}`}>{formatRole(u.role?.name || u.role)}</span></td>
+                          <td style={{ textAlign: "center" }}>
+                            <button
+                              className="btn btn-danger"
+                              disabled={u.role?.name === "superadmin"}
+                              onClick={() => deleteUser(u)}
+                            > Hapus
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </section>
         </main>

@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\PeriodeController;
 use App\Http\Controllers\Api\UserManagementController;
 use App\Http\Controllers\Api\LaporanController;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use App\Http\Controllers\Api\NotificationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -94,3 +95,7 @@ Route::get('/approval/{pengajuan}/pdf', [PengajuanController::class, 'downloadPd
 */
 Route::get('/laporan/grafik-belanja', [LaporanController::class, 'grafikBelanja']);
 Route::get('/test-qr', function () {return QrCode::size(200)->generate('VERIFIKASI YAYASAN');});
+
+Route::get('/notifications', [NotificationController::class, 'index']);
+Route::patch('/notifications/{notification}/read', [NotificationController::class, 'markAsRead']);
+Route::delete('/users/{user}', [UserManagementController::class, 'destroy']);

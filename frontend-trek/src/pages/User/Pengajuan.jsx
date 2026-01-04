@@ -43,9 +43,14 @@ function Pengajuan() {
   const currentUser = storedUser ? JSON.parse(storedUser) : null;
   const userId = currentUser?.id;
   const [confirmId, setConfirmId] = useState(null);
-  
+  const formatRole = (role) => {
+    if (!role) return "-";
 
-
+    return role
+      .toLowerCase()
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+  };
   const getStepperLabel = () =>
     "Stepper: Data Pengajuan → Input Barang → Konfirmasi";
 
@@ -125,28 +130,38 @@ function Pengajuan() {
 
   // ====== AUTO-SUGGEST BARANG ======
   useEffect(() => {
-    if (!query.trim()) {
-      setSearchResults([]);
-      return;
+  if (!query.trim()) {
+    setSearchResults([]);
+    return;
+  }
+
+  const timeoutId = setTimeout(async () => {
+    try {
+      setLoadingSearch(true);
+
+      const res = await fetch(
+        `${API_BASE}/barang?q=${encodeURIComponent(query)}`
+      );
+
+      const data = await res.json(); // ✅ data DIDEFINISIKAN DI SINI
+
+      const keyword = query.trim().toLowerCase();
+
+      const filtered = data.filter((item) =>
+        item.nama?.toLowerCase().startsWith(keyword)
+      );
+
+      setSearchResults(filtered);
+    } catch (err) {
+      console.error("Gagal mencari barang", err);
+    } finally {
+      setLoadingSearch(false);
     }
+  }, 300);
 
-    const timeoutId = setTimeout(async () => {
-      try {
-        setLoadingSearch(true);
-        const res = await fetch(
-          `${API_BASE}/barang?q=${encodeURIComponent(query)}`
-        );
-        const data = await res.json();
-        setSearchResults(data);
-      } catch (err) {
-        console.error("Gagal mencari barang", err);
-      } finally {
-        setLoadingSearch(false);
-      }
-    }, 300);
+  return () => clearTimeout(timeoutId);
+}, [query]);
 
-    return () => clearTimeout(timeoutId);
-  }, [query]);
 
   // tambah barang ke daftar item
   const handleAddItem = (barang) => {
@@ -368,9 +383,9 @@ function Pengajuan() {
             </div>
           </div>
           <div className="topbar-right">
-            <span>Role: </span>
-            <span className="role-pill">User</span>
-          </div>
+          <span>Role: </span>
+          <span className="role-pill">{formatRole(currentUser?.role)}</span>
+        </div>
         </header>
 
         {/* MAIN CONTENT */}
@@ -398,7 +413,7 @@ function Pengajuan() {
               </button>
             </div>
           ) : (
-            // 3. PERIODE TERBUKA → FORM
+            // 3. PERIODE TERBUKA → FORM  
             <>
               <div className="card">
                 <div className="card-title">

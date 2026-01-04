@@ -104,6 +104,17 @@ export default function Verifikasi() {
     }
   };
 
+  const storedUser = localStorage.getItem("user");
+  const currentUser = storedUser ? JSON.parse(storedUser) : null;
+  const formatRole = (role) => {
+    if (!role) return "-";
+
+    return role
+      .toLowerCase()
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+  };
+
   // 🔹 Revisi jumlah + catatan, lalu set status disetujui
   const handleRevisi = async (pengajuan) => {
     if (!pengajuan.items || pengajuan.items.length === 0) {
@@ -188,7 +199,6 @@ export default function Verifikasi() {
       { label: "Dashboard Admin", to: "/approval"},
       { label: "Verifikasi", to: "/verifikasi", active: true  },
       { label: "Kelola Barang ATK", to: "/kelola-barang" },
-      { label: "Kelola Harga ATK", to: "/kelola-harga" },
       ];
 
       const [editingId, setEditingId] = useState(null);
@@ -343,9 +353,9 @@ const [selectedPengajuan, setSelectedPengajuan] = useState(null);
             <div className="topbar-sub">Selamat datang: Admin ATK</div>
           </div>
           <div className="topbar-right">
-            <span>Role: Admin</span>
-            <span className="role-pill">Admin</span>
-          </div>
+          <span>Role: </span>
+          <span className="role-pill">{formatRole(currentUser?.role)}</span>
+        </div>
         </header>
 
         <section className="main-content">
@@ -482,14 +492,7 @@ const [selectedPengajuan, setSelectedPengajuan] = useState(null);
                                   </button>
                                 </>
                               )}
-                              {p.status === "diverifikasi_admin" && (
-  <span className="status-text done">
-    ✓ Pengajuan diverifikasi
-  </span>
-)}
-
-
-
+                              {p.status === "diverifikasi_admin" && (<span className="status-text done">✓ Pengajuan diverifikasi</span>)}
                               {p.status === "ditolak" && (
                                 <span className="status-text rejected">
                                   ✗ Pengajuan ditolak

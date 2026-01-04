@@ -17,13 +17,11 @@ import Riwayat from "./pages/User/Riwayat";
 import DashboardAdmin from "./pages/Admin/DashboardAdmin";
 import Verifikasi from "./pages/Admin/Verifikasi";
 import KelolaBarangATK from "./pages/Admin/KelolaBarangATK";
-import KelolaHargaATK from "./pages/Admin/KelolaHargaATK";
 
 import Periode from "./pages/Superadmin/Periode";
 import DashboardSuperAdmin from "./pages/Superadmin/DashboardSuperAdmin";
 import Approval from "./pages/Superadmin/Approval";
 import TambahUser from "./pages/Superadmin/TambahUser";
-import Grafik from "./pages/Superadmin/Grafik";
 import DaftarBarangATKSuperAdmin from "./pages/Superadmin/DaftarBarangATKSuperAdmin";
 import GrafikBelanjaSuperAdmin from "./pages/Superadmin/GrafikBelanjaSuperAdmin";
 
@@ -298,34 +296,12 @@ function App() {
          }
         />
 
-
-        {/* =========================
-            FITUR BARU
-        ========================= */}
-        <Route
-          path="/kelola-harga"
-          element={
-            <RequireAuth allowRoles={["admin"]}>
-              <KelolaHargaATK />
-            </RequireAuth>
-          }
-        />
-
         {/* ✅ ROUTE BARU: Kelola Barang ATK */}
         <Route
           path="/kelola-barang"
           element={
             <RequireAuth allowRoles={["admin"]}>
               <KelolaBarangATK />
-            </RequireAuth>
-          }
-        />
-
-        <Route
-          path="/grafik"
-          element={
-            <RequireAuth allowRoles={["superadmin"]}>
-              <Grafik />
             </RequireAuth>
           }
         />

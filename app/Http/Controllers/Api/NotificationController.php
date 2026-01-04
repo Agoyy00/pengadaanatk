@@ -8,10 +8,6 @@ use Illuminate\Http\Request;
 
 class NotificationController extends Controller
 {
-    /**
-     * GET /api/notifications?user_id=1
-     * Ambil notif milik user (superadmin)
-     */
     public function index(Request $request)
     {
         $request->validate([
@@ -29,11 +25,6 @@ class NotificationController extends Controller
             'notifications' => $data,
         ]);
     }
-
-    /**
-     * PATCH /api/notifications/{notification}/read
-     * Tandai 1 notif sudah dibaca
-     */
     public function markAsRead(Notification $notification)
     {
         $notification->is_read = true;
@@ -45,10 +36,6 @@ class NotificationController extends Controller
         ]);
     }
 
-    /**
-     * PATCH /api/notifications/read-all?user_id=1
-     * Tandai semua notif milik user menjadi read
-     */
     public function markAllAsRead(Request $request)
     {
         $request->validate([

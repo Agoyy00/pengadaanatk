@@ -30,14 +30,23 @@ export default function GrafikBelanjaSuperAdmin() {
 
   const sidebarMenus = useMemo(() => {
     return [
-      { label: "Dashboard SuperAdmin", to: "/dashboardsuperadmin" },
-      { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang" },
-      { label: "Grafik Belanja Unit", to: "/superadmin/grafik-belanja", active: true },
-      { label: "Kelola User", to: "/tambah-user" }, // sesuaikan kalau route kamu beda
-      { label: "Periode", to: "/periode" },
+      { label: "Dashboard Super Admin", to: "/dashboardsuperadmin"},
       { label: "Approval", to: "/approval" },
+      { label: "Tambah User", to: "/tambahuser" },
+      { label: "Atur Periode", to: "/periode" },
+      { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang" },
+      { label: "Grafik Belanja Unit", to: "/superadmin/grafik-belanja", active: true  },
     ];
   }, []);
+
+  const formatRole = (role) => {
+    if (!role) return "-";
+
+    return role
+      .toLowerCase()
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+  };
 
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
@@ -123,9 +132,9 @@ export default function GrafikBelanjaSuperAdmin() {
             </div>
           </div>
           <div className="topbar-right">
-            <span>Role: {currentUser?.role || "-"}</span>
-            <span className="role-pill">{String(currentUser?.role || "-").toUpperCase()}</span>
-          </div>
+          <span>Role: </span>
+          <span className="role-pill">{formatRole(currentUser?.role)}</span>
+        </div>
         </header>
 
         <section className="main-content">

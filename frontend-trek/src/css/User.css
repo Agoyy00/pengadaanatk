@@ -1,11 +1,56 @@
-/* Ini punya tambah user*/
-.input-text{
-  color: #000000;
+.input-text {
+  color: #111827;
+  font-size: 14px;
+  width: 100%;
+  padding: 12px 44px 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(0,0,0,0.08);
+  background: linear-gradient(180deg, #ffffff 0%, #f9fafb 100%);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,0.6);
+  transition: all 0.3s ease;
+}
+
+.input-text:hover {
+  border-color: rgba(124, 58, 237, 0.4);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.input-text:focus {
+  outline: none;
+  border-color: #7c3aed;
+  box-shadow: 0 0 0 3px rgba(124,58,237,0.15);
 }
 
 /* ===== PASSWORD FIELD WITH EYE ICON ===== */
 .form-group {
   position: relative;
+}
+
+/* ===== CARD ===== */
+.card {
+  background: #fff;
+  padding: 24px;
+  border-radius: 16px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+  margin-bottom: 24px;
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+}
+
+.card-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 4px;
+}
+
+.card-subtitle {
+  font-size: 13px;
+  color: #6b7280;
+  margin-bottom: 16px;
 }
 
 /* tombol eye */
@@ -119,5 +164,99 @@
 .form-group3 .show-password-btn-small1 svg {
   width: 18px;
   height: 18px;
+}.role-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 999px;
+  text-transform: capitalize;
+  letter-spacing: 0.3px;
 }
-/* Akhir punya tambah user */
+
+/* Super Admin – Ungu elegan */
+.role-superadmin {
+  background: linear-gradient(135deg, #6a11cb, #4b0082);
+  color: #fff;
+}
+
+/* Admin – Biru profesional */
+.role-admin {
+  background: linear-gradient(135deg, #1e3c72, #2a5298);
+  color: #fff;
+}
+
+/* User – Abu netral */
+.role-user {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+/* ===== TABLE ===== */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  color: #111827;
+}
+
+.table th, .table td {
+  padding: 12px 16px;
+  text-align: left;
+}
+
+.table th {
+  background: #f3f4f6;
+  color: #374151;
+  font-weight: 600;
+}
+
+.table tr {
+  background: #fff;
+  transition: all 0.2s ease;
+  border-radius: 12px;
+  margin-bottom: 8px;
+}
+
+.table tr:hover {
+  background: #f9f5ff;
+}
+
+.select-input {
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,0.08);
+  background: #f9fafb;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  color: #111827;
+}
+
+.select-input:hover {
+  border-color: rgba(124,58,237,0.4);
+}
+
+.select-input:focus {
+  outline: none;
+  border-color: #7c3aed;
+  box-shadow: 0 0 0 3px rgba(124,58,237,0.15);
+}
+
+/* ===== BUTTON ===== */
+.btn {
+  padding: 10px 18px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 14px;
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.btn-danger {
+  background: #ef4444;
+  color: #fff;
+}
+
+.btn-danger:hover {
+  background: #b91c1c;
+}

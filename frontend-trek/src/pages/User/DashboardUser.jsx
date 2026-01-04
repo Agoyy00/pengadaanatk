@@ -11,6 +11,14 @@ export default function DashboardUser() {
   const currentUser = storedUser ? JSON.parse(storedUser) : null;
   const user = currentUser;
   const userId = user?.id;
+  const formatRole = (role) => {
+    if (!role) return "-";
+
+    return role
+      .toLowerCase()
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+  };
 
 
   const [loading, setLoading] = useState(true);
@@ -144,9 +152,9 @@ export default function DashboardUser() {
             </div>
           </div>
           <div className="topbar-right">
-            <span>Role:</span>
-          <span className="role-pill"> {user?.role ? user.role.toUpperCase() : "UNKNOWN"} </span>
-          </div>
+          <span>Role: </span>
+          <span className="role-pill">{formatRole(currentUser?.role)}</span>
+        </div>
         </header>
 
         {/* CONTENT */}

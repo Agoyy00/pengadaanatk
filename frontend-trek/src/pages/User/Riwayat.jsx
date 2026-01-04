@@ -13,6 +13,14 @@ export default function Riwayat() {
   const storedUser = localStorage.getItem("user");
   const currentUser = storedUser ? JSON.parse(storedUser) : null;
   const userId = currentUser?.id;
+  const formatRole = (role) => {
+    if (!role) return "-";
+
+    return role
+      .toLowerCase()
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+  };
 
   useEffect(() => {
     async function loadRiwayat() {
@@ -90,9 +98,9 @@ export default function Riwayat() {
             </div>
           </div>
           <div className="topbar-right">
-            <span>Role: User</span>
-            <span className="role-pill">User</span>
-          </div>
+          <span>Role: </span>
+          <span className="role-pill">{formatRole(currentUser?.role)}</span>
+        </div>
         </header>
 
         {/* MAIN CONTENT */}

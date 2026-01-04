@@ -14,13 +14,16 @@ export default function Approval() {
   const storedUser = localStorage.getItem("user");
   const currentUser = storedUser ? JSON.parse(storedUser) : null;
 
-  const sidebarMenus = useMemo(() => [
-    { label: "Dashboard Super Admin", to: "/dashboardsuperadmin" },
-    { label: "Approval", to: "/approval", active: true },
-    { label: "Tambah User", to: "/tambahuser" },
-    { label: "Atur Periode", to: "/periode" },
-    { label: "Grafik & Analisis Data", to: "/grafik" },
-  ], []);
+  const sidebarMenus = useMemo(() => {
+      return [
+        { label: "Dashboard Super Admin", to: "/dashboardsuperadmin"},
+        { label: "Approval", to: "/approval", active: true },
+        { label: "Tambah User", to: "/tambahuser" },
+        { label: "Atur Periode", to: "/periode" },
+        { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang"},
+        { label: "Grafik Belanja Unit", to: "/superadmin/grafik-belanja" },
+      ];
+    }, []);
 
   useEffect(() => {
     fetchPengajuan();
@@ -38,6 +41,15 @@ export default function Approval() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const formatRole = (role) => {
+    if (!role) return "-";
+
+    return role
+      .toLowerCase()
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase());
   };
 
   const handleStatusUpdate = async (id, newStatus) => {
@@ -110,9 +122,9 @@ export default function Approval() {
             </div>
           </div>
           <div className="topbar-right">
-            <span>Role: Super Admin</span>
-            <span className="role-pill">Super Admin</span>
-          </div>
+          <span>Role: </span>
+          <span className="role-pill">{formatRole(currentUser?.role)}</span>
+        </div>
         </header>
 
         <section className="main-content">

@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
 
 class UserManagementController extends Controller
 {
@@ -16,12 +17,33 @@ class UserManagementController extends Controller
      */
     public function index()
     {
-        // Sementara: ambil semua user
-        // (kalau mau diurutkan: orderBy('name'))
-        $users = User::orderBy('name')->get();
+        $users = User::with('role')
+        ->orderBy('role_id')
+        ->orderBy('name')
+        ->get();
 
-        return response()->json($users);
+
+    return response()->json($users);
     }
+
+    public function destroy(User $user)
+{
+    // Optional: cegah hapus diri sendiri
+    if (Auth::id() === $user->id) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Tidak bisa menghapus akun sendiri'
+        ], 403);
+    }
+
+    $user->delete();
+
+    return response()->json([
+        'success' => true,
+        'message' => 'User berhasil dihapus'
+    ]);
+}
+
 
     /**
      * POST /api/users

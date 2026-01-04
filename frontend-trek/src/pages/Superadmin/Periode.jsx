@@ -14,6 +14,18 @@ export default function Periode() {
   const [errorMsg, setErrorMsg] = useState("");
   const [activePeriodeId, setActivePeriodeId] = useState(null);
 
+  const storedUser = localStorage.getItem("user");
+  const currentUser = storedUser ? JSON.parse(storedUser) : null;
+
+  const formatRole = (role) => {
+    if (!role) return "-";
+
+    return role
+      .toLowerCase()
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+  };
+
   // Load periode aktif/akan-datang saat halaman dibuka
   useEffect(() => {
     async function loadPeriode() {
@@ -111,15 +123,16 @@ export default function Periode() {
     }
   }
 
-  const sidebarMenus = useMemo(() => {
+ const sidebarMenus = useMemo(() => {
     return [
-    { label: "Dashboard Super Admin", to: "/dashboardsuperadmin"},
-    { label: "Approval", to: "/approval" },
-    { label: "Tambah User", to: "/tambahuser" },
-    { label: "Atur Periode", to: "/periode", active: true },
-    { label: "Grafik & Analisis Data", to: "/grafik" },
+      { label: "Dashboard Super Admin", to: "/dashboardsuperadmin"},
+      { label: "Approval", to: "/approval" },
+      { label: "Tambah User", to: "/tambahuser" },
+      { label: "Atur Periode", to: "/periode", active: true },
+      { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang" },
+      { label: "Grafik Belanja Unit", to: "/superadmin/grafik-belanja" },
     ];
-    }, []);
+  }, []);
 
   return (
     <div className="layout">
@@ -162,9 +175,9 @@ export default function Periode() {
             </div>
           </div>
           <div className="topbar-right">
-            <span>Role: Admin</span>
-            <span className="role-pill">Admin</span>
-          </div>
+          <span>Role: </span>
+          <span className="role-pill">{formatRole(currentUser?.role)}</span>
+        </div>
         </header>
 
         <section className="main-content">

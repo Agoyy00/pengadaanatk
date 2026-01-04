@@ -38,6 +38,15 @@ export default function KelolaBarangATK() {
     harga_satuan: "",
   });
 
+  const formatRole = (role) => {
+    if (!role) return "-";
+
+    return role
+      .toLowerCase()
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+  };
+
   const generateKodeATK = () => {
   const atkItems = barangs.filter(
     (b) => typeof b.kode === "string" && b.kode.startsWith("ATK-")
@@ -61,7 +70,6 @@ const [errors, setErrors] = useState({});
     { label: "Dashboard Admin", to: "/dashboardadmin" },
     { label: "Verifikasi", to: "/verifikasi" },
     { label: "Kelola Barang ATK", to: "/kelola-barang", active: true },
-    { label: "Kelola Harga ATK", to: "/kelola-harga" },
   ];
 }, []);
 
@@ -290,10 +298,10 @@ const [errors, setErrors] = useState({});
             <div className="topbar-title">Kelola Barang ATK</div>
             <div className="topbar-sub">Daftar barang agar konsisten & rapi</div>
           </div>
-          <div className="topbar-right">
-            <span>Role: {currentUser?.role || "-"}</span>
-            <span className="role-pill">{currentUser?.role || "-"}</span>
-          </div>
+         <div className="topbar-right">
+          <span>Role: </span>
+          <span className="role-pill">{formatRole(currentUser?.role)}</span>
+        </div>
         </header>
 
         <section className="main-content">

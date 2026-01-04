@@ -14,6 +14,17 @@ export default function DashboardSuperAdmin() {
   const [loadingNotif, setLoadingNotif] = useState(false);
   const [errorNotif, setErrorNotif] = useState("");
 
+  const storedUser = localStorage.getItem("user");
+  const currentUser = storedUser ? JSON.parse(storedUser) : null;
+  const formatRole = (role) => {
+    if (!role) return "-";
+
+    return role
+      .toLowerCase()
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+  };
+
   // Ambil user dari localStorage (sesuaikan kalau formatmu beda)
   // Biasanya Login.jsx menyimpan: localStorage.setItem("user", JSON.stringify(user))
   const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -90,7 +101,6 @@ export default function DashboardSuperAdmin() {
   { label: "Dashboard Admin", to: "/dashboardadmin", active: true },
   { label: "Verifikasi", to: "/verifikasi" },
   { label: "Kelola Barang ATK", to: "/kelola-barang" },
-  { label: "Kelola Harga ATK", to: "/kelola-harga" },
 ];
 
   return (
@@ -136,12 +146,11 @@ export default function DashboardSuperAdmin() {
               Selamat datang: {user?.name || "Super Admin"}
             </div>
           </div>
-
-          <div className="topbar-right">
-            <span>Role: Admin</span>
-            <span className="role-pill"> {user?.role ? user.role.toUpperCase() : "UNKNOWN"} </span>
-          </div>
           
+        <div className="topbar-right">
+          <span>Role: </span>
+          <span className="role-pill">{formatRole(currentUser?.role)}</span>
+        </div>
         </header>
 
         <section className="main-content">
