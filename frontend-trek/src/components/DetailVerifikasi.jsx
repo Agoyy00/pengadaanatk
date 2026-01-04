@@ -18,6 +18,7 @@ export default function DetailVerifikasi({ pengajuan, onClose, onSuccess }) {
   return initial;
 });
 
+  const user = JSON.parse(localStorage.getItem("user"));
 
   const handleSubmit = async () => {
   if (!window.confirm("Submit verifikasi pengajuan ini?")) return;
@@ -84,10 +85,12 @@ export default function DetailVerifikasi({ pengajuan, onClose, onSuccess }) {
       "Content-Type": "application/json",
       "Accept": "application/json",
     },
-    body: JSON.stringify({ status: "diverifikasi_admin" }),
+    body: JSON.stringify({
+      status: "diverifikasi_admin",
+      role: user.role, // HARUS ADA
+    }),
   }
 );
-
 
     const statusJson = await resStatus.json();
     console.log("RESP STATUS:", statusJson);

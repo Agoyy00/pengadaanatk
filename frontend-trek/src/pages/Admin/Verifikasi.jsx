@@ -13,7 +13,7 @@ export default function Verifikasi() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
-  const [filterStatus, setFilterStatus] = useState("semua");
+  const [filterStatus, setFilterStatus] = useState("diajukan");
   const [processingId, setProcessingId] = useState(null);
 
   useEffect(() => {
@@ -190,11 +190,10 @@ export default function Verifikasi() {
     }
   };
 
-  const filteredData =
-    filterStatus === "semua"
-      ? data
-      : data.filter((p) => p.status === filterStatus);
-
+  const filteredData = data.filter(
+    (p) => p.status === filterStatus
+  );
+  
       const sidebarMenus = [
       { label: "Dashboard Admin", to: "/approval"},
       { label: "Verifikasi", to: "/verifikasi", active: true  },
@@ -307,11 +306,7 @@ const submitVerifikasi = async (pengajuanId) => {
   }
 };
 
-
-
 const [selectedPengajuan, setSelectedPengajuan] = useState(null);
-
-
   return (
     <div className="layout">
       {/* SIDEBAR */}
@@ -369,17 +364,16 @@ const [selectedPengajuan, setSelectedPengajuan] = useState(null);
             <div style={{ marginBottom: 12, display: "flex", gap: 8, alignItems: "center" }}>
               <span style={{ fontSize: 13 }} className="A">Filter status:</span>
               <select
-                className="select-input"
-                style={{ maxWidth: 220 }}
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-              >
-                <option value="diajukan">Diajukan</option>
-                <option value="diverifikasi_admin">Diverifikasi Admin</option>
-                <option value="ditolak_admin">Ditolak Admin</option>
-              </select>
+              className="select-input"
+              style={{ maxWidth: 220 }}
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+            >
+              <option value="diajukan">Diajukan</option>
+              <option value="diverifikasi_admin">Diverifikasi Admin</option>
+              <option value="ditolak_admin">Ditolak Admin</option>
+            </select>
             </div>
-
             {loading && <p>Sedang memuat...</p>}
             {errorMsg && <p className="error-text">{errorMsg}</p>}
 

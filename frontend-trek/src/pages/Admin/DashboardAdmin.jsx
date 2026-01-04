@@ -261,7 +261,7 @@ export default function DashboardSuperAdmin() {
                           {n.pengajuan_id && (
                             <button
                               onClick={() =>
-                                navigate(`/approval?pengajuan_id=${n.pengajuan_id}`)
+                                navigate(`/verifikasi?pengajuan_id=${n.pengajuan_id}`)
                               }
                               style={{
                                 padding: "7px 10px",

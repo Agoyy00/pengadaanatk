@@ -53,16 +53,26 @@ export default function Approval() {
   };
 
   const handleStatusUpdate = async (id, newStatus) => {
+    if (!currentUser) {
+  alert("User belum login");
+  return;
+}
     if (!window.confirm(`Ubah status pengajuan #${id} menjadi "${newStatus}"?`)) return;
     try {
       setProcessingId(id);
 
       const res = await fetch(`${API_BASE}/pengajuan/${id}/status`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus }),
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+        },
+        body: JSON.stringify({
+          status: newStatus,
+          user_id: currentUser.id,
+          role: currentUser.role, // ⬅️ INI JUGA WAJIB
+        }),
       });
-
       const json = await res.json();
 
       if (!res.ok || !json.success) {
@@ -70,7 +80,6 @@ export default function Approval() {
         return;
       }
 
-      // update status di state tanpa hapus dari list
       setPengajuan(prev => prev.map(p => p.id === id ? { ...p, status: newStatus } : p));
       alert("Status berhasil diubah");
     } catch (err) {

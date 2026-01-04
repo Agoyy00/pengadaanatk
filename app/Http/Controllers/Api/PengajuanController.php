@@ -31,7 +31,7 @@ class PengajuanController extends Controller
         if ($request->has('user_id')) {
             $query->where('user_id', $request->user_id);
         }
-
+        
         return response()->json($query->get());
     }
 
@@ -133,6 +133,17 @@ class PengajuanController extends Controller
             'total_jumlah_diajukan'  => $totalJumlahDiajukan,
             'user_id'                => $validated['user_id'],
         ]);
+       $admins = User::whereIn('role_id', [2])->get();
+        foreach ($admins as $admin) {
+            Notification::create([
+                'user_id'      => $admin->id,
+                'title'        => 'Pengajuan ATK Baru',
+                'message'      => 'Ada pengajuan ATK baru dari ' . $validated['nama_pemohon'],
+                'pengajuan_id' => $pengajuan->id,
+                'is_read'      => false,
+            ]);
+        }
+
 
         // 5. SIMPAN DETAIL ITEM
         foreach ($validated['items'] as $item) {
@@ -163,42 +174,69 @@ class PengajuanController extends Controller
      */
 
     public function updateStatus(Request $request, Pengajuan $pengajuan)
-        {
-        $request->validate([
-            'status' => 'required|in:diajukan,diverifikasi_admin,disetujui,ditolak_admin',
-        ]);
+{
+    $validated = $request->validate([
+        'status' => 'required|in:diverifikasi_admin,disetujui,ditolak_admin',
+    ]);
 
-        // RULE ADMIN
-        if (
-            $pengajuan->status === 'diajukan' &&
-            $request->status !== 'diverifikasi_admin'
-        ) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Admin hanya boleh verifikasi',
-            ], 422);
-        }
+    $nextStatus = $validated['status'];
 
-        // RULE SUPER ADMIN
-        if (
-            $pengajuan->status === 'diverifikasi_admin' &&
-            !in_array($request->status, ['disetujui', 'ditolak_admin'])
-        ) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Super admin hanya boleh approve / tolak',
-            ], 422);
-        }
+    // ambil user login (sementara dari request, nanti auth)
+    $userId = $request->user_id;
+    $user   = User::find($userId);
 
-        $pengajuan->status = $request->status;
-        $pengajuan->save();
-
+    if (!$user) {
         return response()->json([
-            'success' => true,
-            'message' => 'Status berhasil diperbarui',
-            'pengajuan' => $pengajuan,
-        ]);
+            'success' => false,
+            'message' => 'User tidak valid',
+        ], 401);
     }
+
+    // ================= ADMIN =================
+    if ($user->role_id === 2) {
+        if ($pengajuan->status !== 'diajukan' || $nextStatus !== 'diverifikasi_admin') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Admin hanya boleh memverifikasi pengajuan',
+            ], 422);
+        }
+
+        // notif ke superadmin
+        $supers = User::where('role_id', 1)->get();
+        foreach ($supers as $sa) {
+            Notification::create([
+                'user_id'      => $sa->id,
+                'title'        => 'Pengajuan Menunggu Persetujuan',
+                'message'      => 'Ada pengajuan ATK yang sudah diverifikasi admin.',
+                'pengajuan_id' => $pengajuan->id,
+                'is_read'      => false,
+            ]);
+        }
+    }
+
+    // ================= SUPER ADMIN =================
+    if ($user->role_id === 1) {
+        if (
+            $pengajuan->status !== 'diverifikasi_admin' ||
+            !in_array($nextStatus, ['disetujui', 'ditolak_admin'])
+        ) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Superadmin hanya boleh approve / tolak',
+            ], 422);
+        }
+    }
+
+    $pengajuan->update(['status' => $nextStatus]);
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Status berhasil diperbarui',
+        'pengajuan' => $pengajuan,
+    ]);
+}
+
+
 
 
     /**
