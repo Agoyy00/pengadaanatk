@@ -198,6 +198,7 @@ export default function Verifikasi() {
       { label: "Dashboard Admin", to: "/approval"},
       { label: "Verifikasi", to: "/verifikasi", active: true  },
       { label: "Kelola Barang ATK", to: "/kelola-barang" },
+      { label: "Grafik Usulan Barang", to: "/grafik-usulan-barang" },
       ];
 
       const [editingId, setEditingId] = useState(null);

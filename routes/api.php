@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\UserManagementController;
 use App\Http\Controllers\Api\LaporanController;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\BarangUsulanController;
 
 /*
 |--------------------------------------------------------------------------
@@ -99,3 +100,7 @@ Route::get('/test-qr', function () {return QrCode::size(200)->generate('VERIFIKA
 Route::get('/notifications', [NotificationController::class, 'index']);
 Route::patch('/notifications/{notification}/read', [NotificationController::class, 'markAsRead']);
 Route::delete('/users/{user}', [UserManagementController::class, 'destroy']);
+Route::post('/barang-usulan', [BarangUsulanController::class, 'store']);
+Route::get('/barang-usulan', [BarangUsulanController::class, 'index']);
+Route::get('/barang-usulan/statistik', [BarangUsulanController::class, 'statistik']);
+    

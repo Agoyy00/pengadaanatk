@@ -176,24 +176,16 @@ class PengajuanController extends Controller
     public function updateStatus(Request $request, Pengajuan $pengajuan)
 {
     $validated = $request->validate([
-        'status' => 'required|in:diverifikasi_admin,disetujui,ditolak_admin',
+        'status'  => 'required|in:diverifikasi_admin,disetujui,ditolak_admin',
+        'user_id' => 'required|exists:users,id',
     ]);
 
+    $user = User::find($validated['user_id']);
     $nextStatus = $validated['status'];
-
-    // ambil user login (sementara dari request, nanti auth)
-    $userId = $request->user_id;
-    $user   = User::find($userId);
-
-    if (!$user) {
-        return response()->json([
-            'success' => false,
-            'message' => 'User tidak valid',
-        ], 401);
-    }
 
     // ================= ADMIN =================
     if ($user->role_id === 2) {
+
         if ($pengajuan->status !== 'diajukan' || $nextStatus !== 'diverifikasi_admin') {
             return response()->json([
                 'success' => false,
@@ -201,13 +193,18 @@ class PengajuanController extends Controller
             ], 422);
         }
 
-        // notif ke superadmin
-        $supers = User::where('role_id', 1)->get();
-        foreach ($supers as $sa) {
+        // ❌ hapus notif admin
+        Notification::where('pengajuan_id', $pengajuan->id)
+            ->where('user_id', $user->id)
+            ->delete();
+
+        // ✅ kirim notif ke superadmin
+        $superAdmins = User::where('role_id', 1)->get();
+        foreach ($superAdmins as $sa) {
             Notification::create([
                 'user_id'      => $sa->id,
                 'title'        => 'Pengajuan Menunggu Persetujuan',
-                'message'      => 'Ada pengajuan ATK yang sudah diverifikasi admin.',
+                'message'      => 'Pengajuan ATK telah diverifikasi admin.',
                 'pengajuan_id' => $pengajuan->id,
                 'is_read'      => false,
             ]);
@@ -216,6 +213,7 @@ class PengajuanController extends Controller
 
     // ================= SUPER ADMIN =================
     if ($user->role_id === 1) {
+
         if (
             $pengajuan->status !== 'diverifikasi_admin' ||
             !in_array($nextStatus, ['disetujui', 'ditolak_admin'])
@@ -225,19 +223,20 @@ class PengajuanController extends Controller
                 'message' => 'Superadmin hanya boleh approve / tolak',
             ], 422);
         }
+
+        // ❌ hapus semua notif terkait pengajuan ini (admin + superadmin)
+        Notification::where('pengajuan_id', $pengajuan->id)->delete();
     }
 
+    // ✅ update status TERAKHIR
     $pengajuan->update(['status' => $nextStatus]);
 
     return response()->json([
-        'success' => true,
-        'message' => 'Status berhasil diperbarui',
+        'success'   => true,
+        'message'   => 'Status berhasil diperbarui',
         'pengajuan' => $pengajuan,
     ]);
 }
-
-
-
 
     /**
      * GET /api/analisis-barang
@@ -253,7 +252,7 @@ class PengajuanController extends Controller
         $barangId      = $request->query('barang_id');
         $tahunAkademik = $request->query('tahun_akademik');
         $unit          = $request->query('unit');
-
+        
         // Info barang
         $barang = DB::table('barangs')->where('id', $barangId)->first();
 

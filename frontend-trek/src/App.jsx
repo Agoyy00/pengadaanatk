@@ -17,6 +17,7 @@ import Riwayat from "./pages/User/Riwayat";
 import DashboardAdmin from "./pages/Admin/DashboardAdmin";
 import Verifikasi from "./pages/Admin/Verifikasi";
 import KelolaBarangATK from "./pages/Admin/KelolaBarangATK";
+import GrafikUsulanBarang from "./pages/Admin/GrafikUsulanBarang";
 
 import Periode from "./pages/Superadmin/Periode";
 import DashboardSuperAdmin from "./pages/Superadmin/DashboardSuperAdmin";
@@ -252,10 +253,10 @@ function App() {
           }
         />
         <Route
-          path="/periode"
+          path="/grafik-usulan-barang"
           element={
-            <RequireAuth allowRoles={["superadmin"]}>
-              <Periode />
+            <RequireAuth allowRoles={["admin"]}>
+              <GrafikUsulanBarang />
             </RequireAuth>
           }
         />
@@ -268,6 +269,14 @@ function App() {
           element={
             <RequireAuth allowRoles={["superadmin"]}>
               <Approval />
+            </RequireAuth>
+          }
+        />
+          <Route
+          path="/periode"
+          element={
+            <RequireAuth allowRoles={["superadmin"]}>
+              <Periode />
             </RequireAuth>
           }
         />

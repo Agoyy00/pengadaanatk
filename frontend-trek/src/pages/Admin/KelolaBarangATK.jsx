@@ -70,6 +70,7 @@ const [errors, setErrors] = useState({});
     { label: "Dashboard Admin", to: "/dashboardadmin" },
     { label: "Verifikasi", to: "/verifikasi" },
     { label: "Kelola Barang ATK", to: "/kelola-barang", active: true },
+    { label: "Grafik Usulan Barang", to: "/grafik-usulan-barang" },
   ];
 }, []);
 

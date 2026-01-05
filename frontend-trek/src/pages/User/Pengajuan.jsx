@@ -24,6 +24,14 @@ function Pengajuan() {
   const [loadingSearch, setLoadingSearch] = useState(false);
   const [items, setItems] = useState([]);
   const [step2Error, setStep2Error] = useState("");
+  const [openUsulan, setOpenUsulan] = useState(false);
+  const [usulan, setUsulan] = useState({
+  nama: "",
+});
+const [loadingSubmit, setLoadingSubmit] = useState(false); // opsional spinner
+
+
+  
 
   // preview foto besar
   const [previewImage, setPreviewImage] = useState(null);
@@ -152,6 +160,11 @@ function Pengajuan() {
       );
 
       setSearchResults(filtered);
+
+// 🔥 TRIGGER FITUR USULAN
+    if (filtered.length === 0 && query.trim().length >= 3) {
+      setUsulan((prev) => ({ ...prev, nama: query }));
+    }
     } catch (err) {
       console.error("Gagal mencari barang", err);
     } finally {
@@ -212,6 +225,44 @@ function Pengajuan() {
       })
     );
   };
+
+  const [usulanStatus, setUsulanStatus] = useState(null); // { type: "success"|"error", message: "" }
+  const submitUsulan = async () => {
+  if (!usulan.nama.trim()) {
+    setUsulanStatus({ type: "error", message: "Nama barang tidak boleh kosong" });
+    return;
+  }
+
+  if (usulan.nama.trim().length < 3) {
+    setUsulanStatus({ type: "error", message: "Nama barang minimal 3 karakter" });
+    return;
+  }
+
+  try {
+    setLoadingSubmit(true);
+    setUsulanStatus(null);
+
+    const res = await fetch(`${API_BASE}/barang-usulan`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nama_barang: usulan.nama, user_id: userId }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || !data.success) throw new Error(data.message || "Gagal mengirim usulan");
+
+    setOpenUsulan(false);          // tutup modal
+    setUsulan({ nama: "" });       // reset input
+    setUsulanStatus({ type: "success", message: "Usulan barang berhasil dikirim!" });
+
+  } catch (err) {
+    setUsulanStatus({ type: "error", message: err.message || "Gagal mengirim usulan" });
+  } finally {
+    setLoadingSubmit(false);
+  }
+};
+
 
   // sisa stok berubah → jumlah diajukan = kebutuhan - sisa
   const handleChangeSisaStok = (id, value) => {
@@ -583,10 +634,22 @@ function Pengajuan() {
                           value={query}
                           onChange={(e) => setQuery(e.target.value)}
                         />
-                        {loadingSearch && (
-                          <div className="search-loading">mencari...</div>
+                        {!loadingSearch &&
+                        query.trim().length >= 3 &&
+                        searchResults.length === 0 && (
+                          <div className="usulan-box">
+                            <p>
+                              Barang <strong>"{query}"</strong> tidak ditemukan
+                            </p>
+                            <button
+                              type="button"
+                              className="btn-usulan"
+                              onClick={() => setOpenUsulan(true)}
+                            >
+                              + Ajukan Barang Baru
+                            </button>
+                          </div>
                         )}
-
                         {searchResults.length > 0 && (
                           <ul className="search-dropdown">
                             {searchResults.map((b) => (
@@ -616,8 +679,34 @@ function Pengajuan() {
                           </ul>
                         )}
                       </div>
+                      {usulanStatus && (<div className={`toast ${usulanStatus.type}`}>{usulanStatus.message}</div>)}
+                      {openUsulan && (
+                        <div className="modal-overlay">
+                          <div className="modal-card">
+                            <h3>Ajukan Barang Baru</h3>
+                            <input
+                              type="text"
+                              className="input-pro"
+                              value={usulan.nama}
+                              onChange={(e) => setUsulan({ nama: e.target.value })}
+                              placeholder="Contoh: Tinta Printer Epson 003"
+                              autoFocus
+                            />
+                            <div className="modal-actions">
+                              <button type="button" onClick={() => setOpenUsulan(false)}>Batal</button>
+                              <button
+                                type="button"
+                                className="btn btn-primary"
+                                disabled={!usulan.nama.trim() || loadingSubmit}
+                                onClick={submitUsulan}
+                              >
+                                {loadingSubmit ? "Mengirim..." : "Kirim Usulan"}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
-
                     <div className="table-title">Item yang diajukan</div>
 
                     <div className="table-wrapper">
@@ -643,122 +732,114 @@ function Pengajuan() {
                           )}
 
                           {items.map((item) => (
-  <tr key={item.id}>
-    {/* BARANG + FOTO */}
-    <td>
-      <div className="barang-cell">
+                          <tr key={item.id}>
+                            {/* BARANG + FOTO */}
+                            <td>
+                              <div className="barang-cell">
+                              {console.log("FOTO:", item.foto)}
+                        {item.foto ? (
+                          <img
+                            src={`${BACKEND_BASE}${item.foto}`}
+                            alt={item.nama}
+                            className="barang-thumb barang-thumb-clickable"
+                            onClick={() => setPreviewImage(`${BACKEND_BASE}${item.foto}`)}
+                          />
+                        ) : (
+                          <div className="barang-thumb placeholder" />)}
+                            <span>{item.nama}</span>
+                            </div>
+                            </td>
+                            <td>{item.satuan}</td>
+                            <td>
+                              Rp {item.estimasiNilai.toLocaleString("id-ID")}
+                            </td>
 
-      {console.log("FOTO:", item.foto)}
+                            <td>
+                              <input
+                                type="number"
+                                min="0"
+                                inputMode="numeric"
+                                onKeyDown={handleNumericKeyDown}
+                                className="input-number"
+                                value={item.kebutuhanTotal}
+                                onChange={(e) =>
+                                  handleChangeKebutuhan(item.id, e.target.value)
+                                }
+                              />
+                            </td>
 
-{item.foto ? (
-  <img
-    src={`${BACKEND_BASE}${item.foto}`}
-    alt={item.nama}
-    className="barang-thumb barang-thumb-clickable"
-    onClick={() => setPreviewImage(`${BACKEND_BASE}${item.foto}`)}
-  />
-) : (
-  <div className="barang-thumb placeholder" />
-)}
+                            <td>
+                              <input
+                                type="number"
+                                min="0"
+                                inputMode="numeric"
+                                onKeyDown={handleNumericKeyDown}
+                                className="input-number"
+                                value={item.sisaStok}
+                                onChange={(e) =>
+                                  handleChangeSisaStok(item.id, e.target.value)
+                                }
+                              />
+                            </td>
 
+                            <td>{item.jumlahDiajukan}</td>
 
+                            <td>
+                              Rp{" "}
+                              {(item.jumlahDiajukan * item.estimasiNilai).toLocaleString("id-ID")}
+                            </td>
 
-        <span>{item.nama}</span>
-      </div>
-    </td>
+                            <td>
+                          {confirmId === item.id ? (
+                            <div style={{ display: "flex", gap: 8 }}>
+                              <button
+                                className="aksi-hapus"
+                                onClick={() => handleRemoveItem(item.id)}
+                              >
+                                Ya, hapus
+                              </button>
 
-    <td>{item.satuan}</td>
+                              <button
+                                onClick={() => setConfirmId(null)}
+                                style={{
+                                  padding: "6px 12px",
+                                  borderRadius: 999,
+                                  border: "1px solid #ddd",
+                                  cursor: "pointer",
+                                  fontWeight: 600,
+                                }}
+                              >
+                                Batal
+                              </button>
+                            </div>
+                          ) : (
+                            <span
+                              className="aksi-hapus"
+                              onClick={() => setConfirmId(item.id)}
+                            >
+                              <svg
+                                width="14"
+                                height="14"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <polyline points="3 6 5 6 21 6" />
+                                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                                <path d="M10 11v6" />
+                                <path d="M14 11v6" />
+                                <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                              </svg>
+                              Hapus
+                            </span>
+                          )}
+                        </td>
 
-    <td>
-      Rp {item.estimasiNilai.toLocaleString("id-ID")}
-    </td>
-
-    <td>
-      <input
-        type="number"
-        min="0"
-        inputMode="numeric"
-        onKeyDown={handleNumericKeyDown}
-        className="input-number"
-        value={item.kebutuhanTotal}
-        onChange={(e) =>
-          handleChangeKebutuhan(item.id, e.target.value)
-        }
-      />
-    </td>
-
-    <td>
-      <input
-        type="number"
-        min="0"
-        inputMode="numeric"
-        onKeyDown={handleNumericKeyDown}
-        className="input-number"
-        value={item.sisaStok}
-        onChange={(e) =>
-          handleChangeSisaStok(item.id, e.target.value)
-        }
-      />
-    </td>
-
-    <td>{item.jumlahDiajukan}</td>
-
-    <td>
-      Rp{" "}
-      {(item.jumlahDiajukan * item.estimasiNilai).toLocaleString("id-ID")}
-    </td>
-
-    <td>
-  {confirmId === item.id ? (
-    <div style={{ display: "flex", gap: 8 }}>
-      <button
-        className="aksi-hapus"
-        onClick={() => handleRemoveItem(item.id)}
-      >
-        Ya, hapus
-      </button>
-
-      <button
-        onClick={() => setConfirmId(null)}
-        style={{
-          padding: "6px 12px",
-          borderRadius: 999,
-          border: "1px solid #ddd",
-          cursor: "pointer",
-          fontWeight: 600,
-        }}
-      >
-        Batal
-      </button>
-    </div>
-  ) : (
-    <span
-      className="aksi-hapus"
-      onClick={() => setConfirmId(item.id)}
-    >
-      <svg
-        width="14"
-        height="14"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <polyline points="3 6 5 6 21 6" />
-        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-        <path d="M10 11v6" />
-        <path d="M14 11v6" />
-        <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-      </svg>
-      Hapus
-    </span>
-  )}
-</td>
-
-  </tr>
-))}
+                          </tr>
+                        ))}
 
                         </tbody>
                       </table>

@@ -101,6 +101,7 @@ export default function DashboardSuperAdmin() {
   { label: "Dashboard Admin", to: "/dashboardadmin", active: true },
   { label: "Verifikasi", to: "/verifikasi" },
   { label: "Kelola Barang ATK", to: "/kelola-barang" },
+  { label: "Grafik Usulan Barang", to: "/grafik-usulan-barang" },
 ];
 
   return (

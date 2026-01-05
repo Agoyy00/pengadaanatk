@@ -55,7 +55,6 @@ export default function DetailVerifikasi({ pengajuan, onClose, onSuccess }) {
   `${API_BASE}/pengajuan/${pengajuan.id}/revisi`
 );
 
-
     const resRevisi = await fetch(
   `${API_BASE}/pengajuan/${pengajuan.id}/revisi`,
   {
@@ -88,6 +87,7 @@ export default function DetailVerifikasi({ pengajuan, onClose, onSuccess }) {
     body: JSON.stringify({
       status: "diverifikasi_admin",
       role: user.role, // HARUS ADA
+      user_id: user.id,
     }),
   }
 );

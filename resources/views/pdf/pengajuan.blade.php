@@ -132,29 +132,41 @@ verifikasi dan persetujuan sesuai ketentuan yang berlaku.
 <thead>
 <tr>
     <th width="5%">No</th>
-    <th width="45%">Nama Barang</th>
-    <th width="15%">Diajukan</th>
-    <th width="15%">Disetujui</th>
-    <th width="20%">Satuan</th>
+    <th width="35%">Nama Barang</th>
+    <th width="10%">Diajukan</th>
+    <th width="10%">Disetujui</th>
+    <th width="15%">Harga Satuan</th>
+    <th width="15%">Subtotal</th>
+    <th width="10%">Satuan</th>
 </tr>
 </thead>
 <tbody>
+@php $totalNilai = 0; @endphp
 @foreach($pengajuan->items as $i => $item)
+    @php
+        $jumlahDisetujui = $item->jumlah_disetujui ?? 0;
+        $hargaSatuan    = $item->harga_satuan ?? 0;
+        $subtotal       = $jumlahDisetujui * $hargaSatuan;
+        $totalNilai    += $subtotal;
+    @endphp
 <tr class="text-center">
     <td>{{ $i + 1 }}</td>
-    <td class="text-left">{{ $item->barang->nama }}</td>
-    <td>{{ $item->jumlah_diajukan }}</td>
-    <td>{{ $item->jumlah_disetujui }}</td>
-    <td>{{ $item->barang->satuan }}</td>
+    <td class="text-left">{{ $item->barang->nama ?? '-' }}</td>
+    <td>{{ $item->jumlah_diajukan ?? 0 }}</td>
+    <td>{{ $jumlahDisetujui }}</td>
+    <td>Rp {{ number_format($hargaSatuan, 0, ',', '.') }}</td>
+    <td>Rp {{ number_format($subtotal, 0, ',', '.') }}</td>
+    <td>{{ $item->barang->satuan ?? '-' }}</td>
 </tr>
 @endforeach
 </tbody>
+<tfoot>
+<tr>
+    <th colspan="5" class="text-right">Total Nilai Pengadaan:</th>
+    <th colspan="2">Rp {{ number_format($totalNilai, 0, ',', '.') }}</th>
+</tr>
+</tfoot>
 </table>
-
-<p style="margin-top:12px; text-align:right;">
-<strong>Total Nilai Pengadaan:</strong>
-Rp {{ number_format($pengajuan->total_nilai, 0, ',', '.') }}
-</p>
 
 <div class="section-title">Pengesahan</div>
 
