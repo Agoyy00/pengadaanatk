@@ -1,97 +1,157 @@
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-    Bar,
-    BarChart,
-    Legend,
-    ResponsiveContainer,
-    Tooltip,
-    XAxis,
-    YAxis,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
 } from "recharts";
 import "../../css/Pengajuan.css";
 
 const API_BASE = "http://127.0.0.1:8000/api";
 
 const rupiah = (n) =>
-  new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR" }).format(
-    Number(n || 0)
-  );
+  new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+  }).format(Number(n || 0));
 
-export default function GrafikBelanjaSuperAdmin() {
+export default function SuperAdminAnalisisDashboard() {
   const navigate = useNavigate();
   const storedUser = localStorage.getItem("user");
   const currentUser = storedUser ? JSON.parse(storedUser) : null;
 
+  /* =========================
+     PROTEKSI LOGIN
+  ========================= */
   useEffect(() => {
     if (!currentUser?.id) navigate("/", { replace: true });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [currentUser, navigate]);
 
-  const sidebarMenus = useMemo(() => {
-    return [
-      { label: "Dashboard Super Admin", to: "/dashboardsuperadmin"},
+  /* =========================
+     SIDEBAR
+  ========================= */
+  const sidebarMenus = useMemo(
+    () => [
+      { label: "Dashboard Super Admin", to: "/dashboardsuperadmin" },
       { label: "Approval", to: "/approval" },
       { label: "Tambah User", to: "/tambahuser" },
       { label: "Atur Periode", to: "/periode" },
-      { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang" },
-      { label: "Grafik Belanja Unit", to: "/superadmin/grafik-belanja", active: true  },
-    ];
+      { label: "Analisis & Grafik", to: "/superadmin/analisis", active: true },
+    ],
+    []
+  );
+
+  /* =========================
+     STATE ANALISIS BARANG
+  ========================= */
+  const [barangList, setBarangList] = useState([]);
+  const [barangId, setBarangId] = useState("");
+  const [tahunAkademik, setTahunAkademik] = useState("all");
+  const [unit, setUnit] = useState("all");
+  const [loadingAnalisis, setLoadingAnalisis] = useState(false);
+  const [resultAnalisis, setResultAnalisis] = useState(null);
+  const [errorAnalisis, setErrorAnalisis] = useState("");
+
+  const unitOptions = [
+    "Direktorat",
+    "DPJJ",
+    "PDJAMA",
+    "Pascasarjana",
+    "Fakultas Kedokteran",
+    "Fakultas Kedokteran Gigi",
+    "Fakultas Teknologi Informasi",
+    "Fakultas Hukum",
+    "Fakultas Psikologi",
+    "Fakultas Ekonomi",
+  ];
+
+  useEffect(() => {
+    async function loadBarang() {
+      const res = await fetch(`${API_BASE}/barang`);
+      const json = await res.json();
+      setBarangList(json || []);
+      if (json?.length) setBarangId(String(json[0].id));
+    }
+    loadBarang();
   }, []);
 
-  const formatRole = (role) => {
-    if (!role) return "-";
+  async function handleAnalisis(e) {
+    e.preventDefault();
+    setLoadingAnalisis(true);
+    setErrorAnalisis("");
+    setResultAnalisis(null);
 
-    return role
-      .toLowerCase()
-      .replace(/_/g, " ")
-      .replace(/\b\w/g, (c) => c.toUpperCase());
-  };
+    try {
+      const params = new URLSearchParams({
+        barang_id: barangId,
+        tahun_akademik: tahunAkademik,
+        unit,
+      });
 
-  const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState("");
+      const res = await fetch(`${API_BASE}/analisis-barang?${params}`);
+      const json = await res.json();
+
+      if (!res.ok || json.success === false) {
+        setErrorAnalisis(json.message || "Gagal mengambil analisis");
+        return;
+      }
+
+      setResultAnalisis(json);
+    } catch {
+      setErrorAnalisis("Kesalahan jaringan");
+    } finally {
+      setLoadingAnalisis(false);
+    }
+  }
+
+  /* =========================
+     STATE GRAFIK
+  ========================= */
+  const [loadingGrafik, setLoadingGrafik] = useState(false);
+  const [errGrafik, setErrGrafik] = useState("");
   const [years, setYears] = useState([]);
-  const [data, setData] = useState([]);
-  const [status, setStatus] = useState("disetujui"); // default belanja
+  const [grafikData, setGrafikData] = useState([]);
+  const [status, setStatus] = useState("disetujui");
   const [yearsCount, setYearsCount] = useState(3);
 
   async function loadGrafik() {
-    setLoading(true);
-    setErr("");
+    setLoadingGrafik(true);
+    setErrGrafik("");
+
     try {
       const res = await fetch(
-        `${API_BASE}/laporan/grafik-belanja?years=${yearsCount}&status=${encodeURIComponent(
-          status
-        )}`
+        `${API_BASE}/laporan/grafik-belanja?years=${yearsCount}&status=${status}`
       );
       const json = await res.json();
 
-      if (!res.ok || !json?.success) {
-        setErr(json?.message || "Gagal mengambil data grafik.");
-        setYears([]);
-        setData([]);
+      if (!res.ok || !json.success) {
+        setErrGrafik(json.message || "Gagal ambil grafik");
         return;
       }
 
       setYears(json.years || []);
-      setData(Array.isArray(json.data) ? json.data : []);
-    } catch (e) {
-      console.error(e);
-      setErr("Terjadi kesalahan saat mengambil data dari server.");
-      setYears([]);
-      setData([]);
+      setGrafikData(json.data || []);
+    } catch {
+      setErrGrafik("Kesalahan jaringan grafik");
     } finally {
-      setLoading(false);
+      setLoadingGrafik(false);
     }
   }
 
   useEffect(() => {
     loadGrafik();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, yearsCount]);
 
+  /* =========================
+     RENDER
+  ========================= */
   return (
     <div className="layout">
+      {/* SIDEBAR */}
       <aside className="sidebar">
         <div>
           <div className="sidebar-logo">Sistem Pengajuan ATK</div>
@@ -103,7 +163,6 @@ export default function GrafikBelanjaSuperAdmin() {
             <div
               key={m.label}
               className={`menu-item ${m.active ? "disabled" : ""}`}
-              style={{ cursor: m.active ? "default" : "pointer" }}
               onClick={() => !m.active && navigate(m.to)}
             >
               {m.label}
@@ -113,7 +172,6 @@ export default function GrafikBelanjaSuperAdmin() {
 
         <div
           className="logout"
-          style={{ cursor: "pointer" }}
           onClick={() => {
             localStorage.removeItem("user");
             window.location.href = "/";
@@ -123,83 +181,89 @@ export default function GrafikBelanjaSuperAdmin() {
         </div>
       </aside>
 
-      <main className="main">
+      {/* MAIN */}
+        <main className="main">
         <header className="topbar">
           <div>
-            <div className="topbar-title">Grafik Belanja Unit (Default 3 Tahun Terakhir)</div>
+            <div className="topbar-title">Analisis & Grafik ATK</div>
             <div className="topbar-sub">
-              Selamat datang: {currentUser?.name || "SuperAdmin"}
+              Selamat datang: {currentUser?.name || "Super Admin"}
             </div>
           </div>
-          <div className="topbar-right">
-          <span>Role: </span>
-          <span className="role-pill">{formatRole(currentUser?.role)}</span>
-        </div>
         </header>
 
         <section className="main-content">
+          {/* ANALISIS */}
           <div className="card">
-            <div
-              style={{
-                display: "flex",
-                gap: 12,
-                alignItems: "center",
-                flexWrap: "wrap",
-                marginBottom: 12,
-              }}
-            >
-              <div style={{ fontWeight: 700 }}>Filter:</div>
+            <div className="card-title">Analisis Barang</div>
 
-              <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
-                style={{ padding: 10, borderRadius: 8, border: "1px solid #ddd" }}
-              >
-                <option value="disetujui">Disetujui (Belanja)</option>
+            <form onSubmit={handleAnalisis}>
+              <div className="form-row">
+                <select value={barangId} onChange={(e) => setBarangId(e.target.value)}>
+                  {barangList.map((b) => (
+                    <option key={b.id} value={b.id}>{b.nama}</option>
+                  ))}
+                </select>
+
+                <select value={tahunAkademik} onChange={(e) => setTahunAkademik(e.target.value)}>
+                  <option value="all">Semua Tahun</option>
+                  <option value="2024/2025">2024/2025</option>
+                  <option value="2025/2026">2025/2026</option>
+                </select>
+
+                <select value={unit} onChange={(e) => setUnit(e.target.value)}>
+                  <option value="all">Semua Unit</option>
+                  {unitOptions.map((u) => (
+                    <option key={u}>{u}</option>
+                  ))}
+                </select>
+              </div>
+
+              <button type="submit">
+                {loadingAnalisis ? "Loading..." : "Analisis"}
+              </button>
+            </form>
+
+            {errorAnalisis && <p className="error-text">{errorAnalisis}</p>}
+            {resultAnalisis && (
+              <p>
+                Total diajukan:{" "}
+                <b>{resultAnalisis.summary.total_diajukan}</b>
+              </p>
+            )}
+          </div>
+
+          {/* GRAFIK */}
+          <div className="card" style={{ marginTop: 20 }}>
+            <div className="card-title">Grafik Belanja Unit</div>
+
+            <div className="filter-row">
+              <select value={status} onChange={(e) => setStatus(e.target.value)}>
+                <option value="disetujui">Disetujui</option>
                 <option value="diverifikasi">Diverifikasi</option>
                 <option value="diajukan">Diajukan</option>
-                <option value="ditolak">Ditolak</option>
               </select>
 
               <select
                 value={yearsCount}
                 onChange={(e) => setYearsCount(Number(e.target.value))}
-                style={{ padding: 10, borderRadius: 8, border: "1px solid #ddd" }}
               >
                 <option value={3}>3 Tahun</option>
                 <option value={4}>4 Tahun</option>
                 <option value={5}>5 Tahun</option>
               </select>
-
-              <button
-                onClick={loadGrafik}
-                style={{
-                  padding: "10px 14px",
-                  borderRadius: 8,
-                  border: "none",
-                  cursor: "pointer",
-                  background: "#1f6feb",
-                  color: "white",
-                  fontWeight: 600,
-                }}
-              >
-                Refresh
-              </button>
             </div>
 
-            {loading && <p>Loading data grafik...</p>}
-            {!loading && err && <p style={{ color: "crimson" }}>{err}</p>}
-            {!loading && !err && data.length === 0 && (
-              <p>Belum ada data untuk ditampilkan.</p>
-            )}
+            {loadingGrafik && <p>Loading grafik...</p>}
+            {errGrafik && <p className="error-text">{errGrafik}</p>}
 
-            {!loading && !err && data.length > 0 && (
-              <div style={{ width: "100%", height: 420 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={data}>
+            {!loadingGrafik && grafikData.length > 0 && (
+              <div style={{ width: "100%", height: 400 }}>
+                <ResponsiveContainer>
+                  <BarChart data={grafikData}>
                     <XAxis dataKey="unit" />
-                    <YAxis tickFormatter={(v) => `${Math.round(v / 1000000)} jt`} />
-                    <Tooltip formatter={(value) => rupiah(value)} />
+                    <YAxis />
+                    <Tooltip formatter={(v) => rupiah(v)} />
                     <Legend />
                     {years.map((y) => (
                       <Bar key={y} dataKey={y} />
