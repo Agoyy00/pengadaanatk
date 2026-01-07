@@ -6,6 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Barang;
 use App\Models\BarangAuditLog;
 use Illuminate\Http\Request;
+use App\Imports\BarangAtkImport;
+use Maatwebsite\Excel\Facades\Excel;
+
 use Illuminate\Support\Facades\Storage;
 
 
@@ -262,4 +265,21 @@ class BarangController extends Controller
             'barang'  => $barang,
         ]);
     }
+
+
+
+public function importExcel(Request $request)
+{
+    $request->validate([
+        'file' => 'required|mimes:xlsx,xls'
+    ]);
+
+    Excel::import(new BarangAtkImport, $request->file('file'));
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Import barang ATK berhasil'
+    ]);
+}
+
 }

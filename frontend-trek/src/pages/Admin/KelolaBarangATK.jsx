@@ -29,7 +29,8 @@ export default function KelolaBarangATK() {
   const [mode, setMode] = useState("create"); // create | edit
   const [selected, setSelected] = useState(null);
   const [gambar, setGambar] = useState(null);
-
+  const [excelFile, setExcelFile] = useState(null);
+  const [importOpen, setImportOpen] = useState(false);
 
   const [form, setForm] = useState({
     nama: "",
@@ -258,6 +259,42 @@ const [errors, setErrors] = useState({});
     }
   };
 
+  const handleImportExcel = async () => {
+  if (!excelFile) {
+    alert("Pilih file Excel terlebih dahulu");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("file", excelFile);
+  formData.append("actor_user_id", currentUser.id);
+
+  setLoading(true);
+  try {
+    const res = await fetch(`${API_BASE}/barang/import`, {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || !data.success) {
+      alert(data.message || "Import gagal");
+      return;
+    }
+
+    alert("Import Excel berhasil ✅");
+    setExcelFile(null);
+    await loadBarang();
+  } catch (err) {
+    console.error(err);
+    alert("Terjadi kesalahan saat import");
+  } finally {
+    setLoading(false);
+  }
+};
+
+
   return (
     <div className="layout">
       {/* SIDEBAR */}
@@ -308,15 +345,33 @@ const [errors, setErrors] = useState({});
         <section className="main-content">
           <div className="card">
             <div
-              className="card-title"
+            className="card-title"
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: 12,
+              flexWrap: "wrap",
+            }}
+          >
+            <span>Daftar Barang</span>
+            <div className="excel-wrapper">
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+              onClick={() => setImportOpen(true)}
               style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                gap: 12,
+                padding: "10px 14px",
+                borderRadius: 10,
+                border: "none",
+                cursor: "pointer",
+                background: "#0ea5e9",
+                color: "white",
+                fontWeight: 700,
               }}
             >
-              <span>Daftar Barang</span>
+              📤 Import Excel
+            </button>
+</div>
               <button
                 onClick={openCreate}
                 style={{
@@ -332,6 +387,7 @@ const [errors, setErrors] = useState({});
                 + Tambah Barang
               </button>
             </div>
+          </div>
 
             <div style={{ display: "flex", gap: 12, marginTop: 12 }}>
               <input
@@ -667,6 +723,77 @@ const [errors, setErrors] = useState({});
               </div>
             </div>
           )}
+          {importOpen && (
+          <div className="modal-overlay">
+            <div className="modal-box-small" style={{ width: 480 }}>
+              <button
+                className="close-btn-small"
+                onClick={() => {
+                  setImportOpen(false);
+                  setExcelFile(null);
+                }}
+              >
+                ✖
+              </button>
+
+              <div style={{ padding: 16 }}>
+                <h2 style={{ marginTop: 0 }}>Import Barang via Excel</h2>
+
+                <p style={{ fontSize: 14, color: "#555" }}>
+                  Format Excel: <b>nama | satuan | harga_satuan</b><br />
+                  Satuan akan diset otomatis ke <b>dus</b> jika berbeda.
+                </p>
+
+                <input
+                  type="file"
+                  accept=".xlsx,.xls"
+                  onChange={(e) => setExcelFile(e.target.files[0])}
+                />
+
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    gap: 10,
+                    marginTop: 20,
+                  }}
+                >
+                  <button
+                    onClick={() => {
+                      setImportOpen(false);
+                      setExcelFile(null);
+                    }}
+                    style={{
+                      padding: "10px 14px",
+                      borderRadius: 10,
+                      border: "1px solid #ddd",
+                      cursor: "pointer",
+                      fontWeight: 700,
+                    }}
+                  >
+                    Batal
+                  </button>
+
+                  <button
+                    onClick={handleImportExcel}
+                    disabled={loading}
+                    style={{
+                      padding: "10px 14px",
+                      borderRadius: 10,
+                      border: "none",
+                      cursor: "pointer",
+                      background: "#16a34a",
+                      color: "white",
+                      fontWeight: 800,
+                    }}
+                  >
+                    {loading ? "Mengimpor..." : "Submit Import"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         </section>
       </main>
     </div>

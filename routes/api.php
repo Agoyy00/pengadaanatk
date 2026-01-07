@@ -103,4 +103,7 @@ Route::delete('/users/{user}', [UserManagementController::class, 'destroy']);
 Route::post('/barang-usulan', [BarangUsulanController::class, 'store']);
 Route::get('/barang-usulan', [BarangUsulanController::class, 'index']);
 Route::get('/barang-usulan/statistik', [BarangUsulanController::class, 'statistik']);
-    
+Route::post('/barang/import', [PengajuanController::class, 'importBarangATK']);
+Route::post('/barang/import-excel', [BarangController::class, 'importExcel']);
+
+

@@ -9,6 +9,8 @@ use App\Models\PengajuanItem;
 use App\Models\Periode;
 use App\Models\Notification;
 use App\Models\User;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Imports\BarangATKImport;
 
 
 use Illuminate\Http\Request;
@@ -411,24 +413,49 @@ class PengajuanController extends Controller
     }
     
     public function downloadPdf(Pengajuan $pengajuan)
-{
-    $pengajuan->load('items.barang');
+    {
+        $pengajuan->load('items.barang');
 
-    // 🔐 DATA VALIDASI (nanti dipakai QR)
-    $payload = json_encode([
-        'pengajuan_id' => $pengajuan->id,
-        'status' => $pengajuan->status,
-        'tanggal' => $pengajuan->updated_at->toIso8601String(),
-    ]);
+        // 🔐 DATA VALIDASI (nanti dipakai QR)
+        $payload = json_encode([
+            'pengajuan_id' => $pengajuan->id,
+            'status' => $pengajuan->status,
+            'tanggal' => $pengajuan->updated_at->toIso8601String(),
+        ]);
 
-    // ⚠️ DUMMY QR (sementara, biar blade gak error)
-    $qr = null;
+        // ⚠️ DUMMY QR (sementara, biar blade gak error)
+        $qr = null;
 
-    $pdf = Pdf::loadView('pdf.pengajuan', [
-        'pengajuan' => $pengajuan,
-        'qr'        => $qr, // ⬅️ INI YANG HILANG
-    ])->setPaper('A4', 'portrait');
+        $pdf = Pdf::loadView('pdf.pengajuan', [
+            'pengajuan' => $pengajuan,
+            'qr'        => $qr, // ⬅️ INI YANG HILANG
+        ])->setPaper('A4', 'portrait');
 
-    return $pdf->download('Pengajuan-ATK-'.$pengajuan->id.'.pdf');
-}
+        return $pdf->download('Pengajuan-ATK-'.$pengajuan->id.'.pdf');
+    }
+
+    public function importBarangATK(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls',
+            'actor_user_id' => 'required|exists:users,id',
+        ]);
+
+        try {
+            Excel::import(
+                new BarangATKImport($request->actor_user_id),
+                $request->file('file')
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Import barang ATK berhasil'
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
 }
