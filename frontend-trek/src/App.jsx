@@ -8,6 +8,7 @@ import DetailVerifikasi from "./components/DetailVerifikasi";
 
 import Login from "./components/Login";
 import Navbar from "./components/Navbar";
+import Import from "./components/ImportExcelBarang";
 
 import Pengajuan from "./pages/User/Pengajuan";
 import DashboardUser from "./pages/User/DashboardUser";

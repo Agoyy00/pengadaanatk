@@ -1,0 +1,127 @@
+ /* STATUS BADGE DI RIWAYAT */
+.status-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.status-diajukan {
+  background-color: #f4b000; /* kuning */
+}
+
+.status-diverifikasi {
+  background-color: #007bff; /* biru */
+}
+
+.status-disetujui {
+  background-color: #1f9a3f; /* hijau */
+}
+
+
+.status-diajukan {
+  background-color: #f4b000; /* kuning */
+}
+
+.status-diverifikasi {
+  background-color: #007bff; /* biru */
+}
+
+.status-disetujui {
+  background-color: #1f9a3f; /* hijau */
+}
+.item-meta {
+  font-size: 12px; /* dari 13 */
+  color: #000000;
+  opacity: 0.8;
+}
+
+
+/* Badge status */
+.badge-status {
+  display: inline-block;
+  border-radius: 999px;
+  font-weight: 600;
+  color: white;
+  padding: 4px 10px;
+  font-size: 11px;
+  letter-spacing: 0.4px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+}
+
+.status-diajukan {
+  background-color: #2196f3;
+}
+
+.status-diverifikasi {
+  background-color: #9c27b0;
+}
+
+.status-ditolak {
+  background-color: #f44336;
+}
+
+.status-disetujui {
+  background-color: #4caf50;
+}
+/* di Pengajuan.css */
+.btn-status-revisi {
+  margin-left: 4px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: none;
+  background: #0369a1;
+  color: #fff;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.revisi-note {
+  font-size: 11px;
+  color: #b91c1c;
+}
+
+
+.btn-status-verif {
+  border: none;
+  padding: 6px 12px;
+  font-size: 13px;
+  border-radius: 3px;
+  background: #1f9a3f;
+  color: #fff;
+  cursor: pointer;
+  margin-right: 6px;
+}
+
+.btn-status-verif:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.btn-status-tolak {
+  border: none;
+  padding: 6px 12px;
+  font-size: 13px;
+  border-radius: 3px;
+  background: #c0392b; /* merah */
+  color: #fff;
+  cursor: pointer;
+}
+
+.btn-status-tolak:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+
+.error-text {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #dc2626;
+}
+
+.error-text.danger {
+  font-weight: 500;
+}

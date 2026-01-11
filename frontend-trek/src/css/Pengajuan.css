@@ -727,40 +727,7 @@ th {
     .card-subtitle {
         font-size: 12px;
     }
-    /* STATUS BADGE DI RIWAYAT */
-.status-badge {
-  display: inline-block;
-  padding: 2px 10px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #fff;
-}
-
-.status-diajukan {
-  background-color: #f4b000; /* kuning */
-}
-
-.status-diverifikasi {
-  background-color: #007bff; /* biru */
-}
-
-.status-disetujui {
-  background-color: #1f9a3f; /* hijau */
-}
-
-}
-
-.status-diajukan {
-  background-color: #f4b000; /* kuning */
-}
-
-.status-diverifikasi {
-  background-color: #007bff; /* biru */
-}
-
-.status-disetujui {
-  background-color: #1f9a3f; /* hijau */
+   
 }
 
 .btn-danger {
@@ -827,36 +794,7 @@ th {
   align-items: center;
   gap: 8px;
 }
-.btn-status-verif {
-  border: none;
-  padding: 6px 12px;
-  font-size: 13px;
-  border-radius: 3px;
-  background: #1f9a3f;
-  color: #fff;
-  cursor: pointer;
-  margin-right: 6px;
-}
 
-.btn-status-verif:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
-
-.btn-status-tolak {
-  border: none;
-  padding: 6px 12px;
-  font-size: 13px;
-  border-radius: 3px;
-  background: #c0392b; /* merah */
-  color: #fff;
-  cursor: pointer;
-}
-
-.btn-status-tolak:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
 .periode-closed-card {
   background: #ffe5e5;
   border-left: 6px solid #d32f2f;
@@ -868,34 +806,6 @@ th {
   font-weight: bold;
 }
 
-.card {
-  border-radius: 14px;
-  padding: 28px 32px;
-  background: #ffffff;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-  border: 1px solid #e5e7eb;
-}
-
-.card-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #0f172a;
-}
-
-.card-subtitle {
-  font-size: 14px;
-  color: #475569;
-  margin-bottom: 20px;
-}
-
-.card label {
-  font-size: 13px;
-  font-weight: 500;
-  color: #334155;
-  margin-bottom: 6px;
-  display: block;
-}
-
 .input-text {
   height: 42px;
   padding: 10px 14px;
@@ -905,19 +815,6 @@ th {
   background: #ffffff;
   transition: all 0.2s ease;
 }
-
-.card p {
-  font-size: 13px;
-}
-
-.card p[style*="green"] {
-  background: #ecfdf5;
-  color: #047857;
-  padding: 10px 12px;
-  border-radius: 8px;
-  border: 1px solid #6ee7b7;
-}
-
 
 .input-text:focus {
   outline: none;
@@ -1049,87 +946,4 @@ th {
   border-radius: 6px;
   border: 1px solid #ddd;
   background: #fafafa;
-}
-
-/* Badge status */
-.badge-status {
-  display: inline-block;
-  border-radius: 999px;
-  font-weight: 600;
-  color: white;
-  padding: 4px 10px;
-  font-size: 11px;
-  letter-spacing: 0.4px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
-}
-
-.status-diajukan {
-  background-color: #2196f3;
-}
-
-.status-diverifikasi {
-  background-color: #9c27b0;
-}
-
-.status-ditolak {
-  background-color: #f44336;
-}
-
-.status-disetujui {
-  background-color: #4caf50;
-}
-/* di Pengajuan.css */
-.btn-status-revisi {
-  margin-left: 4px;
-  padding: 4px 8px;
-  border-radius: 4px;
-  border: none;
-  background: #0369a1;
-  color: #fff;
-  cursor: pointer;
-  font-size: 12px;
-}
-
-.revisi-note {
-  font-size: 11px;
-  color: #b91c1c;
-}
-
-/* Ini punya tambah user*/
-
-.input-text{
-  color: #000000;
-}
-
-/* ===== PASSWORD FIELD WITH EYE ICON ===== */
-.form-group {
-  position: relative;
-}
-
-.form-group .input-text {
-  padding-right: 42px; /* kasih ruang buat icon mata */
-}
-
-/* tombol eye */
-.show-password-btn-small {
-  position: absolute;
-  right: 12px;
-
-  background: none;
-  border: none;
-  padding: 0;
-
-  cursor: pointer;
-  color: #6b7280;
-  font-size: 16px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-
-/* hover efek */
-.show-password-btn-small:hover {
-  color: #111827;
 }

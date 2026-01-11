@@ -1,5 +1,6 @@
 import { useState } from "react";
-import "../css/Import.css";
+import "../css/import.css";
+import "../css/layout.css";
 
 export default function ImportExcelBarang() {
   const [showPanel, setShowPanel] = useState(false);

@@ -1,7 +1,9 @@
 // frontend-trek/src/components/Verifikasi.jsx
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import "../../css/Pengajuan.css";
+import "../../css/layout.css";
+import "../../css/tabel.css";
+import "../../css/verifikasi.css";
 import DetailVerifikasi from "../../components/DetailVerifikasi";
 
 
