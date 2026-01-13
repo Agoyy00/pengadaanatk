@@ -65,15 +65,13 @@ class BarangController extends Controller
 
                 // 🔴 INI KUNCINYA
                 'foto' => $b->gambar
-                    ? '/storage/public/barang/' . $b->gambar
-                    : null,
-            ];
-        });
+                ? '/storage/barang/' . $b->gambar
+                : null,
+                ];  
+            });
 
     return response()->json($barang);
 }
-
-
 
     public function show(Barang $barang)
     {
@@ -134,14 +132,19 @@ class BarangController extends Controller
         ]);
 
         if ($request->hasFile('gambar')) {
-            $file = $request->file('gambar');
-            $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+    $file = $request->file('gambar');
+    $filename = time().'_'.uniqid().'.'.$file->getClientOriginalExtension();
 
-            $file->storeAs('public/barang', $filename);
+    Storage::disk('public')->putFileAs(
+        'barang',
+        $file,
+        $filename
+    );
 
-            $barang->gambar = $filename;
-            $barang->save();
-        }
+    $barang->gambar = $filename;
+    $barang->save();
+}
+
 
         $this->writeLog($barang->id, (int)$validated['actor_user_id'], 'create', null, $barang->toArray());
 
@@ -194,13 +197,18 @@ class BarangController extends Controller
 
         if ($request->hasFile('gambar')) {
     // hapus gambar lama
-            if ($barang->gambar && Storage::exists('public/barang/' . $barang->gambar)) {
-                Storage::delete('public/barang/' . $barang->gambar);
+            if ($barang->gambar && Storage::disk('public')->exists('barang/' . $barang->gambar)) {
+                Storage::disk('public')->delete('barang/' . $barang->gambar);
             }
 
             $file = $request->file('gambar');
             $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-            $file->storeAs('public/barang', $filename);
+            Storage::disk('public')->putFileAs(
+    'barang',
+    $file,
+    $filename
+);
+
 
             $barang->gambar = $filename;
             $barang->save();
@@ -272,8 +280,6 @@ class BarangController extends Controller
         'message' => 'Barang berhasil dihapus.'
     ]);
 }
-
-
     // PATCH /api/barang/{barang}/harga
     public function updateHarga(Request $request, Barang $barang)
     {
