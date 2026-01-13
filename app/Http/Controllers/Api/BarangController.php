@@ -8,7 +8,7 @@ use App\Models\BarangAuditLog;
 use Illuminate\Http\Request;
 use App\Imports\BarangAtkImport;
 use Maatwebsite\Excel\Facades\Excel;
-
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 
@@ -219,29 +219,60 @@ class BarangController extends Controller
 
     // DELETE /api/barang/{barang}
     public function destroy(Request $request, Barang $barang)
-    {
-        $validated = $request->validate([
-            'actor_user_id' => 'required|exists:users,id',
-        ]);
+{
+    // =========================
+    // VALIDASI USER PENGHAPUS
+    // =========================
+    $actorUserId = $request->input('actor_user_id');
 
-        $old = $barang->toArray();
-        $barangId = $barang->id;
-
-        if ($barang->gambar && Storage::exists('public/barang/' . $barang->gambar)) {
-            Storage::delete('public/barang/' . $barang->gambar);
-        }
-
-
-        $barang->delete();
-
-        // ✅ LOG DELETE (new_data null)
-        $this->writeLog($barangId, (int)$validated['actor_user_id'], 'delete', $old, null);
-
+    if (!$actorUserId || !\App\Models\User::where('id', $actorUserId)->exists()) {
         return response()->json([
-            'success' => true,
-            'message' => 'Barang berhasil dihapus.',
-        ]);
+            'success' => false,
+            'message' => 'User penghapus tidak valid.'
+        ], 422);
     }
+
+    // =========================
+    // CEK: BARANG SUDAH DIPAKAI ATAU BELUM
+    // =========================
+    $dipakai = \Illuminate\Support\Facades\DB::table('pengajuan_items')
+        ->where('barang_id', $barang->id)
+        ->exists();
+
+    if ($dipakai) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Barang tidak bisa dihapus karena sudah digunakan dalam pengajuan.'
+        ], 409);
+    }
+
+    // =========================
+    // SIMPAN DATA LAMA (UNTUK LOG)
+    // =========================
+    $oldData = $barang->toArray();
+
+    // =========================
+    // TULIS LOG DULU (PENTING!)
+    // =========================
+    \App\Models\BarangAuditLog::create([
+        'barang_id' => $barang->id, // MASIH ADA
+        'user_id'   => $actorUserId,
+        'action'    => 'delete',
+        'old_data'  => json_encode($oldData),
+        'new_data'  => null,
+    ]);
+
+    // =========================
+    // BARU HAPUS BARANG
+    // =========================
+    $barang->delete();
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Barang berhasil dihapus.'
+    ]);
+}
+
 
     // PATCH /api/barang/{barang}/harga
     public function updateHarga(Request $request, Barang $barang)
