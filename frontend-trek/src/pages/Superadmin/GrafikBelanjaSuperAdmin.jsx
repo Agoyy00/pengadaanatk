@@ -9,7 +9,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import "../../css/Pengajuan.css";
+import "../../css/layout.css";
 import "../../css/Grafik.css";
 
 const API_BASE = "http://127.0.0.1:8000/api";

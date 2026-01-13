@@ -1,104 +1,114 @@
-import { useState } from "react";
-import "../css/Import.css";
+import { useEffect } from "react";
+import "../css/import.css";
 
-export default function ImportExcelBarang() {
-  const [showPanel, setShowPanel] = useState(false);
-  const [file, setFile] = useState(null);
-  const [loading, setLoading] = useState(false);
+export default function ImportExcelBarang({
+  open,
+  onClose,
+  excelFile,
+  setExcelFile,
+  onSubmit,
+  loading,
+}) {
+  useEffect(() => {
+    console.log("IMPORT MODAL RENDERED", open);
+  }, [open]);
 
-  async function handleSubmit() {
-    if (!file) {
-      alert("Silakan pilih file Excel terlebih dahulu");
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append("file", file);
-
-    setLoading(true);
-    try {
-      const res = await fetch(
-        "http://127.0.0.1:8000/api/barang/import-excel",
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
-
-      if (!res.ok) throw new Error();
-
-      alert("Import data barang berhasil ✅");
-      setShowPanel(false);
-      setFile(null);
-    } catch {
-      alert("Import gagal ❌");
-    } finally {
-      setLoading(false);
-    }
-  }
+  if (!open) return null;
 
   return (
-    <div style={{ position: "relative" }}>
-      {/* BUTTON */}
-      <button className="btn-excel" onClick={() => setShowPanel(!showPanel)}>
-        📤 Import Excel
-      </button>
+    <div className="import-overlay">
+      <div className="import-panel">
+        <button className="import-close" onClick={onClose}>
+          ✖
+        </button>
 
-      {/* PANEL */}
-      {showPanel && (
-        <div className="excel-panel">
-          <h3 className="excel-title">Import Barang ATK</h3>
+        <h2 className="import-title">Import Data Barang ATK</h2>
 
-          <div className="excel-subtitle">
-            Gunakan template Excel berikut agar proses import berjalan lancar dan
-            data tersimpan dengan konsisten.
+        <p className="import-desc">
+          Unggah file Excel untuk menambahkan data barang secara massal.
+          Pastikan format kolom sesuai contoh di bawah.
+        </p>
+
+        {/* CONTOH FORMAT */}
+        <div className="import-instruction">
+          <div className="instruction-title">
+            Contoh format file Excel
           </div>
 
-          <div className="excel-format-box">
-            <div><b>Kolom wajib (urutan harus sama):</b></div>
-            <ul style={{ paddingLeft: 18, margin: "6px 0" }}>
-              <li>Nama Barang</li>
-              <li>Satuan <b>(dus)</b></li>
-              <li>Harga Satuan (Rp)</li>
-            </ul>
-
-            <div style={{ fontSize: 12, marginTop: 6 }}>
-              • Kode barang akan <b>dibuat otomatis</b> oleh sistem<br />
-              • Harga harus berupa angka (tanpa titik / koma)
-            </div>
+          <div className="import-table-wrapper">
+            <table className="import-table">
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>A</th>
+                  <th>B</th>
+                  <th>C</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td className="row-index">1</td>
+                  <td>Nama Barang</td>
+                  <td>Satuan</td>
+                  <td>Harga</td>
+                </tr>
+                <tr>
+                  <td className="row-index">2</td>
+                  <td>Kertas A4</td>
+                  <td>dus</td>
+                  <td>40000</td>
+                </tr>
+                <tr>
+                  <td className="row-index">3</td>
+                  <td>Pulpen Biru</td>
+                  <td>pcs</td>
+                  <td>3500</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
 
+          <div className="import-note">
+            <b>1</b> = Adalah Keterangan Jangan Di Tiru <br />
+            <b>A</b> = Nama Barang <br />
+            <b>B</b> = Satuan Barang (rim / pcs / dus) <br />
+            <b>C</b> = Harga Barang (angka tanpa titik)
+          </div>
+        </div>
+
+        {/* FILE INPUT */}
+        <div className="import-file-wrapper">
           <input
             type="file"
             accept=".xlsx,.xls"
-            className="excel-file"
-            onChange={(e) => setFile(e.target.files[0])}
+            onChange={(e) => setExcelFile(e.target.files[0])}
           />
 
-          {file && (
-            <div className="excel-file-name">
-              📄 File dipilih: <b>{file.name}</b>
+          {excelFile && (
+            <div className="import-file">
+              📄 {excelFile.name}
             </div>
           )}
-
-          <div className="excel-actions">
-            <button
-              className="btn-cancel"
-              onClick={() => setShowPanel(false)}
-            >
-              Batal
-            </button>
-
-            <button
-              className="btn-submit"
-              onClick={handleSubmit}
-              disabled={loading}
-            >
-              {loading ? "Mengimpor..." : "Submit Import"}
-            </button>
-          </div>
         </div>
-      )}
+
+        {/* ACTION */}
+        <div className="import-actions">
+          <button
+            className="import-btn-cancel"
+            onClick={onClose}
+          >
+            Batal
+          </button>
+
+          <button
+            className="import-btn-submit"
+            onClick={onSubmit}
+            disabled={loading}
+          >
+            {loading ? "Mengimpor..." : "Import Data"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import "../../css/Pengajuan.css";
+import "../../css/layout.css";
+import ImportExcelBarang from "../../components/ImportExcelBarang";
+
 const API_BASE = "http://127.0.0.1:8000/api";
 
 const normalizeRole = (role) =>
@@ -222,42 +224,52 @@ const [errors, setErrors] = useState({});
 };
 
 
-  const onDelete = async (item) => {
-    const ok = window.confirm(`Hapus barang "${item.nama}"?`);
-    if (!ok) return;
+const onDelete = async (item) => {
+  const ok = window.confirm(`Hapus barang "${item.nama}"?`);
+  if (!ok) return;
 
-    if (!currentUser?.id) {
-      alert("User login tidak terbaca. Silakan login ulang.");
-      localStorage.removeItem("user");
-      window.location.href = "/";
+  setLoading(true);
+  try {
+    const res = await fetch(
+      `http://127.0.0.1:8000/api/barang/${item.id}`,
+      {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+        },
+        body: JSON.stringify({
+          actor_user_id: currentUser.id,
+        }),
+      }
+    );
+
+    // ⛑️ SAFETY CHECK
+    const text = await res.text();
+
+    if (!text.startsWith("{")) {
+      console.error("Bukan JSON:", text);
+      alert("Server mengembalikan response tidak valid (HTML)");
       return;
     }
 
-    setLoading(true);
-    try {
-      // ✅ DELETE pakai body untuk actor_user_id
-      const res = await fetch(`${API_BASE}/barang/${item.id}`, {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ actor_user_id: currentUser.id }),
-      });
+    const data = JSON.parse(text);
 
-      const data = await res.json();
-
-      if (!res.ok || !data.success) {
-        alert(data.message || "Gagal menghapus barang.");
-        return;
-      }
-
-      alert("Barang berhasil dihapus ✅");
-      await loadBarang();
-    } catch (err) {
-      console.error(err);
-      alert("Terjadi kesalahan server.");
-    } finally {
-      setLoading(false);
+    if (!res.ok || !data.success) {
+      alert(data.message || "Gagal menghapus barang.");
+      return;
     }
-  };
+
+    alert("Barang berhasil dihapus ✅");
+    await loadBarang();
+  } catch (err) {
+    console.error(err);
+    alert("Terjadi kesalahan server.");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const handleImportExcel = async () => {
   if (!excelFile) {
@@ -358,19 +370,14 @@ const [errors, setErrors] = useState({});
             <div className="excel-wrapper">
             <div style={{ display: "flex", gap: 8 }}>
               <button
-              onClick={() => setImportOpen(true)}
-              style={{
-                padding: "10px 14px",
-                borderRadius: 10,
-                border: "none",
-                cursor: "pointer",
-                background: "#0ea5e9",
-                color: "white",
-                fontWeight: 700,
-              }}
-            >
-              📤 Import Excel
-            </button>
+  onClick={() => {
+    console.log("IMPORT BUTTON CLICKED");
+    setImportOpen(true);
+  }}
+>
+  📤 Import Excel
+</button>
+
 </div>
               <button
                 onClick={openCreate}
@@ -724,75 +731,14 @@ const [errors, setErrors] = useState({});
             </div>
           )}
           {importOpen && (
-          <div className="modal-overlay">
-            <div className="modal-box-small" style={{ width: 480 }}>
-              <button
-                className="close-btn-small"
-                onClick={() => {
-                  setImportOpen(false);
-                  setExcelFile(null);
-                }}
-              >
-                ✖
-              </button>
-
-              <div style={{ padding: 16 }}>
-                <h2 style={{ marginTop: 0 }}>Import Barang via Excel</h2>
-
-                <p style={{ fontSize: 14, color: "#555" }}>
-                  Format Excel: <b>nama | satuan | harga_satuan</b><br />
-                  Satuan akan diset otomatis ke <b>dus</b> jika berbeda.
-                </p>
-
-                <input
-                  type="file"
-                  accept=".xlsx,.xls"
-                  onChange={(e) => setExcelFile(e.target.files[0])}
-                />
-
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "flex-end",
-                    gap: 10,
-                    marginTop: 20,
-                  }}
-                >
-                  <button
-                    onClick={() => {
-                      setImportOpen(false);
-                      setExcelFile(null);
-                    }}
-                    style={{
-                      padding: "10px 14px",
-                      borderRadius: 10,
-                      border: "1px solid #ddd",
-                      cursor: "pointer",
-                      fontWeight: 700,
-                    }}
-                  >
-                    Batal
-                  </button>
-
-                  <button
-                    onClick={handleImportExcel}
-                    disabled={loading}
-                    style={{
-                      padding: "10px 14px",
-                      borderRadius: 10,
-                      border: "none",
-                      cursor: "pointer",
-                      background: "#16a34a",
-                      color: "white",
-                      fontWeight: 800,
-                    }}
-                  >
-                    {loading ? "Mengimpor..." : "Submit Import"}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+          <ImportExcelBarang
+          open={importOpen}
+          onClose={() => setImportOpen(false)}
+          loading={loading}
+          excelFile={excelFile}
+          setExcelFile={setExcelFile}
+          onSubmit={handleImportExcel}
+        />
         )}
         </section>
       </main>
