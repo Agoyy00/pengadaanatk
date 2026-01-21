@@ -6,58 +6,64 @@ import "../css/Login.css";
 import atk from "../gambar/Logo.png";
 import logo from "../gambar/LogoYarsi.jpeg";
 
-const API_BASE = "http://127.0.0.1:8000/api";
-
 function Login({ onClose }) {
-  const [ceklis, tidak] = useState(false);
-  const [email, setEmail] = useState("");
+  const [ingatSaya, setIngatSaya] = useState(false);
+  const [username, setUsername] = useState(""); // 👈 Ganti email jadi username
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
 
-  // 🔹 Login handler
   const handleLogin = async (e) => {
     e.preventDefault();
+    setLoading(true); // Set loading aktif saat tombol diklik
 
     try {
-      const response = await fetch(`${API_BASE}/login`, {
+      const res = await fetch("http://127.0.0.1:8000/api/login", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+        },
+        // 👈 Payload sekarang mengirim 'email' tapi isinya adalah username (untuk cocok dengan Controller Laravel)
+        body: JSON.stringify({ email: username, password }), 
       });
 
-      const data = await response.json();
+      const data = await res.json();
 
-      if (!data.success) {
-        alert(data.message || "Email atau password salah!");
+      if (!res.ok) {
+        alert(data.message || "Login gagal");
+        setLoading(false);
         return;
       }
 
+      // SIMPAN TOKEN & USER
+      localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
-      
-      if (data.user.role === "superadmin") {
-        navigate("/dashboardsuperadmin");
-      } else if (data.user.role === "admin") {
-        navigate("/dashboardadmin");
-      } else {
-        navigate("/dashboarduser");
-      }
 
+      alert("Login berhasil");
 
-      if (onClose) onClose();
-    } catch (error) {
-      console.error("Login error:", error);
-      alert("Terjadi kesalahan saat menghubungi server!");
+      // REDIRECT BERDASARKAN ROLE DARI BACKEND
+      window.location.href =
+        data.user.role === "superadmin"
+          ? "/dashboardsuperadmin"
+          : data.user.role === "admin"
+          ? "/dashboardadmin"
+          : "/dashboarduser";
+
+    } catch (err) {
+      console.error("FETCH ERROR:", err);
+      alert("Terjadi kesalahan saat menghubungi server");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="modal-overlay">
       <div className="modal-box-small">
-        <button className="close-btn-small" onClick={onClose} aria-label="Tutup login">
-          ✖
-        </button>
+        <button className="close-btn-small" onClick={onClose}>✖</button>
 
         <div className="login-container-small">
           <div className="left-side-small">
@@ -66,24 +72,24 @@ function Login({ onClose }) {
           </div>
 
           <div className="right-side-small">
-            <h2 className="login-title">Login</h2>
-            <form onSubmit={handleLogin} className="login-form-small">
+            <h2 className="login-title">Login LDAP</h2>
 
-              {/* INPUT EMAIL */}
+            <form onSubmit={handleLogin} className="login-form-small">
+              {/* USERNAME (Bukan Email) */}
               <div className="input-group">
-                <label className="input-label">Email</label>
+                <label>Username</label>
                 <input
-                  type="email"
-                  placeholder="Masukkan email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  type="text" // 👈 Ganti type email ke text
+                  placeholder="Masukkan username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
                   required
                 />
               </div>
 
-              {/* INPUT PASSWORD */}
+              {/* PASSWORD */}
               <div className="input-group">
-                <label className="input-label">Password</label>
+                <label>Password</label>
                 <div className="password-wrapper-small">
                   <input
                     type={showPassword ? "text" : "password"}
@@ -92,8 +98,6 @@ function Login({ onClose }) {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                   />
-
-                  {/* Show/hide password */}
                   <button
                     type="button"
                     className="show-password-btn-small"
@@ -108,19 +112,22 @@ function Login({ onClose }) {
               <label className="checkbox-small">
                 <input
                   type="checkbox"
-                  checked={ceklis}
-                  onChange={(e) => tidak(e.target.checked)}
+                  checked={ingatSaya}
+                  onChange={(e) => setIngatSaya(e.target.checked)}
                 />
                 <span>Ingat Saya</span>
               </label>
 
-              {/* TOMBOL LOGIN */}
-              <button type="submit" className="submit-btn-small">
-                Masuk
+              {/* SUBMIT */}
+              <button
+                type="submit"
+                className="submit-btn-small"
+                disabled={loading}
+              >
+                {loading ? "Memproses..." : "Masuk"}
               </button>
             </form>
           </div>
-
         </div>
       </div>
     </div>

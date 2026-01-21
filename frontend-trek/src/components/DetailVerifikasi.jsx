@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import "../css/DetailVerifikasi.css"; 
 
 const API_BASE = "http://127.0.0.1:8000/api";
+const token = localStorage.getItem("token");
 
 export default function DetailVerifikasi({ pengajuan, onClose, onSuccess }) {
   const [processing, setProcessing] = useState(false);
@@ -19,6 +20,7 @@ export default function DetailVerifikasi({ pengajuan, onClose, onSuccess }) {
 });
 
   const user = JSON.parse(localStorage.getItem("user"));
+  
 
   const handleSubmit = async () => {
   if (!window.confirm("Submit verifikasi pengajuan ini?")) return;
@@ -61,9 +63,10 @@ export default function DetailVerifikasi({ pengajuan, onClose, onSuccess }) {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
-      "Accept": "application/json",
+      "Accept": "application/json", 
+      "Authorization": `Bearer ${localStorage.getItem("token")}`,
     },
-    body: JSON.stringify({ items }),
+    body: JSON.stringify({ actor_user_id: user.id, items }),
   }
 );
 
@@ -82,7 +85,7 @@ export default function DetailVerifikasi({ pengajuan, onClose, onSuccess }) {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
-      "Accept": "application/json",
+      "Accept": "application/json", "Authorization": `Bearer ${localStorage.getItem("token")}`,
     },
     body: JSON.stringify({
       status: "diverifikasi_admin",

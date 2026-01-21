@@ -252,26 +252,47 @@
 .password-wrapper-small input {
   padding-right: 45px;
 }
-
 .show-password-btn-small {
   position: absolute;
   right: 12px;
   top: 50%;
   transform: translateY(-50%);
+
   border: none;
   background: transparent;
-  cursor: pointer;
-  font-size: 18px;
-  color: #64748b;
-  padding: 4px;
+  padding: 0;
+  margin: 0;
+
+  width: 24px;
+  height: 24px;
+
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.2s ease;
+
+  cursor: pointer;
+  color: #64748b;
+
+  line-height: 1;
 }
 
 .show-password-btn-small:hover {
   color: #334155;
+}
+
+/* PENTING: matiin efek focus default */
+.show-password-btn-small:focus,
+.show-password-btn-small:active {
+  outline: none;
+  box-shadow: none;
+  transform: translateY(-50%);
+}
+.show-password-btn-small {
+  transition: none !important;
+}
+
+.show-password-btn-small * {
+  transition: none !important;
 }
 
 /* =========================

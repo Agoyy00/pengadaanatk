@@ -4,6 +4,7 @@ import "../../css/layout.css";
 import "../../css/tabel.css";
 
 const API_BASE = "http://127.0.0.1:8000/api";
+const token = localStorage.getItem("token");
 
 const rupiah = (n) =>
   new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR" }).format(
@@ -27,7 +28,7 @@ export default function DaftarBarangATKSuperAdmin() {
       { label: "Tambah User", to: "/tambahuser" },
       { label: "Atur Periode", to: "/periode" },
       { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang", active: true  },
-      { label: "Grafik Belanja Unit", to: "/superadmin/grafik-belanja" },
+      { label: "Analisis Dan Grafik", to: "/superadmin/grafik-belanja" },
     ];
   }, []);
 
@@ -40,7 +41,11 @@ export default function DaftarBarangATKSuperAdmin() {
     setLoading(true);
     setErr("");
     try {
-      const res = await fetch(`${API_BASE}/barang?q=${encodeURIComponent(keyword)}`);
+      const res = await fetch(`${API_BASE}/barang?q=${encodeURIComponent(keyword)}`, {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        },
+      });
       const data = await res.json();
       setBarangs(Array.isArray(data) ? data : []);
     } catch (e) {

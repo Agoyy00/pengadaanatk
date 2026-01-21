@@ -4,6 +4,7 @@ import "../../css/DashboardUser.css";
 import "../../css/layout.css";
 
 const API_BASE = "http://127.0.0.1:8000/api";
+const token = localStorage.getItem("token");
 
 export default function DashboardUser() {
   const navigate = useNavigate();
@@ -36,7 +37,11 @@ export default function DashboardUser() {
     }
 
     try {
-      const res = await fetch(`${API_BASE}/pengajuan?user_id=${userId}`);
+      const res = await fetch(`${API_BASE}/pengajuan?user_id=${userId}`, {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        },
+      });
       if (!res.ok) {
         setErrorMsg("Gagal mengambil data pengajuan.");
         setLoading(false);

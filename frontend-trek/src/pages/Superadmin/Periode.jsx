@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import "../../css/layout.css";
 
 const API_BASE = "http://127.0.0.1:8000/api";
+const token = localStorage.getItem("token");
 
 export default function Periode() {
   const navigate = useNavigate();
@@ -67,7 +68,7 @@ export default function Periode() {
     try {
       const res = await fetch(`${API_BASE}/periode`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
         body: JSON.stringify(payload),
       });
 
@@ -130,7 +131,7 @@ export default function Periode() {
       { label: "Tambah User", to: "/tambahuser" },
       { label: "Atur Periode", to: "/periode", active: true },
       { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang" },
-      { label: "Grafik Belanja Unit", to: "/superadmin/grafik-belanja" },
+      { label: "Analisis Dan Grafik", to: "/superadmin/grafik-belanja" },
     ];
   }, []);
 

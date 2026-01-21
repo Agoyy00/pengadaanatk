@@ -5,6 +5,7 @@ import "../../css/tabel.css";
 
 
 const API_BASE = "http://127.0.0.1:8000/api";
+const token = localStorage.getItem("token");
 
 export default function Approval() {
   const navigate = useNavigate();
@@ -22,7 +23,7 @@ export default function Approval() {
         { label: "Tambah User", to: "/tambahuser" },
         { label: "Atur Periode", to: "/periode" },
         { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang"},
-        { label: "Grafik Belanja Unit", to: "/superadmin/grafik-belanja" },
+        { label: "Analisis Dan Grafik", to: "/superadmin/grafik-belanja" },
       ];
     }, []);
 
@@ -33,7 +34,11 @@ export default function Approval() {
   const fetchPengajuan = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`${API_BASE}/pengajuan`);
+      const res = await fetch(`${API_BASE}/pengajuan` , {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        },
+      });
       const json = await res.json();
       // Ambil semua pengajuan yang diverifikasi admin atau sudah disetujui/ditolak
       setPengajuan(json.filter(p => ["diverifikasi_admin", "disetujui", "ditolak_admin"].includes(p.status)));
@@ -66,7 +71,7 @@ export default function Approval() {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          "Accept": "application/json",
+          "Accept": "application/json", "Authorization": `Bearer ${token}`,
         },
         body: JSON.stringify({
           status: newStatus,
@@ -90,7 +95,42 @@ export default function Approval() {
       setProcessingId(null);
     }
   };
+  console.log(currentUser.role); // harus superadmin
+console.log(token); // harus ada
 
+
+ const handleDownloadPdf = async (id) => {
+  try {
+    const res = await fetch(`${API_BASE}/superadmin/pengajuan/pdf/${id}`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/pdf",
+      },
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      console.error("Gagal download PDF:", text);
+      alert("Gagal download PDF, cek console");
+      return;
+    }
+
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Approval-ATK-${id}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+
+  } catch (err) {
+    console.error("Fetch error:", err);
+    alert("Kesalahan jaringan");
+  }
+};
   return (
     
     <div className="layout">
@@ -191,16 +231,19 @@ export default function Approval() {
                           )}
                         </td>
                         <td>
-                          {["disetujui", "ditolak_admin"].includes(p.status) && (
-                            <a
-                              href={`${API_BASE}/pengajuan/${p.id}/pdf`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              Download PDF
-                            </a>
-                          )}
-                        </td>
+                        {["disetujui", "ditolak_admin"].includes(p.status) && (
+                          <button
+                            onClick={() => handleDownloadPdf(p.id)}
+                            style={{
+                              padding: "6px 10px",
+                              fontSize: "13px",
+                              cursor: "pointer",
+                            }}
+                          >
+                            Download PDF
+                          </button>
+                        )}
+                      </td>
                       </tr>
                     ))}
                   </tbody>

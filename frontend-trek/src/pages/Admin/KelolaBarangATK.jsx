@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../../css/layout.css";
+import "../../css/Barang.css";
 import ImportExcelBarang from "../../components/ImportExcelBarang";
 
 const API_BASE = "http://127.0.0.1:8000/api";
+const token = localStorage.getItem("token");
 
 const normalizeRole = (role) =>
   String(role || "")
@@ -81,7 +83,11 @@ const [errors, setErrors] = useState({});
   const loadBarang = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/barang?q=${encodeURIComponent(q)}`);
+      const res = await fetch(`${API_BASE}/barang?q=${encodeURIComponent(q)}`, {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        },
+      });
       const data = await res.json();
       setBarangs(Array.isArray(data) ? data : []);
     } catch (e) {
@@ -202,6 +208,7 @@ const [errors, setErrors] = useState({});
     const res = await fetch(url, {
       method,
       body: formData,
+      headers: { "Authorization": `Bearer ${token}` },
     });
 
     const data = await res.json();
@@ -236,7 +243,7 @@ const onDelete = async (item) => {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
-          "Accept": "application/json",
+          "Accept": "application/json", "Authorization": `Bearer ${token}`,
         },
         body: JSON.stringify({
           actor_user_id: currentUser.id,
@@ -286,6 +293,7 @@ const onDelete = async (item) => {
     const res = await fetch(`${API_BASE}/barang/import`, {
       method: "POST",
       body: formData,
+      headers: { "Authorization": `Bearer ${token}` },
     });
 
     const data = await res.json();
@@ -305,7 +313,6 @@ const onDelete = async (item) => {
     setLoading(false);
   }
 };
-
 
   return (
     <div className="layout">
@@ -367,34 +374,24 @@ const onDelete = async (item) => {
             }}
           >
             <span>Daftar Barang</span>
-            <div className="excel-wrapper">
-            <div style={{ display: "flex", gap: 8 }}>
-              <button
-  onClick={() => {
-    console.log("IMPORT BUTTON CLICKED");
-    setImportOpen(true);
-  }}
->
-  📤 Import Excel
-</button>
+            <div className="action-buttons">
+            <button
+              className="btn-import"
+              onClick={() => setImportOpen(true)}
+            >
+              📤 Import Excel
+            </button>
 
-</div>
-              <button
-                onClick={openCreate}
-                style={{
-                  padding: "10px 14px",
-                  borderRadius: 10,
-                  border: "none",
-                  cursor: "pointer",
-                  background: "#16a34a",
-                  color: "white",
-                  fontWeight: 700,
-                }}
-              >
-                + Tambah Barang
-              </button>
-            </div>
+            <button
+              className="btn-add"
+              onClick={openCreate}
+            >
+              + Tambah Barang
+            </button>
           </div>
+
+            </div>
+
 
             <div style={{ display: "flex", gap: 12, marginTop: 12 }}>
               <input
@@ -608,20 +605,19 @@ const onDelete = async (item) => {
                     Satuan
                   </label>
                   <select
-                    style={{
-                      width: "100%",
-                      padding: 10,
-                      borderRadius: 10,
-                      border: `1px solid ${errors.satuan ? "#ef4444" : "#ddd"}`,
-                      cursor: "pointer",
-                    }}
-                    value={form.satuan}
-                    onChange={(e) => setForm((p) => ({ ...p, satuan: e.target.value }))}
-                  >
-                    <option value="rim">Rim</option>
-                    <option value="pcs">Pcs</option>
-                    <option value="dus">Dus</option>
-                  </select>
+                  style={{
+                    width: "100%",
+                    padding: 10,
+                    borderRadius: 10,
+                    border: `1px solid ${errors.satuan ? "#ef4444" : "#ddd"}`,
+                    cursor: "not-allowed",
+                    background: "#f9fafb",
+                  }}
+                  value="dus"
+                  disabled
+                >
+                  <option value="dus">Dus</option>
+                </select>
 
                   {errors.satuan && (
                     <div style={{ color: "#ef4444", marginTop: 6 }}>{errors.satuan}</div>

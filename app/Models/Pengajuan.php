@@ -22,7 +22,18 @@ class Pengajuan extends Model
         'total_nilai',
         'total_jumlah_diajukan',
         'user_id',
+
+        'verified_by',
+        'verified_at',
+        'approved_by',
+        'approved_at',
     ];
+
+    protected $casts = [
+    'created_at'   => 'datetime',
+    'verified_at'  => 'datetime',
+    'approved_at'  => 'datetime',
+];
 
     /**
      * Relasi ke item pengajuan (detail barang-barang yang diajukan)
@@ -39,4 +50,15 @@ class Pengajuan extends Model
     {
         return $this->belongsTo(User::class);
     }
+    
+    public function verifiedBy()
+{
+    return $this->belongsTo(User::class, 'verified_by');
+}
+
+public function approvedBy()
+{
+    return $this->belongsTo(User::class, 'approved_by');
+}
+
 }

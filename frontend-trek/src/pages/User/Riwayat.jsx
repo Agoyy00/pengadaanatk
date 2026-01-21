@@ -4,6 +4,7 @@ import "../../css/Riwayat.css";
 import "../../css/layout.css";
 
 const API_BASE = "http://127.0.0.1:8000/api";
+const token = localStorage.getItem("token");
 
 export default function Riwayat() {
   const [data, setData] = useState([]);
@@ -34,7 +35,11 @@ export default function Riwayat() {
       try {
         setLoading(true);
 
-        const res = await fetch(`${API_BASE}/pengajuan?user_id=${userId}`);
+        const res = await fetch(`${API_BASE}/pengajuan?user_id=${userId}`, {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+          },
+        });
         const json = await res.json();
         setData(json);
       } catch (err) {

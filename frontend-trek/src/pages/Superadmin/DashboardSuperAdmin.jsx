@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import "../../css/layout.css";
 
 const API_BASE = "http://127.0.0.1:8000/api";
+const token = localStorage.getItem("token");
 
 export default function DashboardSuperAdmin() {
   const navigate = useNavigate();
@@ -53,7 +54,11 @@ export default function DashboardSuperAdmin() {
       setErrorNotif("");
 
       try {
-        const res = await fetch(`${API_BASE}/notifications?user_id=${userId}`);
+        const res = await fetch(`${API_BASE}/notifications?user_id=${userId}`, {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+          },
+        });
         const data = await res.json();
 
         // response yang diharapkan: { success: true, notifications: [] }
@@ -96,7 +101,11 @@ export default function DashboardSuperAdmin() {
     setErrorNotif("");
 
     try {
-      const res = await fetch(`${API_BASE}/notifications?user_id=${userId}`);
+      const res = await fetch(`${API_BASE}/notifications?user_id=${userId}` , {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        },
+      });
       const data = await res.json();
       setNotifications(data.notifications || []);
     } catch (err) {
@@ -120,7 +129,7 @@ export default function DashboardSuperAdmin() {
       { label: "Tambah User", to: "/tambahuser" },
       { label: "Atur Periode", to: "/periode" },
       { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang" },
-      { label: "Grafik Belanja Unit", to: "/superadmin/grafik-belanja" },
+      { label: "Analisis Dan Grafik", to: "/superadmin/grafik-belanja" },
     ];
   }, []);
 

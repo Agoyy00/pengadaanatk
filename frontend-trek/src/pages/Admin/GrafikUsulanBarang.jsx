@@ -12,6 +12,7 @@ import {
 import "../../css/layout.css";
 
 const API_BASE = "http://127.0.0.1:8000/api";
+const token = localStorage.getItem("token");
 
 export default function GrafikUsulanBarangPage() {
   const navigate = useNavigate();
@@ -23,7 +24,11 @@ export default function GrafikUsulanBarangPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`${API_BASE}/barang-usulan/statistik`)
+    fetch(`${API_BASE}/barang-usulan/statistik`, {
+      headers: {
+        "Authorization": `Bearer ${token}`,
+      },
+    })
       .then((res) => res.json())
       .then((resData) => {
         setData(resData);

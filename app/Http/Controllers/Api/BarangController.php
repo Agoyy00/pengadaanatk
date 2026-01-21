@@ -100,14 +100,14 @@ class BarangController extends Controller
             'actor_user_id' => 'required|exists:users,id',
             'nama'          => 'required|string|max:255',
             'kode'          => 'required|string|max:50',
-            'satuan'        => 'required|string|max:50',
+            'satuan'        => 'required|in:dus',
             'harga_satuan'  => 'nullable|integer|min:0|max:1000000000',
             'gambar'        => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
         $nama   = $this->normalizeNama($validated['nama']);
         $kode   = $this->normalizeKode($validated['kode']);
-        $satuan = $this->normalizeSatuan($validated['satuan']);
+        $satuan = 'dus';
         $harga  = $validated['harga_satuan'] ?? 0;
 
         $existsKode = Barang::whereRaw('LOWER(kode) = ?', [strtolower($kode)])->exists();
@@ -162,7 +162,7 @@ class BarangController extends Controller
             'actor_user_id' => 'required|exists:users,id',
             'nama'          => 'required|string|max:255',
             'kode'          => 'required|string|max:50',
-            'satuan'        => 'required|string|max:50',
+            'satuan'        => 'required|in:dus',
             'harga_satuan'  => 'nullable|integer|min:0|max:1000000000',
             'gambar'        => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
@@ -171,7 +171,7 @@ class BarangController extends Controller
 
         $nama   = $this->normalizeNama($validated['nama']);
         $kode   = $this->normalizeKode($validated['kode']);
-        $satuan = $this->normalizeSatuan($validated['satuan']);
+        $satuan = 'dus';
         $harga  = $validated['harga_satuan'] ?? $barang->harga_satuan;
 
         $existsKode = Barang::whereRaw('LOWER(kode) = ?', [strtolower($kode)])
@@ -305,18 +305,21 @@ class BarangController extends Controller
 
 
 
-public function importExcel(Request $request)
-{
-    $request->validate([
-        'file' => 'required|mimes:xlsx,xls'
-    ]);
+    public function importExcel(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls',
+            'actor_user_id' => 'required|exists:users,id',
+        ]);
 
-    Excel::import(new BarangAtkImport, $request->file('file'));
+        Excel::import(
+            new BarangAtkImport($request->actor_user_id),
+            $request->file('file')
+        );
 
-    return response()->json([
-        'success' => true,
-        'message' => 'Import barang ATK berhasil'
-    ]);
-}
-
+        return response()->json([
+            'success' => true,
+            'message' => 'Import barang ATK berhasil'
+        ]);
+    }
 }

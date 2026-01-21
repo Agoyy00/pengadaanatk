@@ -5,6 +5,7 @@
   import "../../css/layout.css";
 
   const API_BASE = "http://127.0.0.1:8000/api";
+  const token = localStorage.getItem("token");
 
   export default function TambahUser() {
     const navigate = useNavigate();
@@ -37,7 +38,7 @@
       try {
         const res = await fetch(`${API_BASE}/users`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
           body: JSON.stringify({ name, email, password, role, }),
         });
 
@@ -74,7 +75,9 @@
 
    async function loadUsers() {
     setLoadingUsers(true);
-    const res = await fetch(`${API_BASE}/users`);
+    const res = await fetch(`${API_BASE}/users` , {
+      headers: { "Authorization": `Bearer ${token}` },
+    });
     const data = await res.json();
     setUsers(data);
     setLoadingUsers(false);
@@ -99,6 +102,7 @@ async function deleteUser(user) {
 
   const res = await fetch(`${API_BASE}/users/${user.id}`, {
     method: "DELETE",
+    headers: { "Authorization": `Bearer ${token}` },
   });
 
   const data = await res.json();
@@ -117,7 +121,7 @@ async function deleteUser(user) {
       { label: "Tambah User", to: "/tambahuser", active: true  },
       { label: "Atur Periode", to: "/periode" },
       { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang" },
-      { label: "Grafik Belanja Unit", to: "/superadmin/grafik-belanja" },
+      { label: "Analisis Dan Grafik", to: "/superadmin/grafik-belanja" },
     ];
   }, []);
 

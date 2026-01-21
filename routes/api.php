@@ -11,99 +11,113 @@ use App\Http\Controllers\Api\LaporanController;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\BarangUsulanController;
-
+use App\Http\Controllers\Api\PengajuanAdminPdfController;
+use App\Http\Controllers\Api\Superadmin\PengajuanPdfSuperadminController;
 /*
 |--------------------------------------------------------------------------
 | Auth
 |--------------------------------------------------------------------------
 */
+/*
+|--------------------------------------------------------------------------
+| Public API
+|--------------------------------------------------------------------------
+*/
 Route::post('/login', [AuthController::class, 'login']);
 
-/*
-|--------------------------------------------------------------------------
-| User Management (Super Admin)
-|--------------------------------------------------------------------------
-*/
-Route::get('/users', [UserManagementController::class, 'index']);
-Route::post('/users', [UserManagementController::class, 'store']);
-
-/*
-|--------------------------------------------------------------------------
-| Barang
-|--------------------------------------------------------------------------
-*/
-Route::get('/barang', [BarangController::class, 'index']);
-Route::get('/barang/{barang}', [BarangController::class, 'show']);
-Route::get('/barang/{barang}/logs', [BarangController::class, 'logs']);
-
-// CRUD barang
-Route::post('/barang', [BarangController::class, 'store']);
-Route::patch('/barang/{barang}', [BarangController::class, 'update']);
-Route::delete('/barang/{barang}', [BarangController::class, 'destroy']);
-
-// update harga
-Route::patch('/barang/{barang}/harga', [BarangController::class, 'updateHarga']);
-
-/*
-|--------------------------------------------------------------------------
-| Pengajuan ATK
-|--------------------------------------------------------------------------
-*/
-Route::get('/pengajuan', [PengajuanController::class, 'index']);
-Route::post('/pengajuan', [PengajuanController::class, 'store']);
-Route::get('/pengajuan/check/{user}/{tahun}', [PengajuanController::class, 'checkUserPengajuan']);
-Route::patch('/pengajuan/{pengajuan}/status', [PengajuanController::class, 'updateStatus']);
-Route::patch('/pengajuan/{pengajuan}/revisi', [PengajuanController::class, 'revisiItems']);
-Route::get('/pengajuan/{pengajuan}/pdf', [PengajuanController::class, 'downloadPdf']);
-
-/*
-|--------------------------------------------------------------------------
-| Approval (Super Admin)
-|--------------------------------------------------------------------------
-*/
-Route::get('/pengajuan/approval', [PengajuanController::class, 'approvalList']);
-
-/*
-|--------------------------------------------------------------------------
-| Analisis
-|--------------------------------------------------------------------------
-*/
-Route::get('/analisis-barang', [PengajuanController::class, 'analisisBarang']);
-
-/*
-|--------------------------------------------------------------------------
-| Periode
-|--------------------------------------------------------------------------
-*/
-Route::get('/periode', [PeriodeController::class, 'index']);
 Route::get('/periode/active', [PeriodeController::class, 'active']);
-Route::post('/periode', [PeriodeController::class, 'storeOrUpdate']);
-Route::delete('/periode/{periode}', [PeriodeController::class, 'destroy']);
 
 /*
 |--------------------------------------------------------------------------
-| Approval (SuperAdmin)
+| Protected API (Sanctum)
 |--------------------------------------------------------------------------
 */
-Route::get('/approval', [PengajuanController::class, 'approvalList']);
-Route::patch('/approval/{pengajuan}', [PengajuanController::class, 'approveBySuperAdmin']);
-Route::get('/approval/{pengajuan}/pdf', [PengajuanController::class, 'downloadPdf']);
+Route::middleware('auth:sanctum')->group(function () {
 
-/*
-|--------------------------------------------------------------------------
-| Laporan (SuperAdmin)
-|--------------------------------------------------------------------------
-*/
-Route::get('/laporan/grafik-belanja', [LaporanController::class, 'grafikBelanja']);
-Route::get('/test-qr', function () {return QrCode::size(200)->generate('VERIFIKASI YAYASAN');});
+    /*
+    | User Management (Super Admin)
+    */
+    Route::get('/users', [UserManagementController::class, 'index']);
+    Route::post('/users', [UserManagementController::class, 'store']);
+    Route::delete('/users/{user}', [UserManagementController::class, 'destroy']);
 
-Route::get('/notifications', [NotificationController::class, 'index']);
-Route::patch('/notifications/{notification}/read', [NotificationController::class, 'markAsRead']);
-Route::delete('/users/{user}', [UserManagementController::class, 'destroy']);
-Route::post('/barang-usulan', [BarangUsulanController::class, 'store']);
-Route::get('/barang-usulan', [BarangUsulanController::class, 'index']);
-Route::get('/barang-usulan/statistik', [BarangUsulanController::class, 'statistik']);
-Route::post('/barang/import', [PengajuanController::class, 'importBarangATK']);
-Route::post('/barang/import-excel', [BarangController::class, 'importExcel']);
+    /*
+    | Barang
+    */
+    Route::get('/barang', [BarangController::class, 'index']);
+    Route::get('/barang/{barang}', [BarangController::class, 'show']);
+    Route::get('/barang/{barang}/logs', [BarangController::class, 'logs']);
+
+    Route::post('/barang', [BarangController::class, 'store']);
+    Route::patch('/barang/{barang}', [BarangController::class, 'update']);
+    Route::delete('/barang/{barang}', [BarangController::class, 'destroy']);
+    Route::patch('/barang/{barang}/harga', [BarangController::class, 'updateHarga']);
+
+    Route::post('/barang/import-excel', [BarangController::class, 'importExcel']);
+
+    /*
+    | Pengajuan ATK
+    */
+    Route::get('/pengajuan', [PengajuanController::class, 'index']);
+    Route::post('/pengajuan', [PengajuanController::class, 'store']);
+    Route::get('/pengajuan/check/{user}/{tahun}', [PengajuanController::class, 'checkUserPengajuan']);
+
+    Route::patch('/pengajuan/{pengajuan}/status', [PengajuanController::class, 'updateStatus']);
+    Route::patch('/pengajuan/{pengajuan}/revisi', [PengajuanController::class, 'revisiItems']);
 
 
+    /*
+    | Approval (Super Admin)
+    */
+    Route::get('/approval', [PengajuanController::class, 'approvalList']);
+    Route::patch('/approval/{pengajuan}', [PengajuanController::class, 'approveBySuperAdmin']);
+    // ===== PDF ADMIN (verifikasi) =====
+    Route::get(
+        '/pengajuan/{pengajuan}/pdf/admin',
+        [PengajuanAdminPdfController::class, 'adminPdf']
+    );
+
+    // ===== PDF SUPERADMIN (approval) =====
+    Route::prefix('superadmin')
+    ->middleware('auth:sanctum')
+    ->group(function () {
+
+        Route::get('/pengajuan/pdf/{pengajuan}',
+            [PengajuanPdfSuperadminController::class, 'download']
+        );
+
+    });
+
+
+    /*
+    | Analisis & Laporan
+    */
+    Route::get('/analisis-barang', [PengajuanController::class, 'analisisBarang']);
+    Route::get('/laporan/grafik-belanja', [LaporanController::class, 'grafikBelanja']);
+
+    /*
+    | Periode Management (Admin)
+    */
+    Route::get('/periode', [PeriodeController::class, 'index']);
+    Route::post('/periode', [PeriodeController::class, 'storeOrUpdate']);
+    Route::delete('/periode/{periode}', [PeriodeController::class, 'destroy']);
+
+    /*
+    | Notification
+    */
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::patch('/notifications/{notification}/read', [NotificationController::class, 'markAsRead']);
+
+    /*
+    | Barang Usulan
+    */
+    Route::post('/barang-usulan', [BarangUsulanController::class, 'store']);
+    Route::get('/barang-usulan', [BarangUsulanController::class, 'index']);
+    Route::get('/barang-usulan/statistik', [BarangUsulanController::class, 'statistik']);
+
+    /*
+    | Import
+    */
+    Route::post('/barang/import', [PengajuanController::class, 'importBarangATK']);
+
+});

@@ -11,8 +11,14 @@ import {
 } from "recharts";
 import "../../css/layout.css";
 import "../../css/Grafik.css";
+import Analisis from "../../components/AnalisisData.jsx";
+// sesuaikan path kalau beda folder
+
 
 const API_BASE = "http://127.0.0.1:8000/api";
+const token = localStorage.getItem("token");
+
+
 
 const rupiah = (n) =>
   new Intl.NumberFormat("id-ID", {
@@ -24,7 +30,7 @@ export default function SuperAdminAnalisisDashboard() {
   const navigate = useNavigate();
   const storedUser = localStorage.getItem("user");
   const currentUser = storedUser ? JSON.parse(storedUser) : null;
-
+const [showAnalisis, setShowAnalisis] = useState(false);
   /* =========================
      PROTEKSI LOGIN
   ========================= */
@@ -41,6 +47,7 @@ export default function SuperAdminAnalisisDashboard() {
       { label: "Approval", to: "/approval" },
       { label: "Tambah User", to: "/tambahuser" },
       { label: "Atur Periode", to: "/periode" },
+      { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang" },
       { label: "Analisis & Grafik", to: "/superadmin/analisis", active: true },
     ],
     []
@@ -72,7 +79,9 @@ export default function SuperAdminAnalisisDashboard() {
 
   useEffect(() => {
     async function loadBarang() {
-      const res = await fetch(`${API_BASE}/barang`);
+      const res = await fetch(`${API_BASE}/barang`, {
+        headers: { "Authorization": `Bearer ${token}` },
+      });
       const json = await res.json();
       setBarangList(json || []);
       if (json?.length) setBarangId(String(json[0].id));
@@ -93,7 +102,9 @@ export default function SuperAdminAnalisisDashboard() {
         unit,
       });
 
-      const res = await fetch(`${API_BASE}/analisis-barang?${params}`);
+      const res = await fetch(`${API_BASE}/analisis-barang?${params}`, {
+        headers: { "Authorization": `Bearer ${token}` },
+      });
       const json = await res.json();
 
       if (!res.ok || json.success === false) {
@@ -125,7 +136,12 @@ export default function SuperAdminAnalisisDashboard() {
 
     try {
       const res = await fetch(
-        `${API_BASE}/laporan/grafik-belanja?years=${yearsCount}&status=${status}`
+        `${API_BASE}/laporan/grafik-belanja?years=${yearsCount}&status=${status}`,
+        {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+          },
+        }
       );
       const json = await res.json();
 
@@ -182,8 +198,8 @@ export default function SuperAdminAnalisisDashboard() {
         </div>
       </aside>
 
-      {/* MAIN */}
-        <main className="main">
+       {/* MAIN */}
+      <main className="main">
         <header className="topbar">
           <div>
             <div className="topbar-title">Analisis & Grafik ATK</div>
@@ -194,45 +210,16 @@ export default function SuperAdminAnalisisDashboard() {
         </header>
 
         <section className="main-content">
-          {/* ANALISIS */}
-          <div className="card">
-            <div className="card-title">Analisis Barang</div>
-
-            <form onSubmit={handleAnalisis}>
-              <div className="form-row">
-                <select value={barangId} onChange={(e) => setBarangId(e.target.value)}>
-                  {barangList.map((b) => (
-                    <option key={b.id} value={b.id}>{b.nama}</option>
-                  ))}
-                </select>
-
-                <select value={tahunAkademik} onChange={(e) => setTahunAkademik(e.target.value)}>
-                  <option value="all">Semua Tahun</option>
-                  <option value="2024/2025">2024/2025</option>
-                  <option value="2025/2026">2025/2026</option>
-                </select>
-
-                <select value={unit} onChange={(e) => setUnit(e.target.value)}>
-                  <option value="all">Semua Unit</option>
-                  {unitOptions.map((u) => (
-                    <option key={u}>{u}</option>
-                  ))}
-                </select>
-              </div>
-
-              <button type="submit">
-                {loadingAnalisis ? "Loading..." : "Analisis"}
+                <button
+                className="btn btn-primary btn-sm"
+                onClick={() => setShowAnalisis(true)}
+              >
+                Tampilkan Analisis
               </button>
-            </form>
-
-            {errorAnalisis && <p className="error-text">{errorAnalisis}</p>}
-            {resultAnalisis && (
-              <p>
-                Total diajukan:{" "}
-                <b>{resultAnalisis.summary.total_diajukan}</b>
-              </p>
-            )}
-          </div>
+            <Analisis
+              open={showAnalisis}
+              onClose={() => setShowAnalisis(false)}
+            />
 
           {/* GRAFIK */}
           <div className="card" style={{ marginTop: 20 }}>

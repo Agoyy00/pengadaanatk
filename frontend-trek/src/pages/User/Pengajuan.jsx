@@ -7,6 +7,8 @@ function Pengajuan() {
   const [currentStep, setCurrentStep] = useState(1);
 
   const STORAGE_URL = "http://127.0.0.1:8000/storage/barang";
+  const token = localStorage.getItem("token");
+
 
   // STEP 1 – data pengajuan
   const [tahunAkademik, setTahunAkademik] = useState("");
@@ -148,8 +150,14 @@ const [loadingSubmit, setLoadingSubmit] = useState(false); // opsional spinner
       setLoadingSearch(true);
 
       const res = await fetch(
-        `${API_BASE}/barang?q=${encodeURIComponent(query)}`
-      );
+    `${API_BASE}/barang?q=${encodeURIComponent(query)}`,
+      {
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      }
+    );
 
       const data = await res.json(); // ✅ data DIDEFINISIKAN DI SINI
 
@@ -244,7 +252,7 @@ const [loadingSubmit, setLoadingSubmit] = useState(false); // opsional spinner
 
     const res = await fetch(`${API_BASE}/barang-usulan`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}`, },
       body: JSON.stringify({ nama_barang: usulan.nama, user_id: userId }),
     });
 
@@ -379,7 +387,7 @@ const [loadingSubmit, setLoadingSubmit] = useState(false); // opsional spinner
     try {
       const res = await fetch(`${API_BASE}/pengajuan`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}`, },
         body: JSON.stringify(payload),
       });
 

@@ -1,0 +1,43 @@
+/* =========================
+   ACTION BUTTONS (KANAN)
+   ========================= */
+
+.action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Import Excel */
+.btn-import {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid #1f6feb;
+  background: #ffffff;
+  color: #1f6feb;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-import:hover {
+  background: #1f6feb;
+  color: #ffffff;
+  box-shadow: 0 6px 14px rgba(31, 111, 235, 0.25);
+}
+
+/* Tambah Barang */
+.btn-add {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  background: #16a34a;
+  color: white;
+  transition: all 0.2s ease;
+}
+
+.btn-add:hover {
+  background: #15803d;
+  box-shadow: 0 6px 14px rgba(22, 163, 74, 0.3);
+}

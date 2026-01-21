@@ -8,6 +8,7 @@ import DetailVerifikasi from "../../components/DetailVerifikasi";
 
 
 const API_BASE = "http://127.0.0.1:8000/api";
+const token = localStorage.getItem("token");
 
 export default function Verifikasi() {
   const navigate = useNavigate();
@@ -22,7 +23,11 @@ export default function Verifikasi() {
     async function loadPengajuan() {
       try {
         setLoading(true);
-        const res = await fetch(`${API_BASE}/pengajuan`);
+        const res = await fetch(`${API_BASE}/pengajuan`, {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+          },
+        });
         const json = await res.json();
         setData(json);
       } catch (err) {
@@ -67,6 +72,43 @@ export default function Verifikasi() {
   }
 };
 
+const downloadPdfAdmin = async (id, status) => {
+  if (status !== "diajukan") {
+    alert("PDF Admin hanya tersedia saat pengajuan masih diajukan");
+    return;
+  }
+  
+  const token = localStorage.getItem("token");
+  console.log("TOKEN:", token);
+  try {
+    const response = await fetch(
+      `${API_BASE}/pengajuan/${id}/pdf/admin`,
+      {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        },
+      }
+    );  
+
+    if (!response.ok) {
+      const text = await response.text();
+      console.error("PDF ERROR:", text);
+      throw new Error("Response not ok");
+    }
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `pengajuan-admin-${id}.pdf`;
+    a.click();
+
+    window.URL.revokeObjectURL(url);
+  } catch (err) {
+    alert("Gagal download PDF Admin");
+  }
+};
 
   // PATCH status biasa
   const handleUpdateStatus = async (pengajuanId, newStatus) => {
@@ -80,9 +122,9 @@ export default function Verifikasi() {
       const res = await fetch(`${API_BASE}/pengajuan/${pengajuanId}/status`, {
         method: "PATCH",
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type": "application/json", "Authorization": `Bearer ${token}`,
         },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({ user_id: currentUser.id,status: newStatus }),
       });
 
       const json = await res.json();
@@ -107,6 +149,7 @@ export default function Verifikasi() {
   };
 
   const storedUser = localStorage.getItem("user");
+  const token = localStorage.getItem("token");
   const currentUser = storedUser ? JSON.parse(storedUser) : null;
   const formatRole = (role) => {
     if (!role) return "-";
@@ -164,7 +207,7 @@ export default function Verifikasi() {
 
       const res = await fetch(`${API_BASE}/pengajuan/${pengajuan.id}/revisi`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
         body: JSON.stringify({ items: revisions }),
       });
 
@@ -290,14 +333,14 @@ const submitVerifikasi = async (pengajuanId) => {
     // 🚀 kirim ke backend
     await fetch(`${API_BASE}/pengajuan/${pengajuanId}/revisi`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ items }),
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}`, },
+      body: JSON.stringify({ actor_user_id: currentUser.id, items }),
     });
 
     // update status
     await fetch(`${API_BASE}/pengajuan/${pengajuanId}/status`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}`, },
       body: JSON.stringify({ status: "diverifikasi" }),
     });
 
@@ -416,50 +459,58 @@ const [selectedPengajuan, setSelectedPengajuan] = useState(null);
                             </td>
                             <td>
                               {p.items.map((item) => {
-  const kebutuhan = item.kebutuhan_total;
-  const sisa = item.sisa_stok;
-  const diajukan = item.jumlah_diajukan;
-  const disetujui =
-    item.jumlah_disetujui !== null
-      ? item.jumlah_disetujui
-      : diajukan;
+                              const kebutuhan = item.kebutuhan_total;
+                              const sisa = item.sisa_stok;
+                              const diajukan = item.jumlah_diajukan;
+                              const disetujui =
+                                item.jumlah_disetujui !== null
+                                  ? item.jumlah_disetujui
+                                  : diajukan;
 
-  return (
-    <li key={item.id}>
-      <strong>{item.barang?.nama}</strong>
+                              return (
+                                <li key={item.id}>
+                                  <strong>{item.barang?.nama}</strong>
 
-      {/* 🔹 SAAT MASIH DIAJUKAN */}
-      {p.status === "diajukan" && (
-        <div className="item-meta">
-          Kebutuhan total:{" "}
-          <b>{kebutuhan} {item.barang?.satuan}</b><br />
-          Sisa stok saat ini:{" "}
-          <b>{sisa} {item.barang?.satuan}</b><br />
-          Jumlah diajukan:{" "}
-          <b>{diajukan} {item.barang?.satuan}</b>
-        </div>
-      )}
+                                  {/* 🔹 SAAT MASIH DIAJUKAN */}
+                                  {p.status === "diajukan" && (
+                                    <div className="item-meta">
+                                      Kebutuhan total:{" "}
+                                      <b>{kebutuhan} {item.barang?.satuan}</b><br />
+                                      Sisa stok saat ini:{" "}
+                                      <b>{sisa} {item.barang?.satuan}</b><br />
+                                      Jumlah diajukan:{" "}
+                                      <b>{diajukan} {item.barang?.satuan}</b>
+                                    </div>
+                                  )}
 
-      {/* 🔹 SETELAH DIVERIFIKASI ADMIN */}
-      {p.status !== "diajukan" && (
-        <div className="item-meta">
-          Jumlah disetujui:{" "}
-          <b>{disetujui} {item.barang?.satuan}</b>
-        </div>
-      )}
+                                  {/* 🔹 SETELAH DIVERIFIKASI ADMIN */}
+                                  {p.status !== "diajukan" && (
+                                    <div className="item-meta">
+                                      Jumlah disetujui:{" "}
+                                      <b>{disetujui} {item.barang?.satuan}</b>
+                                    </div>
+                                  )}
 
-      {item.catatan_revisi && (
-        <div className="revisi-note">
-          Catatan: {item.catatan_revisi}
-        </div>
-      )}
-    </li>
-  );
-})}
-
+                                  {item.catatan_revisi && (
+                                    <div className="revisi-note">
+                                      Catatan: {item.catatan_revisi}
+                                    </div>
+                                  )}
+                                </li>
+                              );
+                            })}
 
                             </td>
                             <td>
+                              {/* ===== AKSI PDF (AMAN, TIDAK GANGGU STATUS) ===== */}
+                              {(p.status === "diajukan") && (
+                                <button
+                                className="btn-pdf"
+                                onClick={() => downloadPdfAdmin(p.id, p.status)}
+                              >
+                                📄 PDF Admin
+                              </button>
+                              )}
                               {p.status === "diajukan" && (
                                 <>
                                   <button
@@ -489,6 +540,7 @@ const [selectedPengajuan, setSelectedPengajuan] = useState(null);
                                   </button>
                                 </>
                               )}
+                              
                               {p.status === "diverifikasi_admin" && (<span className="status-text done">✓ Pengajuan diverifikasi</span>)}
                               {p.status === "ditolak" && (
                                 <span className="status-text rejected">

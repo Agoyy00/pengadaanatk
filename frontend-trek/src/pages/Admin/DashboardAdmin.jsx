@@ -6,6 +6,7 @@ const API_BASE = "http://127.0.0.1:8000/api";
 
 export default function DashboardSuperAdmin() {
   const navigate = useNavigate();
+  const token = localStorage.getItem("token");
 
   // =========================
   // NOTIFIKASI STATE
@@ -41,7 +42,11 @@ export default function DashboardSuperAdmin() {
       setErrorNotif("");
 
       try {
-        const res = await fetch(`${API_BASE}/notifications?user_id=${userId}`);
+        const res = await fetch(`${API_BASE}/notifications?user_id=${userId}`, {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+          },
+        });
         const data = await res.json();
 
         // bentuk response yang kita harapkan:

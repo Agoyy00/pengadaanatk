@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\Pengajuan;
 use App\Models\PengajuanItem;
@@ -182,7 +183,8 @@ class PengajuanController extends Controller
         'user_id' => 'required|exists:users,id',
     ]);
 
-    $user = User::find($validated['user_id']);
+    $user = Auth::user();
+
     $nextStatus = $validated['status'];
 
     // ================= ADMIN =================
@@ -195,12 +197,18 @@ class PengajuanController extends Controller
             ], 422);
         }
 
-        // ❌ hapus notif admin
+        $pengajuan->update([
+            'status'      => 'diverifikasi_admin',
+            'verified_by' => Auth::id(),
+            'verified_at' => now(),
+        ]);
+
+        // hapus notif admin
         Notification::where('pengajuan_id', $pengajuan->id)
             ->where('user_id', $user->id)
             ->delete();
 
-        // ✅ kirim notif ke superadmin
+        // notif ke superadmin
         $superAdmins = User::where('role_id', 1)->get();
         foreach ($superAdmins as $sa) {
             Notification::create([
@@ -211,9 +219,15 @@ class PengajuanController extends Controller
                 'is_read'      => false,
             ]);
         }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Pengajuan berhasil diverifikasi admin',
+            'pengajuan' => $pengajuan,
+        ]);
     }
 
-    // ================= SUPER ADMIN =================
+    // ================= SUPERADMIN =================
     if ($user->role_id === 1) {
 
         if (
@@ -226,19 +240,27 @@ class PengajuanController extends Controller
             ], 422);
         }
 
-        // ❌ hapus semua notif terkait pengajuan ini (admin + superadmin)
         Notification::where('pengajuan_id', $pengajuan->id)->delete();
+
+        $pengajuan->update([
+            'status'       => $nextStatus,
+            'approved_by'  => Auth::id(),
+            'approved_at'  => now(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Pengajuan berhasil diproses superadmin',
+            'pengajuan' => $pengajuan,
+        ]);
     }
 
-    // ✅ update status TERAKHIR
-    $pengajuan->update(['status' => $nextStatus]);
-
     return response()->json([
-        'success'   => true,
-        'message'   => 'Status berhasil diperbarui',
-        'pengajuan' => $pengajuan,
-    ]);
+        'success' => false,
+        'message' => 'Role tidak dikenali',
+    ], 403);
 }
+
 
     /**
      * GET /api/analisis-barang
@@ -352,6 +374,7 @@ class PengajuanController extends Controller
         'items.*.id'                => 'required|integer|exists:pengajuan_items,id',
         'items.*.jumlah_disetujui'  => 'required|integer|min:0',
         'items.*.catatan_revisi'    => 'nullable|string',
+        'actor_user_id' => 'required|exists:users,id',
     ]);
 
     if ($pengajuan->status !== 'diajukan') {
@@ -383,9 +406,13 @@ class PengajuanController extends Controller
         $totalNilai  += $qty * $it->harga_satuan;
     }
 
+    $user = Auth::user();
+
     $pengajuan->update([
         'total_jumlah_diajukan' => $totalJumlah,
         'total_nilai'           => $totalNilai,
+        'verified_by' => Auth::id(),
+        'verified_at' => now(),
     ]);
 
     return response()->json([
@@ -411,29 +438,6 @@ class PengajuanController extends Controller
 
         return response()->json($data);
     }
-    
-    public function downloadPdf(Pengajuan $pengajuan)
-    {
-        $pengajuan->load('items.barang');
-
-        // 🔐 DATA VALIDASI (nanti dipakai QR)
-        $payload = json_encode([
-            'pengajuan_id' => $pengajuan->id,
-            'status' => $pengajuan->status,
-            'tanggal' => $pengajuan->updated_at->toIso8601String(),
-        ]);
-
-        // ⚠️ DUMMY QR (sementara, biar blade gak error)
-        $qr = null;
-
-        $pdf = Pdf::loadView('pdf.pengajuan', [
-            'pengajuan' => $pengajuan,
-            'qr'        => $qr, // ⬅️ INI YANG HILANG
-        ])->setPaper('A4', 'portrait');
-
-        return $pdf->download('Pengajuan-ATK-'.$pengajuan->id.'.pdf');
-    }
-
     public function importBarangATK(Request $request)
     {
         $request->validate([
