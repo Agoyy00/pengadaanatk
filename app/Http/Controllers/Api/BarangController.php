@@ -306,20 +306,32 @@ class BarangController extends Controller
 
 
     public function importExcel(Request $request)
-    {
-        $request->validate([
-            'file' => 'required|mimes:xlsx,xls',
-            'actor_user_id' => 'required|exists:users,id',
-        ]);
+{
+    $request->validate([
+        'file' => 'required|mimes:xlsx,xls',
+        'actor_user_id' => 'required|exists:users,id',
+    ]);
 
-        Excel::import(
-            new BarangAtkImport($request->actor_user_id),
+    try {
+        \Illuminate\Support\Facades\DB::beginTransaction();
+
+        \Maatwebsite\Excel\Facades\Excel::import(
+            new \App\Imports\BarangAtkImport($request->actor_user_id),
             $request->file('file')
         );
+
+        \Illuminate\Support\Facades\DB::commit();
 
         return response()->json([
             'success' => true,
             'message' => 'Import barang ATK berhasil'
         ]);
+    } catch (\Exception $e) {
+        \Illuminate\Support\Facades\DB::rollBack();
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal Import: ' . $e->getMessage()
+        ], 500);
     }
+}
 }

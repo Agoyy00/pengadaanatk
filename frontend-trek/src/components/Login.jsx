@@ -72,7 +72,21 @@ function Login({ onClose }) {
           </div>
 
           <div className="right-side-small">
-            <h2 className="login-title">Login LDAP</h2>
+            <h2 className="login-title">Login</h2>
+            
+            {/* Tambahkan teks informasi di sini */}
+            <p style={{
+              textAlign: 'center',
+              fontSize: '13px',
+              color: '#64748b', // Warna slate grey yang elegan
+              marginTop: '-15px', // Menarik posisi ke atas agar dekat dengan judul
+              marginBottom: '25px',
+              lineHeight: '1.5',
+              fontWeight: '400'
+            }}>
+              Silakan login menggunakan akun YARSI yang <br /> 
+              <span style={{ color: '#3b82f6', fontWeight: '600' }}>Sudah Terdaftar</span>
+            </p>
 
             <form onSubmit={handleLogin} className="login-form-small">
               {/* USERNAME (Bukan Email) */}

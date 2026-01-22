@@ -22,7 +22,8 @@ class AuthController extends Controller
         $password = $request->password;
 
         // 2. Ambil username saja (misal: '1212024@yarsi.ac.id' -> '1212024')
-        $username = explode('@', $input)[0];
+        $username = explode('@', $request->email)[0];
+        $user = User::where('email', 'LIKE', $username . '%')->first();
 
         $ldap_success = false;
         $ldap_attributes = [];
@@ -63,27 +64,33 @@ class AuthController extends Controller
         }
 
         // 4. Proses Database Lokal (MySQL)
-        if ($ldap_success) {
-            // Cari user di DB lokal (Cek email yang mirip)
-            $user = User::with('role')
-                ->where('email', 'LIKE', $username . '%')
-                ->first();
+        // Di dalam AuthController.php pada bagian if ($ldap_success)
 
-            // --- FITUR AUTO-REGISTER ---
-            // Jika login LDAP sukses tapi data tidak ada di MySQL, buat otomatis
+        if ($ldap_success) {
+            $username = explode('@', $request->email)[0];
+            
+            // 1. Cari user yang sudah didaftarkan Superadmin tadi
+            $user = User::with('role')->where('email', 'LIKE', $username . '%')->first();
+
             if (!$user) {
-                $user = User::create([
-                    'name'     => $ldap_attributes['name'],
-                    'email'    => $username . '@yarsi.ac.id',
-                    'password' => Hash::make($password), // Backup password
-                    'role_id'  => 3, // Default sebagai 'user'
-                    'is_ldap'  => 1, // Sesuai kolom di database Anda
-                ]);
-                $user->load('role'); // Muat relasi role untuk user baru
+                return response()->json([
+                    'success' => false,
+                    'message' => "Anda belum diberi akses. Silakan hubungi Superadmin.",
+                ], 403);
             }
 
-            // 5. Generate Token Sanctum untuk React
-            $user->tokens()->delete(); // Hapus session lama
+            // 2. AMBIL NAMA ASLI DARI LDAP (Display Name)
+            // $info berasal dari hasil ldap_get_entries yang sudah kita buat sebelumnya
+            $fullName = $info[0]['displayname'][0] ?? $user->name;
+
+            // 3. UPDATE NAMA DI DATABASE LOKAL
+            // Sekarang nama 'keke.odsa' akan berubah jadi 'Keke Odsa Maya' secara otomatis
+            $user->update([
+                'name' => $fullName,
+                'is_ldap' => 1
+            ]);
+
+            $user->tokens()->delete();
             $token = $user->createToken('api-token')->plainTextToken;
 
             return response()->json([
@@ -91,13 +98,12 @@ class AuthController extends Controller
                 'token'   => $token,
                 'user'    => [
                     'id'    => $user->id,
-                    'name'  => $user->name,
+                    'name'  => $user->name, // Ini sudah nama lengkap asli
                     'email' => $user->email,
-                    'role'  => $user->role->name, // Mengirim 'superadmin', 'admin', atau 'user'
+                    'role'  => $user->role->name,
                 ],
             ]);
         }
-
         // 6. Jika Password LDAP Salah
         return response()->json([
             'success' => false,

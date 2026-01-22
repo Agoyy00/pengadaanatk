@@ -4,51 +4,59 @@ namespace App\Imports;
 
 use App\Models\Barang;
 use App\Models\BarangAuditLog;
-use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 
 class BarangAtkImport implements ToModel, WithHeadingRow
 {
     protected int $actorUserId;
+    protected int $nextNumber;
 
     public function __construct(int $actorUserId)
     {
         $this->actorUserId = $actorUserId;
+
+        $lastBarang = Barang::where('kode', 'like', 'ATK-%')
+            ->selectRaw("MAX(CAST(SUBSTRING(kode, 5) AS UNSIGNED)) as max_code")
+            ->first();
+
+        $this->nextNumber = ($lastBarang->max_code ?? 0) + 1;
     }
 
     public function model(array $row)
     {
-        $nama = trim($row['nama'] ?? '');
-        $harga = (int) ($row['harga_satuan'] ?? 0);
+        // 🔥 PAKSA BACA HEADER YANG VALID
+        $nama = trim(
+            $row['nama']
+            ?? $row['nama_barang']
+            ?? ''
+        );
 
         if ($nama === '') {
-            return null;
+            throw new \Exception("Kolom nama / nama_barang tidak ditemukan di Excel");
         }
 
-        // 🔒 generate kode AMAN (atomic)
-        $kodeBaru = DB::transaction(function () {
-            $lastNumber = Barang::lockForUpdate()
-                ->selectRaw("MAX(CAST(SUBSTRING(kode,5) AS UNSIGNED)) as max")
-                ->value('max') ?? 0;
+        $harga = (int) (
+            $row['harga']
+            ?? $row['harga_satuan']
+            ?? 0
+        );
 
-            return 'ATK-' . str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
-        });
+        $kode = 'ATK-' . str_pad($this->nextNumber, 3, '0', STR_PAD_LEFT);
+        $this->nextNumber++;
 
         $barang = Barang::create([
-            'kode'         => $kodeBaru,
+            'kode'         => $kode,
             'nama'         => $nama,
-            'satuan'       => 'dus', // 🔒 KUNCI FINAL
+            'satuan'       => 'dus',
             'harga_satuan' => $harga,
         ]);
 
-        // 🧾 audit log import
         BarangAuditLog::create([
             'barang_id' => $barang->id,
             'user_id'   => $this->actorUserId,
             'action'    => 'import',
-            'old_data'  => null,
-            'new_data'  => $barang->toArray(),
+            'new_data'  => json_encode($barang->toArray()),
         ]);
 
         return $barang;

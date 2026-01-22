@@ -49,35 +49,53 @@ class UserManagementController extends Controller
      * POST /api/users
      * Super Admin menambah user baru
      */
-    public function store(Request $request)
-    {
-        $data = $request->validate([
-            'name'     => 'required|string|max:255',
-            'email'    => 'required|email|unique:users,email',
-            'password' => 'required|string|min:6',
-            'role'     => 'required|exists:roles,name',
-        ]);
+   public function store(Request $request)
+{
+    $request->validate([
+        'email' => 'required',
+        'role'  => 'required'
+    ]);
 
-        $role = Role::where('name', $data['role'])->firstOrFail();
+    $username = explode('@', $request->email)[0];
+    $ldap_found = false;
 
-        $user = User::create([
-            'name'     => $data['name'],
-            'email'    => $data['email'],
-            'password' => Hash::make($data['password']),
-            'role_id'  => $role->id, // ✅ YANG DISIMPAN
-            'is_ldap'  => false,
-        ]);
+    // --- PROSES CEK KE SERVER LDAP YARSI ---
+    $ds = @ldap_connect('pdc.yarsi.ac.id', 389);
+    if ($ds) {
+        ldap_set_option($ds, LDAP_OPT_PROTOCOL_VERSION, 3);
+        ldap_set_option($ds, LDAP_OPT_REFERRALS, 0);
 
-        $user->load('role');
+        if (@ldap_bind($ds)) {
+            $filter = "(uid=$username)";
+            $search = @ldap_search($ds, 'dc=yarsi,dc=ac,dc=id', $filter);
+            $info = @ldap_get_entries($ds, $search);
 
-       return response()->json([
-            'success' => true,
-            'user' => [
-                'id'    => $user->id,
-                'name'  => $user->name,
-                'email' => $user->email,
-                'role'  => $user->role->name, // ⬅️ STRING
-            ]
-        ]);
+            if ($info && $info['count'] > 0) {
+                $ldap_found = true;
+                // Ambil displayname asli untuk disimpan sebagai nama awal
+                $displayName = $info[0]['displayname'][0] ?? $username;
+            }
+        }
+        ldap_close($ds);
     }
+
+    // --- JIKA TIDAK ADA DI LDAP, TOLAK ---
+    if (!$ldap_found) {
+        return response()->json([
+            'success' => false,
+            'message' => "Gagal: Username '$username' tidak terdaftar di sistem akun kampus YARSI."
+        ], 404);
+    }
+
+    // --- JIKA ADA, BARU SIMPAN KE DATABASE ---
+    $user = User::create([
+        'name'     => $displayName, // Langsung dapat nama asli dari kampus
+        'email'    => $username . '@yarsi.ac.id',
+        'role_id'  => $request->role === 'superadmin' ? 1 : ($request->role === 'admin' ? 2 : 3),
+        'password' => bcrypt('LDAP_USER'), 
+        'is_ldap'  => 1
+    ]);
+
+    return response()->json(['success' => true, 'user' => $user]);
+}
 }

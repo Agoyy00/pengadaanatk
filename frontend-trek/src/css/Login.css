@@ -46,39 +46,48 @@
 /* =========================
    CLOSE BUTTON
    ========================= */
+/* =========================
+   CLOSE BUTTON (MODIFIED)
+   ========================= */
 .close-btn-small {
   position: absolute;
   top: 16px;
   right: 16px;
-  background: rgba(255, 255, 255, 0.6);
-  color: #0f172a;
-  backdrop-filter: blur(6px);
+  
+  /* Background merah solid atau sedikit transparan */
+  background: #ef4444; 
+  color: #ffffff; /* Icon X jadi putih */
+  
   border: none;
   width: 32px;
   height: 32px;
-  font-size: 16px;
-  border-radius: 50%;
+  font-size: 14px;
+  border-radius: 8px; /* Kotak sedikit membulat agar lebih modern */
   cursor: pointer;
   z-index: 10;
-  transition: all 0.2s ease;
+  
   display: flex;
   align-items: center;
   justify-content: center;
-  transition:background-color 0.2s ease,color 0.2s ease,transform 0.15s ease,box-shadow 0.15s ease;
+  
+  /* Transisi hanya untuk warna, bukan gerakan */
+  transition: background-color 0.2s ease, opacity 0.2s ease;
 }
 
 .close-btn-small:hover {
-  background: #f1f5f9; /* soft abu */
-  color: #1e293b;
-  transform: scale(1.05);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+  background: #dc2626; /* Merah lebih gelap saat hover */
+  color: #ffffff;
+  
+  /* Hilangkan transform: scale agar tidak membesar (lebay) */
+  transform: none; 
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
 
 .close-btn-small:active {
-  transform: scale(0.95);
-  box-shadow: none;
+  /* Sedikit efek tekan tapi tidak merubah ukuran */
+  background: #b91c1c;
+  transform: translateY(1px); 
 }
-
 /* =========================
    CONTAINER
    ========================= */
@@ -243,6 +252,9 @@
 /* =========================
    PASSWORD WRAPPER
    ========================= */
+/* =========================
+   PASSWORD WRAPPER
+   ========================= */
 .password-wrapper-small {
   position: relative;
   display: flex;
@@ -252,10 +264,12 @@
 .password-wrapper-small input {
   padding-right: 45px;
 }
+
 .show-password-btn-small {
   position: absolute;
   right: 12px;
   top: 50%;
+  /* Transform ini wajib untuk menjaga posisi di tengah vertikal */
   transform: translateY(-50%);
 
   border: none;
@@ -272,26 +286,28 @@
 
   cursor: pointer;
   color: #64748b;
-
-  line-height: 1;
+  
+  /* Hilangkan semua transisi agar tidak ada gerakan */
+  transition: color 0.2s ease; 
 }
 
 .show-password-btn-small:hover {
   color: #334155;
+  /* Pastikan transform tetap sama agar tidak gerak ke bawah */
+  transform: translateY(-50%) !important;
 }
 
-/* PENTING: matiin efek focus default */
+/* Hilangkan efek gerak pada state active/focus */
 .show-password-btn-small:focus,
 .show-password-btn-small:active {
   outline: none;
   box-shadow: none;
-  transform: translateY(-50%);
-}
-.show-password-btn-small {
-  transition: none !important;
+  transform: translateY(-50%) !important;
 }
 
-.show-password-btn-small * {
+/* Pastikan icon di dalamnya juga tidak memiliki transisi gerak */
+.show-password-btn-small svg {
+  display: block;
   transition: none !important;
 }
 

@@ -53,27 +53,6 @@
   margin-bottom: 16px;
 }
 
-/* tombol eye */
-.show-password-btn-small1 {
-  position: absolute;
-  right: 12px;
-
-  top: calc(65% + 2px); /* 🔽 turunin dikit */
-  transform: translateY(-50%);
-
-  background: none;
-  border: none;
-  padding: 0;
-
-  cursor: pointer;
-  color: #6b7280;
-  font-size: 16px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
 /* ===== FORM GROUP (Nama, Email, Password) ===== */
 .form-group1,
 .form-group2,
@@ -137,34 +116,7 @@
   box-shadow: 0 0 0 3px rgba(124,58,237,0.15);
 }
 
-/* ===== ICON SHOW / HIDE PASSWORD ===== */
-.form-group3 .show-password-btn-small1 {
-  position: absolute;
-  right: 12px;
-  top: calc(65% + 4px);
-  transform: translateY(-50%);
-  background: transparent;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  color: #6b7280;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: color 0.2s ease, transform 0.2s ease;
-}
-
-/* Hover icon */
-.form-group3 .show-password-btn-small1:hover {
-  color: #7c3aed;
-  transform: translateY(-50%) scale(1.1);
-}
-
-/* Biar button icon gak ganggu layout */
-.form-group3 .show-password-btn-small1 svg {
-  width: 18px;
-  height: 18px;
-}.role-badge {
+.role-badge {
   display: inline-block;
   padding: 4px 12px;
   font-size: 12px;

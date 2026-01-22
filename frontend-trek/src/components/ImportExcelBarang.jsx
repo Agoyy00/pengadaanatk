@@ -50,7 +50,7 @@ export default function ImportExcelBarang({
                   <td className="row-index">1</td>
                   <td>Nama Barang</td>
                   <td>Satuan</td>
-                  <td>Harga</td>
+                  <td>Harga</td>  
                 </tr>
                 <tr>
                   <td className="row-index">2</td>
@@ -69,10 +69,10 @@ export default function ImportExcelBarang({
           </div>
 
           <div className="import-note">
-            <b>1</b> = Adalah Keterangan Jangan Di Tiru <br />
+            <b>1</b> = Sesuaikan Baris Pertama  <br />
             <b>A</b> = Nama Barang <br />
-            <b>B</b> = Satuan Barang (rim / pcs / dus) <br />
-            <b>C</b> = Harga Barang (angka tanpa titik)
+            <b>B</b> = Satuan Barang (dus) <br />
+            <b>C</b> = Harga (angka tanpa titik)
           </div>
         </div>
 

@@ -25,44 +25,43 @@
     const storedUser = localStorage.getItem("user");
     const currentUser = storedUser ? JSON.parse(storedUser) : null;
 
-    async function handleSubmit(e) {
-      e.preventDefault();
-      setMessage("");
-      setErrorMsg("");
+   async function handleSubmit(e) {
+  e.preventDefault();
+  setLoadingUsers(true); // Gunakan loading state saat mengecek LDAP
+  setMessage("");
+  setErrorMsg("");
 
-      if (!name || !email || !password) {
-        setErrorMsg("Semua field wajib diisi.");
-        return;
-      }
+  try {
+    const res = await fetch(`${API_BASE}/users`, {
+      method: "POST",
+      headers: { 
+        "Content-Type": "application/json", 
+        "Authorization": `Bearer ${token}` 
+      },
+      body: JSON.stringify({ 
+        email: email, 
+        role: role 
+      }),
+    });
 
-      try {
-        const res = await fetch(`${API_BASE}/users`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-          body: JSON.stringify({ name, email, password, role, }),
-        });
+    const data = await res.json();
 
-        const data = await res.json();
-
-        if (!res.ok || !data.success) {
-          setErrorMsg(data.message || "Gagal menambah user.");
-          console.error("Error tambah user:", data);
-          return;
-        }
-
-        setMessage(
-          `User ${data.user.email} berhasil dibuat dengan role ${data.user.role}.`
-        );
-        setName("");
-        setEmail("");
-        setPassword("");
-        setRole("user");
-        await loadUsers();
-      } catch (err) {
-        console.error("Error jaringan:", err);
-        setErrorMsg("Terjadi kesalahan jaringan.");
-      }
+    if (!res.ok || !data.success) {
+      // Ini akan muncul jika LDAP tidak menemukan user
+      setErrorMsg(data.message || "User tidak ditemukan di database kampus.");
+      setLoadingUsers(false);
+      return;
     }
+
+    setMessage(`Berhasil! ${data.user.name} telah ditambahkan.`);
+    setEmail("");
+    await loadUsers();
+  } catch (err) {
+    setErrorMsg("Terjadi kesalahan koneksi server.");
+  } finally {
+    setLoadingUsers(false);
+  }
+}
 
   const formatRole = (role) => {
     if (!role) return "-";
@@ -194,44 +193,19 @@ async function deleteUser(user) {
                     maxWidth: 400,
                   }}
                 >
-                  <div className="form-group1">
-                    <label>Nama</label>
-                    <input
-                      type="text"
-                      className="input-text"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                    />
-                  </div>
-
                   <div className="form-group2">
-                    <label>Email</label>
-                    <input
-                      type="email"
-                      className="input-text"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                    />
-                  </div>
-
-                  <div className="form-group3">
-                    <label>Password Awal</label>
-                    <input
-                    type={showPassword ? "text" : "password"}
+                  <label>Username / Email Kampus</label>
+                  <input
+                    type="text" // Gunakan text agar tidak dipaksa format email oleh browser
                     className="input-text"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Contoh: alzkar.muhammad atau alzkarmuhammad@yarsi.ac.id"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                   />
-
-                    {/* Show/hide password */}
-                  <button
-                    type="button"
-                    className="show-password-btn-small1"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? <FaEye /> : <FaEyeSlash />}
-                  </button>
-                  </div>
+                  <p style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                    *Cukup masukkan ID kampus, sistem akan otomatis mendaftarkannya.
+                  </p>
+                </div>
 
                   <div className="form-group">
                     <label>Role</label>

@@ -1,76 +1,77 @@
+import React from "react";
 import { BRANDING } from "../components/Branding";
 
 export default function Navbar({ onLoginClick }) {
   return (
-     <nav
+    <nav
       style={{
         position: "fixed",
         top: 0,
         left: 0,
         width: "100%",
-        padding: "16px 48px",
+        padding: "0 64px", // Padding disesuaikan untuk keseimbangan vertikal
+        height: "85px",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
         zIndex: 1000,
+        boxSizing: "border-box",
 
-        /* DARK GLASS PREMIUM */
-        background:
-          "linear-gradient(180deg, rgba(10,47,82,0.88), rgba(10,47,82,0.75))",
-        backdropFilter: "blur(10px)",
-        WebkitBackdropFilter: "blur(10px)",
+        /* PREMIUM FROSTED GLASS */
+        background: "rgba(10, 47, 82, 0.75)",
+        backdropFilter: "blur(20px) saturate(160%)",
+        WebkitBackdropFilter: "blur(20px) saturate(160%)",
 
-        borderBottom: "1px solid rgba(255,255,255,0.08)",
-        boxShadow: "0 12px 32px rgba(0,0,0,0.55)",
+        /* SOFT LIGHTING EFFECTS */
+        borderBottom: "1px solid rgba(255, 255, 255, 0.12)",
+        boxShadow: "0 10px 40px rgba(0, 0, 0, 0.4)",
       }}
     >
-      {/* BRAND */}
-      <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-        {/* GOLD ACCENT */}
+      {/* BRAND SECTION */}
+      <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
+        {/* VERTICAL GOLD ACCENT - More Refined */}
         <div
           style={{
-            width: "5px",
-            height: "42px",
-            background: "linear-gradient(180deg, #e6c35c, #b18a1f)",
-            borderRadius: "6px",
-            boxShadow: "0 0 8px rgba(225,185,90,0.4)",
+            width: "3px",
+            height: "44px",
+            background: "linear-gradient(180deg, #D4AF37 0%, #B8860B 100%)",
+            borderRadius: "4px",
+            boxShadow: "0 0 15px rgba(212, 175, 55, 0.3)",
           }}
         />
 
-         <div style={{ lineHeight: 1.05 }}>
-          {/* SHORT NAME */}
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          {/* LOGO TITLE - Luxury Typography */}
           <div
             style={{
-              fontSize: "30px",
-              fontWeight: 900,
-              letterSpacing: "4px",
-              color: "#eafff5",
+              fontSize: "26px",
+              fontWeight: "800",
+              letterSpacing: "5px",
+              color: "#FFFFFF",
               textTransform: "uppercase",
-              textShadow:
-                "0 4px 18px rgba(0,0,0,0.95), 0 0 12px rgba(34,197,94,0.35)",
+              lineHeight: "1",
+              background: "linear-gradient(180deg, #FFFFFF 0%, #E2E8F0 100%)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              filter: "drop-shadow(0 4px 10px rgba(0,0,0,0.5))",
             }}
           >
             YAS WEB
           </div>
 
-          {/* FULL NAME */}
+          {/* SUBTITLE - Minimalist */}
           <div
             style={{
-              marginTop: "2px",
+              fontSize: "11px",
+              fontWeight: "400",
+              letterSpacing: "2.8px",
+              color: "#94A3B8",
+              textTransform: "uppercase",
+              marginTop: "6px",
+              opacity: 0.9,
             }}
           >
-            <span
-              style={{
-                fontSize: "12px",
-                fontWeight: 600,
-                letterSpacing: "2.4px",
-                color: "#f2f2f2",
-                opacity: 0.92,
-                textShadow: "0 1px 4px rgba(0,0,0,0.75)",
-              }}
-            >
-              {BRANDING.fullName}
-            </span>
+            {BRANDING.fullName}
           </div>
         </div>
       </div>
