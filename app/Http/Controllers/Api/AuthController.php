@@ -21,7 +21,7 @@ class AuthController extends Controller
         $input = $request->email;
         $password = $request->password;
 
-        // 2. Ambil username saja (misal: '1212024@yarsi.ac.id' -> '1212024')
+        
         $username = explode('@', $request->email)[0];
         $user = User::where('email', 'LIKE', $username . '%')->first();
 

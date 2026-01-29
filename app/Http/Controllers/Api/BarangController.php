@@ -306,32 +306,85 @@ class BarangController extends Controller
 
 
     public function importExcel(Request $request)
-{
-    $request->validate([
-        'file' => 'required|mimes:xlsx,xls',
-        'actor_user_id' => 'required|exists:users,id',
-    ]);
-
-    try {
-        \Illuminate\Support\Facades\DB::beginTransaction();
-
-        \Maatwebsite\Excel\Facades\Excel::import(
-            new \App\Imports\BarangAtkImport($request->actor_user_id),
-            $request->file('file')
-        );
-
-        \Illuminate\Support\Facades\DB::commit();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Import barang ATK berhasil'
+    {
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls',
+            'actor_user_id' => 'required|exists:users,id',
         ]);
-    } catch (\Exception $e) {
-        \Illuminate\Support\Facades\DB::rollBack();
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal Import: ' . $e->getMessage()
-        ], 500);
+
+        try {
+            \Illuminate\Support\Facades\DB::beginTransaction();
+
+            \Maatwebsite\Excel\Facades\Excel::import(
+                new \App\Imports\BarangAtkImport($request->actor_user_id),
+                $request->file('file')
+            );
+
+            \Illuminate\Support\Facades\DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Import barang ATK berhasil'
+            ]);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal Import: ' . $e->getMessage()
+            ], 500);
+        }
     }
-}
+
+    public function bulkDelete(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'integer|exists:barangs,id',
+            'actor_user_id' => 'required|exists:users,id',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $barangs = Barang::whereIn('id', $validated['ids'])->get();
+
+            foreach ($barangs as $barang) {
+                $dipakai = DB::table('pengajuan_items')
+                    ->where('barang_id', $barang->id)
+                    ->exists();
+
+                if ($dipakai) {
+                    throw new \Exception("Barang {$barang->nama} sudah digunakan.");
+                }
+
+                $this->writeLog(
+                    $barang->id,
+                    (int)$validated['actor_user_id'],
+                    'delete',
+                    $barang->toArray(),
+                    null
+                );
+
+                if ($barang->gambar && Storage::disk('public')->exists('barang/'.$barang->gambar)) {
+                    Storage::disk('public')->delete('barang/'.$barang->gambar);
+                }
+
+                $barang->delete();
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Barang terpilih berhasil dihapus'
+            ]);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 409);
+        }
+    }
+
 }

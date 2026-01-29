@@ -18,6 +18,26 @@ export default function KelolaBarangATK() {
   const storedUser = localStorage.getItem("user");
   const currentUser = storedUser ? JSON.parse(storedUser) : null;
   const role = normalizeRole(currentUser?.role);
+  const [checkedIds, setCheckedIds] = useState([]);
+
+  const isChecked = (id) => checkedIds.includes(id);
+
+const toggleCheck = (id) => {
+  setCheckedIds((prev) =>
+    prev.includes(id)
+      ? prev.filter((x) => x !== id)
+      : [...prev, id]
+  );
+};
+
+const toggleCheckAll = () => {
+  if (checkedIds.length === barangs.length) {
+    setCheckedIds([]);
+  } else {
+    setCheckedIds(barangs.map((b) => b.id));
+  }
+};
+
 
   // ✅ safety: kalau tidak ada user -> balik ke home
   useEffect(() => {
@@ -277,6 +297,47 @@ const onDelete = async (item) => {
   }
 };
 
+const onDeleteSelected = async () => {
+  if (checkedIds.length === 0) return;
+
+  const ok = window.confirm(
+    `Hapus ${checkedIds.length} barang terpilih?`
+  );
+  if (!ok) return;
+
+  setLoading(true);
+  try {
+    const res = await fetch(`${API_BASE}/barang/bulk-delete`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        ids: checkedIds,
+        actor_user_id: currentUser.id,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || !data.success) {
+      alert(data.message || "Gagal menghapus barang");
+      return;
+    }
+
+    alert("Barang berhasil dihapus ✅");
+    setCheckedIds([]);
+    await loadBarang();
+  } catch (err) {
+    console.error(err);
+    alert("Terjadi kesalahan server");
+  } finally {
+    setLoading(false);
+  }
+};
+
+
 
   const handleImportExcel = async () => {
   if (!excelFile) {
@@ -374,7 +435,7 @@ const onDelete = async (item) => {
             }}
           >
             <span>Daftar Barang</span>
-            <div className="action-buttons">
+            <div className="action-buttons" style={{ display: "flex", gap: 8 }}>
             <button
               className="btn-import"
               onClick={() => setImportOpen(true)}
@@ -388,6 +449,24 @@ const onDelete = async (item) => {
             >
               + Tambah Barang
             </button>
+            <button
+            disabled={checkedIds.length === 0}
+            onClick={onDeleteSelected}
+            style={{
+              padding: "10px 14px",
+              borderRadius: 10,
+              border: "none",
+              cursor: checkedIds.length === 0 ? "not-allowed" : "pointer",
+              background: checkedIds.length === 0 ? "#e5e7eb" : "#dc2626",
+              color: checkedIds.length === 0 ? "#6b7280" : "white",
+              fontWeight: 800,
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+            }}
+          >
+            🗑 Hapus Terpilih
+          </button>
           </div>
 
             </div>
@@ -431,122 +510,106 @@ const onDelete = async (item) => {
               <div style={{ overflowX: "auto", marginTop: 12 }}>
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
                   <thead>
-                    <tr>
-                      <th
-                        style={{
-                          textAlign: "left",
-                          padding: 10,
-                          borderBottom: "1px solid #eee",
-                        }}
-                      >
-                        Nama
-                      </th>
-                      <th
-                        style={{
-                          textAlign: "left",
-                          padding: 10,
-                          borderBottom: "1px solid #eee",
-                        }}
-                      >
-                        Kode
-                      </th>
-                      <th
-                        style={{
-                          textAlign: "left",
-                          padding: 10,
-                          borderBottom: "1px solid #eee",
-                        }}
-                      >
-                        Satuan
-                      </th>
-                      <th
-                        style={{
-                          textAlign: "right",
-                          padding: 10,
-                          borderBottom: "1px solid #eee",
-                        }}
-                      >
-                        Harga
-                      </th>
-                      <th style={{ padding: 10, borderBottom: "1px solid #eee" }} />
-                    </tr>
-                  </thead>
+                  <tr>
+                    <th style={{ padding: 10 }}>
+                      <input
+                        type="checkbox"
+                        checked={
+                          barangs.length > 0 &&
+                          checkedIds.length === barangs.length
+                        }
+                        onChange={toggleCheckAll}
+                      />
+                    </th>
+                    <th>Nama</th>
+                    <th>Kode</th>
+                    <th>Satuan</th>
+                    <th style={{ textAlign: "right" }}>Harga</th>
+                    <th />
+                  </tr>
+                </thead>
+
                   <tbody>
-                    {barangs.map((b) => (
-                      <tr key={b.id}>
-                        <td
-                          style={{
-                            padding: 10,
-                            borderBottom: "1px solid #f3f3f3",
-                          }}
-                        >
-                          {b.nama}
-                        </td>
-                        <td
-                          style={{
-                            padding: 10,
-                            borderBottom: "1px solid #f3f3f3",
-                          }}
-                        >
-                          {b.kode}
-                        </td>
-                        <td
-                          style={{
-                            padding: 10,
-                            borderBottom: "1px solid #f3f3f3",
-                          }}
-                        >
-                          {b.satuan}
-                        </td>
-                        <td
-                          style={{
-                            padding: 10,
-                            borderBottom: "1px solid #f3f3f3",
-                            textAlign: "right",
-                          }}
-                        >
-                          {Number(b.harga_satuan ?? 0).toLocaleString("id-ID")}
-                        </td>
-                        <td
-                          style={{
-                            padding: 10,
-                            borderBottom: "1px solid #f3f3f3",
-                            textAlign: "right",
-                          }}
-                        >
-                          <button
-                            onClick={() => openEdit(b)}
-                            style={{
-                              padding: "8px 12px",
-                              borderRadius: 10,
-                              border: "none",
-                              cursor: "pointer",
-                              background: "#0ea5e9",
-                              color: "white",
-                              fontWeight: 700,
-                              marginRight: 8,
-                            }}
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => onDelete(b)}
-                            style={{
-                              padding: "8px 12px",
-                              borderRadius: 10,
-                              border: "none",
-                              cursor: "pointer",
-                              background: "#ef4444",
-                              color: "white",
-                              fontWeight: 700,
-                            }}
-                          >
-                            Hapus
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
+  {barangs.map((b) => (
+    <tr key={b.id}>
+      {/* CHECKBOX PER BARIS */}
+      <td
+        style={{
+          padding: 10,
+          borderBottom: "1px solid #f3f3f3",
+          textAlign: "center",
+        }}
+      >
+        <input
+          type="checkbox"
+          checked={isChecked(b.id)}
+          onChange={() => toggleCheck(b.id)}
+        />
+      </td>
+
+      <td
+        style={{
+          padding: 10,
+          borderBottom: "1px solid #f3f3f3",
+        }}
+      >
+        {b.nama}
+      </td>
+
+      <td
+        style={{
+          padding: 10,
+          borderBottom: "1px solid #f3f3f3",
+        }}
+      >
+        {b.kode}
+      </td>
+
+      <td
+        style={{
+          padding: 10,
+          borderBottom: "1px solid #f3f3f3",
+        }}
+      >
+        {b.satuan}
+      </td>
+
+      <td
+        style={{
+          padding: 10,
+          borderBottom: "1px solid #f3f3f3",
+          textAlign: "right",
+        }}
+      >
+        {Number(b.harga_satuan ?? 0).toLocaleString("id-ID")}
+      </td>
+
+      <td
+        style={{
+          padding: 10,
+          borderBottom: "1px solid #f3f3f3",
+          textAlign: "right",
+        }}
+      >
+        <button
+          onClick={() => openEdit(b)}
+          style={{
+            padding: "8px 12px",
+            borderRadius: 10,
+            border: "none",
+            cursor: "pointer",
+            background: "#0ea5e9",
+            color: "white",
+            fontWeight: 700,
+          }}
+        >
+          Edit
+        </button>
+      </td>
+    </tr>
+  ))}
+</tbody>
+
                 </table>
               </div>
             )}
