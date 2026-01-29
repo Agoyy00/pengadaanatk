@@ -60,7 +60,11 @@ Route::middleware('auth:sanctum')->group(function () {
     */
     Route::get('/pengajuan', [PengajuanController::class, 'index']);
     Route::post('/pengajuan', [PengajuanController::class, 'store']);
-    Route::get('/pengajuan/check/{user}/{tahun}', [PengajuanController::class, 'checkUserPengajuan']);
+Route::get(
+  '/pengajuan/check/{user}',
+  [PengajuanController::class, 'checkLimit']
+);
+
 
     Route::patch('/pengajuan/{pengajuan}/status', [PengajuanController::class, 'updateStatus']);
     Route::patch('/pengajuan/{pengajuan}/revisi', [PengajuanController::class, 'revisiItems']);

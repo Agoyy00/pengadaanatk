@@ -18,4 +18,11 @@ class Periode extends Model
         'selesai' => 'datetime',
         'is_open' => 'boolean',
     ];
+
+    // App\Models\Periode.php
+    public function getIsOpenAttribute()
+    {
+        $now = now('Asia/Jakarta');
+        return $now->between($this->mulai, $this->selesai);
+    }
 }

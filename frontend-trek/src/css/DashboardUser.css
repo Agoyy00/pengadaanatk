@@ -39,7 +39,7 @@
   display: inline-block;
   border-radius: 999px;
   font-weight: 600;
-  color: white;
+  color: rgb(43, 10, 107) !important;
   padding: 4px 10px;
   font-size: 11px;
   letter-spacing: 0.4px;

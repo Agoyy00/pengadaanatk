@@ -462,4 +462,24 @@ class PengajuanController extends Controller
             ], 500);
         }
     }
+
+    public function checkLimit(Request $request, $userId)
+{
+    $tahun = $request->query('tahun');
+
+    if (!$tahun) {
+        return response()->json([
+            'already' => false
+        ]);
+    }
+
+    $exists = Pengajuan::where('user_id', $userId)
+        ->where('tahun_akademik', $tahun)
+        ->exists();
+
+    return response()->json([
+        'already' => $exists
+    ]);
+}
+
 }

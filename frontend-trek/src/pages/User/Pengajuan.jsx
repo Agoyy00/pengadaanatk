@@ -15,10 +15,12 @@ function Pengajuan() {
   const [namaPemohon, setNamaPemohon] = useState("");
   const [jabatan, setJabatan] = useState("Staf");
   const [unit, setUnit] = useState("Direktorat");
+  const [limitChecked, setLimitChecked] = useState(false);
+
 
   // Error step 1
   const [errorsStep1, setErrorsStep1] = useState({});
-  const [limitError, setLimitError] = useState(""); // ❗ pesan "hanya 1x per periode"
+  const [limitError, setLimitError] =useState("CHECKING"); // ❗ pesan "hanya 1x per periode"
 
   // STEP 2 – pencarian & item
   const [query, setQuery] = useState("");
@@ -40,7 +42,7 @@ const [loadingSubmit, setLoadingSubmit] = useState(false); // opsional spinner
 
   // STATUS PERIODE
   const [periodeLoading, setPeriodeLoading] = useState(true);
-  const [periodeOpen, setPeriodeOpen] = useState(null); // null = belum tahu
+  const [periodeOpen, setPeriodeOpen] = useState(false); // null = belum tahu
   const [periodeMessage, setPeriodeMessage] = useState("");
 
   const API_BASE = "http://127.0.0.1:8000/api";
@@ -66,77 +68,89 @@ const [loadingSubmit, setLoadingSubmit] = useState(false); // opsional spinner
 
   // ====== CEK PERIODE PENGAJUAN ======
   useEffect(() => {
-    async function fetchPeriode() {
-      try {
-        setPeriodeLoading(true);
-        const res = await fetch(`${API_BASE}/periode/active`);
+  async function fetchPeriode() {
+    try {
+      setPeriodeLoading(true);
 
-        if (!res.ok) {
-          // kalau API error → jangan kunci form
-          setPeriodeOpen(true);
-          setPeriodeMessage("");
-          return;
-        }
+      const res = await fetch(`${API_BASE}/periode/active`);
 
-        const data = await res.json();
-
-        const isOpen =
-          data.is_open === true ||
-          data.is_open === 1 ||
-          data.is_open === "1" ||
-          data.is_open === "open";
-
-        setPeriodeOpen(isOpen);
-        setPeriodeMessage(data.message || "");
-      } catch (err) {
-        console.error("Gagal cek periode:", err);
-        setPeriodeOpen(true);
+      if (!res.ok) {
+        setPeriodeOpen(isOpen === true);
         setPeriodeMessage("");
-      } finally {
-        setPeriodeLoading(false);
+        return;
       }
-    }
 
-    fetchPeriode();
-  }, []);
+      const data = await res.json();
+
+      const isOpen =
+        data.is_open === true ||
+        data.is_open === 1 ||
+        data.is_open === "1" ||
+        data.is_open === "open";
+
+      setPeriodeOpen(isOpen);
+      setPeriodeMessage(data.message || "");
+
+      // 🔥 AUTO-SET TAHUN AKADEMIK DARI PERIODE AKTIF
+      if (data.periode?.tahun_akademik) {
+        setTahunAkademik(data.periode.tahun_akademik);
+      }
+
+    } catch (err) {
+      console.error("Gagal cek periode:", err);
+      setPeriodeOpen(true);
+      setPeriodeMessage("");
+    } finally {
+      setPeriodeLoading(false);
+    }
+  }
+
+  fetchPeriode();
+}, []);
+
 
   // ====== CEK: user sudah pernah mengajukan di tahun akademik ini? ======
   useEffect(() => {
-    if (!tahunAkademik || !userId) {
-      setLimitError("");
-      return;
-    }
+  if (!tahunAkademik || !userId) {
+    setLimitError(null);
+    setLimitChecked(true);
+    return;
+  }
 
-    async function checkLimit() {
-      try {
-        const res = await fetch(
-          `${API_BASE}/pengajuan/check/${userId}/${encodeURIComponent(
-            tahunAkademik
-          )}`
+  async function checkLimit() {
+    try {
+      const res = await fetch(
+        `${API_BASE}/pengajuan/check/${userId}?tahun=${encodeURIComponent(tahunAkademik)}`,
+        {
+          headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!res.ok) return;
+
+      const data = await res.json();
+
+      if (data.already) {
+        setLimitError(
+          "Anda sudah pernah mengajukan ATK pada periode ini. Pengajuan hanya boleh 1 kali."
         );
-
-        if (!res.ok) {
-          console.error("Gagal cek limit pengajuan");
-          setLimitError("");
-          return;
-        }
-
-        const data = await res.json();
-        if (data.already) {
-          setLimitError(
-            "Anda sudah pernah mengajukan ATK pada periode ini. Pengajuan hanya boleh 1 kali."
-          );
-        } else {
-          setLimitError("");
-        }
-      } catch (err) {
-        console.error("Error cek limit pengajuan:", err);
-        setLimitError("");
+      } else {
+        setLimitError(null);
       }
+    } catch (err) {
+      console.error(err);
+      setLimitError("null");
+    } finally {
+      setLimitChecked(true); // 🔥 PENTING
     }
+  }
 
-    checkLimit();
-  }, [tahunAkademik, userId]);
+  checkLimit();
+}, [tahunAkademik, userId]);
+
 
   // ====== AUTO-SUGGEST BARANG ======
   useEffect(() => {
@@ -407,6 +421,13 @@ const [loadingSubmit, setLoadingSubmit] = useState(false); // opsional spinner
     }
   }
 
+  useEffect(() => {
+  if (currentUser?.name) {
+    setNamaPemohon(currentUser.name);
+  }
+}, [currentUser]);
+
+
   return (
     <div className="layout">
       {/* SIDEBAR */}
@@ -450,14 +471,15 @@ const [loadingSubmit, setLoadingSubmit] = useState(false); // opsional spinner
         {/* MAIN CONTENT */}
         <section className="main-content">
           {/* 1. MASIH CEK PERIODE */}
-          {periodeLoading || periodeOpen === null ? (
+          {periodeLoading || periodeOpen === null || !limitChecked ? (
+            // ⏳ MASIH LOADING
             <div className="card">
               <div className="card-subtitle">
-                Memeriksa status periode pengajuan...
+                Memeriksa status pengajuan...
               </div>
             </div>
           ) : !periodeOpen ? (
-            // 2. PERIODE DITUTUP / BELUM DIBUKA
+            // 🚫 PERIODE TUTUP
             <div className="card periode-closed-card">
               <div className="card-title">Pengajuan ATK tidak tersedia</div>
               <p>Saat ini pengajuan belum dibuka atau sudah ditutup.</p>
@@ -471,9 +493,24 @@ const [loadingSubmit, setLoadingSubmit] = useState(false); // opsional spinner
                 Kembali ke Dashboard
               </button>
             </div>
+          ) : limitError ? (
+            // 🚫 SUDAH PERNAH MENGAJUKAN
+            <div className="card periode-closed-card">
+              <div className="card-title">Pengajuan Tidak Dapat Dilanjutkan</div>
+              <p>{limitError}</p>
+
+              <button
+                type="button"
+                className="btn btn-back-dashboard"
+                onClick={() => navigate("/riwayat")}
+              >
+                Lihat Riwayat Pengajuan
+              </button>
+            </div>
           ) : (
-            // 3. PERIODE TERBUKA → FORM  
+            // ✅ BOLEH MENGAJUKAN → FORM + STEPPER
             <>
+
               <div className="card">
                 <div className="card-title">
                   Form Pengajuan (langkah 1 sampai 3)
@@ -532,17 +569,12 @@ const [loadingSubmit, setLoadingSubmit] = useState(false); // opsional spinner
                           <label>
                             Tahun Akademik <span className="required">*</span>
                           </label>
-                          <select
+                          <input
+                            type="text"
                             className="input-pro"
                             value={tahunAkademik}
-                            onChange={(e) => setTahunAkademik(e.target.value)}
-                          >
-                            <option value="">Pilih Tahun Akademik</option>
-                            <option value="2023/2024">2023 / 2024</option>
-                            <option value="2024/2025">2024 / 2025</option>
-                            <option value="2025/2026">2025 / 2026</option>
-                          </select>
-
+                            disabled
+                          />
                           {errorsStep1.tahunAkademik && (
                             <div className="error-text">
                               {errorsStep1.tahunAkademik}
@@ -564,7 +596,6 @@ const [loadingSubmit, setLoadingSubmit] = useState(false); // opsional spinner
                           <input
                             type="text"
                             className="input-pro"
-                            placeholder="Masukkan nama lengkap"
                             value={namaPemohon}
                             onChange={(e) => setNamaPemohon(e.target.value)}
                           />

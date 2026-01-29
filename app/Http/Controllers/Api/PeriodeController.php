@@ -92,8 +92,10 @@ class PeriodeController extends Controller
         }
 
         // (opsional) sinkronkan kolom is_open di DB dengan kondisi terkini
-        $periode->is_open = $isOpen;
-        $periode->save();
+        //$periode->is_open = $isOpen;
+        //$periode->save();
+        $isOpen = $periode->is_open;
+
 
         return response()->json([
             'is_open'  => $isOpen,   // INI yang dipakai Pengajuan.jsx dan DashboardAdmin.jsx

@@ -8,7 +8,7 @@ const token = localStorage.getItem("token");
 export default function Periode() {
   const navigate = useNavigate();
 
-  const [tahunAkademik, setTahunAkademik] = useState("2024/2025");
+  const [tahunAkademik, setTahunAkademik] = useState(getTahunAkademikOtomatis()); 
   const [mulai, setMulai] = useState("");
   const [selesai, setSelesai] = useState("");
   const [message, setMessage] = useState("");
@@ -26,6 +26,30 @@ export default function Periode() {
       .replace(/_/g, " ")
       .replace(/\b\w/g, (c) => c.toUpperCase());
   };
+
+  const daftarTahunAkademik = useMemo(() => {
+  const baseYear = new Date().getFullYear();
+  return [
+    `${baseYear - 1}/${baseYear}`,
+    `${baseYear}/${baseYear + 1}`,
+    `${baseYear + 1}/${baseYear + 2}`,
+  ];
+}, []);
+
+
+  function getTahunAkademikOtomatis() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1; // 1-12
+
+  // Jika bulan >= Juli, tahun akademik baru
+  if (month >= 7) {
+    return `${year}/${year + 1}`;
+  } else {
+    return `${year - 1}/${year}`;
+  }
+}
+
 
   // Load periode aktif/akan-datang saat halaman dibuka
   useEffect(() => {
@@ -103,6 +127,7 @@ export default function Periode() {
 
     try {
       const res = await fetch(`${API_BASE}/periode/${activePeriodeId}`, {
+        headers: { "Authorization": `Bearer ${token}` },
         method: "DELETE",
       });
 
@@ -200,15 +225,17 @@ export default function Periode() {
               >
                 <div>
                   <label className="A">Tahun Akademik</label>
-                  <select
-                    className="input-text"
-                    value={tahunAkademik}
-                    onChange={(e) => setTahunAkademik(e.target.value)}
-                  >
-                    <option value="2023/2024">2023/2024</option>
-                    <option value="2024/2025">2024/2025</option>
-                    <option value="2025/2026">2025/2026</option>
-                  </select>
+                 <select
+                  className="input-text"
+                  value={tahunAkademik}
+                  onChange={(e) => setTahunAkademik(e.target.value)}
+                >
+                  {daftarTahunAkademik.map((ta) => (
+                    <option key={ta} value={ta}>
+                      {ta}
+                    </option>
+                  ))}
+                </select>
                 </div>
 
                 <div>
