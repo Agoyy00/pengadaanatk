@@ -948,3 +948,126 @@ th {
   background: #fafafa;
 }
 
+@media (max-width: 768px) {
+
+  /* ===== TOAST ===== */
+  .toast {
+    right: 12px;
+    left: 12px;
+    min-width: unset;
+    max-width: unset;
+    width: auto;
+    font-size: 13px;
+  }
+
+  /* ===== CARD PADDING ===== */
+  .confirm-card,
+  .form-card,
+  .card {
+    padding: 16px;
+  }
+
+  /* ===== CONFIRM GRID JADI 1 KOLOM ===== */
+  .confirm-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  /* ===== SUMMARY STACK ===== */
+  .confirm-summary {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  /* ===== ACTION BUTTON STACK ===== */
+  .confirm-actions,
+  .actions {
+    flex-direction: column;
+  }
+
+  .confirm-actions .btn,
+  .actions .btn {
+    width: 100%;
+  }
+
+  /* ===== STEPPER MOBILE ===== */
+  .stepper {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .step-line {
+    display: none;
+  }
+
+  /* ===== FORM GRID 1 KOLOM ===== */
+  .form-grid-pro,
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* ===== TABLE FIX ===== */
+  .table-wrapper {
+    overflow-x: auto;
+  }
+
+  table {
+    min-width: 600px;
+  }
+
+  /* ===== SEARCH DROPDOWN FIX ===== */
+  .search-dropdown {
+    position: absolute;
+    width: 100%;
+    max-height: 260px;
+    overflow-y: auto;
+  }
+
+  /* ===== BARANG CELL STACK ===== */
+  .barang-cell {
+    min-width: unset;
+    gap: 8px;
+  }
+
+}
+
+/* ===============================
+   EXTRA SMALL DEVICE (≤480px)
+=============================== */
+@media (max-width: 480px) {
+
+  /* Font sedikit dikecilkan */
+  body {
+    font-size: 13px;
+  }
+
+  .confirm-title {
+    font-size: 15px;
+  }
+
+  .confirm-summary strong {
+    font-size: 14px;
+  }
+
+  /* Input lebih compact */
+  .input-text,
+  .input-pro {
+    height: 38px;
+    font-size: 13px;
+  }
+
+  /* Button full width */
+  .btn,
+  .btn-primary,
+  .btn-danger {
+    width: 100%;
+  }
+
+  /* Thumbnail lebih kecil */
+  .barang-thumb {
+    width: 40px;
+    height: 40px;
+  }
+}

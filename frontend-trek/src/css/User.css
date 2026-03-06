@@ -212,3 +212,96 @@
 .btn-danger:hover {
   background: #b91c1c;
 }
+
+@media (max-width: 768px) {
+
+  /* Card lebih compact */
+  .card {
+    padding: 18px;
+    border-radius: 14px;
+  }
+
+  .card-title {
+    font-size: 15px;
+  }
+
+  .card-subtitle {
+    font-size: 12px;
+  }
+
+  /* Input lebih kecil */
+  .input-text,
+  .select-input {
+    font-size: 13px;
+    padding: 10px 40px 10px 12px;
+    border-radius: 12px;
+  }
+
+  /* Label sedikit lebih kecil */
+  .form-group1 label,
+  .form-group2 label,
+  .form-group3 label {
+    font-size: 12px;
+  }
+
+  /* Table scroll */
+  .table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .table th,
+  .table td {
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+
+  /* Button */
+  .btn {
+    font-size: 13px;
+    padding: 8px 14px;
+    border-radius: 10px;
+  }
+
+  /* Role badge */
+  .role-badge {
+    font-size: 11px;
+    padding: 3px 10px;
+  }
+}
+
+
+/* ======================================
+   EXTRA SMALL DEVICE (≤480px)
+====================================== */
+
+@media (max-width: 480px) {
+
+  .card {
+    padding: 14px;
+    border-radius: 12px;
+  }
+
+  .input-text,
+  .select-input {
+    font-size: 12px;
+    padding: 9px 36px 9px 10px;
+  }
+
+  .table th,
+  .table td {
+    font-size: 12px;
+    padding: 8px 10px;
+  }
+
+  .btn {
+    width: 100%; /* tombol full width di HP */
+    font-size: 12px;
+  }
+
+  .role-badge {
+    font-size: 10px;
+  }
+
+}

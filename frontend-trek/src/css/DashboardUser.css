@@ -70,3 +70,58 @@
 .revisi-block {
   margin-top: 8px;
 }
+
+/* Tablet */
+@media (max-width: 992px) {
+
+  .info-banner,
+  .notif-banner {
+    font-size: 13px;
+    padding: 10px;
+  }
+
+  .status-card {
+    padding: 12px;
+  }
+
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+
+  .notif-banner {
+    flex-direction: column;      /* jadi vertikal */
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .notif-close {
+    align-self: flex-end;        /* tombol tetap di kanan */
+  }
+
+  .badge-status {
+    font-size: 10px;
+    padding: 4px 8px;
+  }
+
+  .status-card {
+    padding: 10px;
+  }
+
+}
+
+/* Small mobile */
+@media (max-width: 480px) {
+
+  .info-banner,
+  .notif-banner {
+    font-size: 12px;
+    padding: 8px 10px;
+  }
+
+  .badge-status {
+    font-size: 9px;
+    padding: 3px 7px;
+  }
+
+}

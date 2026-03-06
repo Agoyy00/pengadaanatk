@@ -41,3 +41,46 @@
   background: #15803d;
   box-shadow: 0 6px 14px rgba(22, 163, 74, 0.3);
 }
+
+/* Tablet */
+@media (max-width: 992px) {
+  .action-buttons {
+    gap: 8px;
+  }
+
+  .btn-import,
+  .btn-add {
+    padding: 9px 12px;
+    font-size: 14px;
+  }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+
+  .action-buttons {
+    width: 100%;
+    flex-wrap: wrap;        /* Biar bisa turun */
+    justify-content: flex-start;
+    gap: 8px;
+  }
+
+  .btn-import,
+  .btn-add {
+    flex: 1;                /* Tombol jadi full width */
+    text-align: center;
+    font-size: 14px;
+  }
+
+}
+
+/* Small mobile */
+@media (max-width: 480px) {
+
+  .btn-import,
+  .btn-add {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+
+}

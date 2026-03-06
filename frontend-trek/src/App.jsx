@@ -32,7 +32,7 @@ import GrafikBelanjaSuperAdmin from "./pages/Superadmin/GrafikBelanjaSuperAdmin"
 
 
 
-const API_BASE = "http://127.0.0.1:8000/api";
+const API_BASE = import.meta.env.VITE_API_BASE;
 
 // ✅ Normalisasi role: "Super Admin" / "super_admin" -> "superadmin"
 const normalizeRole = (role) =>
@@ -77,7 +77,11 @@ function App() {
   useEffect(() => {
     async function loadPeriode() {
       try {
-        const res = await fetch(`${API_BASE}/periode/active`);
+        const res = await fetch(`${API_BASE}/periode/active`, {
+          headers: {
+            "Authorization": `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
         const data = await res.json();
 
         if (!data.periode) {

@@ -125,3 +125,25 @@
 .error-text.danger {
   font-weight: 500;
 }
+
+@media (max-width: 600px) {
+
+  .status-badge,
+  .badge-status {
+    font-size: 11px;
+    padding: 3px 8px;
+  }
+
+  .btn-status-verif,
+  .btn-status-tolak,
+  .btn-status-revisi {
+    font-size: 12px;
+    padding: 5px 10px;
+    margin-bottom: 4px;
+  }
+
+  .revisi-note {
+    font-size: 11px;
+  }
+
+}

@@ -4,7 +4,7 @@ import "../../css/layout.css";
 import "../../css/Barang.css";
 import ImportExcelBarang from "../../components/ImportExcelBarang";
 
-const API_BASE = "http://127.0.0.1:8000/api";
+const API_BASE = "https://atk.yarsi.ac.id/api";
 const token = localStorage.getItem("token");
 
 const normalizeRole = (role) =>
@@ -166,7 +166,7 @@ const [errors, setErrors] = useState({});
   setForm({
     nama: "",
     kode: generateKodeATK(), // ⬅️ auto
-    satuan: "",
+    satuan: "dus",
     harga_satuan: "",
   });
   setErrors({});
@@ -258,8 +258,8 @@ const onDelete = async (item) => {
   setLoading(true);
   try {
     const res = await fetch(
-      `http://127.0.0.1:8000/api/barang/${item.id}`,
-      {
+      `${API_BASE}/barang/${item.id}`,
+        {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
@@ -345,18 +345,21 @@ const onDeleteSelected = async () => {
     return;
   }
 
+  console.log("Token:", token);
   const formData = new FormData();
   formData.append("file", excelFile);
   formData.append("actor_user_id", currentUser.id);
 
-  setLoading(true);
   try {
     const res = await fetch(`${API_BASE}/barang/import`, {
       method: "POST",
       body: formData,
-      headers: { "Authorization": `Bearer ${token}` },
+      headers: {
+        "Authorization": `Bearer ${token}`,
+      },
     });
-
+    
+    
     const data = await res.json();
 
     if (!res.ok || !data.success) {
@@ -364,14 +367,15 @@ const onDeleteSelected = async () => {
       return;
     }
 
-    alert("Import Excel berhasil ✅");
-    setExcelFile(null);
-    await loadBarang();
+    // ✅ INI YANG KURANG
+    alert("Import berhasil ✅");
+    setImportOpen(false);   // tutup modal
+    setExcelFile(null);     // reset file
+    await loadBarang();     // refresh tabel
+
   } catch (err) {
     console.error(err);
-    alert("Terjadi kesalahan saat import");
-  } finally {
-    setLoading(false);
+    alert("Terjadi kesalahan server");
   }
 };
 
@@ -653,7 +657,7 @@ const onDeleteSelected = async () => {
                   style={{
                     width: "100%",
                     padding: 10,
-                    borderRadius: 10,      // abu2 biar keliatan readonly
+                    borderRadius: 10,
                     border: `1px solid ${errors.kode ? "#ef4444" : "#ddd"}`,
                     cursor: "not-allowed",
                   }}
@@ -673,11 +677,12 @@ const onDeleteSelected = async () => {
                     padding: 10,
                     borderRadius: 10,
                     border: `1px solid ${errors.satuan ? "#ef4444" : "#ddd"}`,
-                    cursor: "not-allowed",
                     background: "#f9fafb",
                   }}
-                  value="dus"
-                  disabled
+                  value={form.satuan}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, satuan: e.target.value }))
+                  }
                 >
                   <option value="dus">Dus</option>
                 </select>

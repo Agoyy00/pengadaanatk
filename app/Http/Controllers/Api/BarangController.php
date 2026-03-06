@@ -10,7 +10,8 @@ use App\Imports\BarangAtkImport;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class BarangController extends Controller
 {
@@ -303,37 +304,51 @@ class BarangController extends Controller
         ]);
     }
 
-
-
     public function importExcel(Request $request)
-    {
-        $request->validate([
-            'file' => 'required|mimes:xlsx,xls',
-            'actor_user_id' => 'required|exists:users,id',
+{
+    $request->validate([
+        'file' => 'required|mimes:xlsx,xls',
+        // Pastikan kamu mengirim actor_user_id dari frontend
+        'actor_user_id' => 'required' 
+    ]);
+
+    try {
+        // --- FIX OPEN_BASEDIR ---
+        // Kita paksa library Excel menggunakan folder storage Laravel untuk file sementara
+        $tempPath = storage_path('app/temp');
+        if (!file_exists($tempPath)) {
+            mkdir($tempPath, 0755, true);
+        }
+        config(['excel.temporary_files.local_path' => $tempPath]);
+        // ------------------------
+
+        DB::beginTransaction();
+
+        $file = $request->file('file');
+        $actorUserId = $request->input('actor_user_id');
+
+        // Jalankan Import
+        Excel::import(new BarangAtkImport((int)$actorUserId), $file);
+
+        DB::commit();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Import barang ATK berhasil'
         ]);
 
-        try {
-            \Illuminate\Support\Facades\DB::beginTransaction();
+    } catch (\Throwable $e) {
+        DB::rollBack();
+        
+        // Log error agar kamu bisa cek di storage/logs/laravel.log jika gagal lagi
+        Log::error('Import Error: ' . $e->getMessage());
 
-            \Maatwebsite\Excel\Facades\Excel::import(
-                new \App\Imports\BarangAtkImport($request->actor_user_id),
-                $request->file('file')
-            );
-
-            \Illuminate\Support\Facades\DB::commit();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Import barang ATK berhasil'
-            ]);
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal Import: ' . $e->getMessage()
-            ], 500);
-        }
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal Import: ' . $e->getMessage()
+        ], 500);
     }
+}
 
     public function bulkDelete(Request $request)
     {

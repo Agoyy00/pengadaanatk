@@ -128,3 +128,65 @@ p {
     gap: 10px;
   }
 }
+
+/* Tablet */
+@media (max-width: 900px) {
+
+  .form-row,
+  .filter-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  select,
+  button {
+    width: 100%;
+  }
+
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+
+  .main {
+    padding: 16px;
+  }
+
+  select {
+    padding: 12px 14px;
+    font-size: 13px;
+  }
+
+  button {
+    padding: 12px;
+    font-size: 13px;
+    border-radius: 14px;
+  }
+
+  .error-text {
+    font-size: 13px;
+  }
+
+  p {
+    font-size: 13px;
+  }
+
+}
+
+/* Small Mobile */
+@media (max-width: 480px) {
+
+  .main {
+    padding: 14px;
+  }
+
+  select {
+    padding: 10px 12px;
+  }
+
+  button {
+    padding: 11px;
+    font-size: 12px;
+  }
+
+}

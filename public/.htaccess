@@ -13,13 +13,30 @@
     RewriteCond %{HTTP:x-xsrf-token} .
     RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%{HTTP:X-XSRF-Token}]
 
-    # Redirect Trailing Slashes If Not A Folder...
+    # Redirect trailing slash jika bukan folder
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_URI} (.+)/$
     RewriteRule ^ %1 [L,R=301]
 
-    # Send Requests To Front Controller...
-    RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteCond %{REQUEST_FILENAME} !-f
+    # ==========================
+    # JANGAN rewrite folder assets
+    # ==========================
+    RewriteCond %{REQUEST_URI} ^/assets/
+    RewriteRule ^ - [L]
+
+    # ==========================
+    # Biarkan file asli diakses langsung
+    # ==========================
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteRule ^ - [L]
+
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+    RewriteCond %{REQUEST_URI} !(\.css|\.js|\.png|\.jpg|\.jpeg|\.svg)$
+
+    # ==========================
+    # Sisanya diarahkan ke Laravel
+    # ==========================
     RewriteRule ^ index.php [L]
+
 </IfModule>

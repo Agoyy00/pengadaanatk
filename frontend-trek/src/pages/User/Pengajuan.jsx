@@ -6,7 +6,7 @@ import "../../css/layout.css";
 function Pengajuan() {
   const [currentStep, setCurrentStep] = useState(1);
 
-  const STORAGE_URL = "http://127.0.0.1:8000/storage/barang";
+  const STORAGE_URL = `${import.meta.env.VITE_BACKEND_BASE}/storage/barang`;
   const token = localStorage.getItem("token");
 
 
@@ -45,8 +45,8 @@ const [loadingSubmit, setLoadingSubmit] = useState(false); // opsional spinner
   const [periodeOpen, setPeriodeOpen] = useState(false); // null = belum tahu
   const [periodeMessage, setPeriodeMessage] = useState("");
 
-  const API_BASE = "http://127.0.0.1:8000/api";
-  const BACKEND_BASE = "http://127.0.0.1:8000";
+  const API_BASE = import.meta.env.VITE_API_BASE;
+  const BACKEND_BASE = import.meta.env.VITE_API_BASE;
 
   const navigate = useNavigate();
 

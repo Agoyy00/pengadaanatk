@@ -20,5 +20,6 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         //
+        config(['excel.temporary_files.local_path' => storage_path('app/temp')]);
     }
 }

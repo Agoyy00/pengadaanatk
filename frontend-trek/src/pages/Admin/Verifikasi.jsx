@@ -7,7 +7,7 @@ import "../../css/verifikasi.css";
 import DetailVerifikasi from "../../components/DetailVerifikasi";
 
 
-const API_BASE = "http://127.0.0.1:8000/api";
+const API_BASE = import.meta.env.VITE_API_BASE;
 const token = localStorage.getItem("token");
 
 export default function Verifikasi() {
@@ -78,7 +78,6 @@ const downloadPdfAdmin = async (id, status) => {
     return;
   }
   
-  const token = localStorage.getItem("token");
   console.log("TOKEN:", token);
   try {
     const response = await fetch(
@@ -149,7 +148,6 @@ const downloadPdfAdmin = async (id, status) => {
   };
 
   const storedUser = localStorage.getItem("user");
-  const token = localStorage.getItem("token");
   const currentUser = storedUser ? JSON.parse(storedUser) : null;
   const formatRole = (role) => {
     if (!role) return "-";

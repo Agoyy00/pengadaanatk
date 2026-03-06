@@ -75,3 +75,62 @@
 .table-wrapper tr:hover {
   background: #fafafa;
 }
+
+@media (max-width: 768px) {
+
+  /* Table tetap bisa scroll */
+  .table-wrapper {
+    overflow-x: auto;
+  }
+
+  .table-wrapper table {
+    min-width: 650px; /* biar gak pecah kolom */
+  }
+
+  /* Padding lebih compact */
+  .table-wrapper th,
+  .table-wrapper td {
+    padding: 10px;
+    font-size: 13px;
+  }
+
+  /* Status badge lebih kecil */
+  .status-badge {
+    font-size: 11px;
+    padding: 4px 10px;
+  }
+
+  /* Revisi note lebih compact */
+  .revisi-note {
+    font-size: 11px;
+    padding: 6px 8px;
+  }
+}
+
+
+/* ======================================
+   EXTRA SMALL DEVICE (≤480px)
+====================================== */
+
+@media (max-width: 480px) {
+
+  /* Font lebih kecil lagi */
+  .table-wrapper th,
+  .table-wrapper td {
+    font-size: 12px;
+    padding: 8px;
+  }
+
+  /* Badge lebih kecil */
+  .status-badge {
+    font-size: 10px;
+    padding: 3px 8px;
+  }
+
+  /* Revisi lebih rapi */
+  .revisi-note {
+    font-size: 10.5px;
+    line-height: 1.3;
+  }
+
+}

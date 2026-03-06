@@ -454,3 +454,39 @@
     font-size: 13px;
   }
 }
+
+@media (max-width: 768px) {
+  .modal-overlay {
+    align-items: flex-start;
+  }
+
+  .modal-box-small {
+    flex-direction: column;
+    margin-top: 40px;
+    margin-bottom: 40px;
+  }
+
+  .login-container-small {
+    flex-direction: column;
+  }
+
+  .left-side-small {
+    border-bottom: 1px solid #e2e8f0;
+  }
+}
+
+@media (max-width: 600px) {
+  .left-side-small {
+    display: none;
+  }
+
+  .right-side-small {
+    padding: 25px;
+  }
+}
+
+@supports (-webkit-touch-callout: none) {
+  .modal-overlay {
+    height: 100dvh;
+  }
+}

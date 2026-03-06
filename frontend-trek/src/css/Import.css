@@ -157,3 +157,70 @@
   background: #93c5fd;
   cursor: not-allowed;
 }
+
+/* Tablet */
+@media (max-width: 992px) {
+
+  .import-panel {
+    width: 90%;
+    padding: 20px;
+  }
+
+  .import-title {
+    font-size: 18px;
+  }
+
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+
+  .import-overlay {
+    padding: 16px; /* biar gak mepet layar */
+  }
+
+  .import-panel {
+    width: 100%;
+    padding: 18px;
+    border-radius: 12px;
+  }
+
+  .import-title {
+    font-size: 16px;
+  }
+
+  .import-desc {
+    font-size: 13px;
+  }
+
+  .instruction-title {
+    font-size: 12px;
+  }
+
+  .import-note {
+    font-size: 11px;
+  }
+
+  .import-actions {
+    flex-direction: column; /* tombol jadi vertikal */
+  }
+
+  .import-btn-cancel,
+  .import-btn-submit {
+    width: 100%;
+  }
+
+}
+
+/* Small Mobile */
+@media (max-width: 480px) {
+
+  .import-panel {
+    padding: 14px;
+  }
+
+  .import-table {
+    font-size: 12px;
+  }
+
+}
