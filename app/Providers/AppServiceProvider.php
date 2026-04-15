@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use PhpOffice\PhpSpreadsheet\Settings;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -20,6 +21,6 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         //
-        config(['excel.temporary_files.local_path' => storage_path('app/temp')]);
+    config(['excel.temporary_files.local_path' => storage_path('app/temp')]);
     }
 }

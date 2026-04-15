@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../../css/layout.css";
 
-const API_BASE = import.meta.env.VITE_API_BASE;
+const API_BASE = "https://atk.yarsi.ac.id/api";
 
 export default function DashboardSuperAdmin() {
   const navigate = useNavigate();
@@ -48,7 +48,6 @@ export default function DashboardSuperAdmin() {
           },
         });
         const data = await res.json();
-        console.log(token);
 
         // bentuk response yang kita harapkan:
         // { success: true, notifications: [...] }

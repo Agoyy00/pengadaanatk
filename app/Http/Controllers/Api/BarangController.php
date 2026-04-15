@@ -6,12 +6,16 @@ use App\Http\Controllers\Controller;
 use App\Models\Barang;
 use App\Models\BarangAuditLog;
 use Illuminate\Http\Request;
-use App\Imports\BarangAtkImport;
+use App\Imports\BarangATKImport;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use PhpOffice\PhpSpreadsheet\Settings;
+use Maatwebsite\Excel\Excel as ExcelReader;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Writer\Csv;
 
 class BarangController extends Controller
 {
@@ -275,6 +279,7 @@ class BarangController extends Controller
     // BARU HAPUS BARANG
     // =========================
     $barang->delete();
+    $this->reindexKodeBarang();
 
     return response()->json([
         'success' => true,
@@ -304,48 +309,122 @@ class BarangController extends Controller
         ]);
     }
 
-    public function importExcel(Request $request)
+public function importExcel(Request $request)
 {
     $request->validate([
-        'file' => 'required|mimes:xlsx,xls',
-        // Pastikan kamu mengirim actor_user_id dari frontend
-        'actor_user_id' => 'required' 
+        'file' => 'required|file|mimes:csv,txt'
     ]);
 
     try {
-        // --- FIX OPEN_BASEDIR ---
-        // Kita paksa library Excel menggunakan folder storage Laravel untuk file sementara
-        $tempPath = storage_path('app/temp');
-        if (!file_exists($tempPath)) {
-            mkdir($tempPath, 0755, true);
-        }
-        config(['excel.temporary_files.local_path' => $tempPath]);
-        // ------------------------
-
-        DB::beginTransaction();
 
         $file = $request->file('file');
-        $actorUserId = $request->input('actor_user_id');
+        $handle = fopen($file->getPathname(), 'r');
 
-        // Jalankan Import
-        Excel::import(new BarangAtkImport((int)$actorUserId), $file);
+        if (!$handle) {
+            throw new \Exception("File tidak bisa dibuka.");
+        }
 
-        DB::commit();
+        // ambil baris pertama untuk detect delimiter
+        $firstLine = fgets($handle);
+
+        if (!$firstLine) {
+            throw new \Exception("File kosong atau header tidak ditemukan.");
+        }
+
+        // daftar delimiter yang mungkin
+        $delimiters = [",", ";", "|", "\t"];
+
+        $delimiter = ",";
+        $maxCount = 0;
+
+        foreach ($delimiters as $d) {
+            $count = count(str_getcsv($firstLine, $d));
+            if ($count > $maxCount) {
+                $maxCount = $count;
+                $delimiter = $d;
+            }
+        }
+
+        // kembali ke awal file
+        rewind($handle);
+
+        // baca header
+        $header = fgetcsv($handle, 0, $delimiter);
+
+        if (!$header) {
+            throw new \Exception("Header CSV tidak ditemukan.");
+        }
+
+        // hapus BOM
+        $header[0] = preg_replace('/^\xEF\xBB\xBF/', '', $header[0]);
+
+        // normalisasi header
+        $header = array_map(function ($h) {
+            $h = strtolower(trim($h));
+            $h = str_replace(' ', '_', $h);
+            return $h;
+        }, $header);
+
+        $userId = auth()->id();
+
+        $lastBarang = Barang::where('kode', 'like', 'ATK-%')
+            ->selectRaw("MAX(CAST(SUBSTRING(kode, 5) AS UNSIGNED)) as max_code")
+            ->first();
+
+        $nextNumber = ($lastBarang->max_code ?? 0) + 1;
+
+        $imported = 0;
+
+        while (($row = fgetcsv($handle, 0, $delimiter)) !== false) {
+
+            if (count($row) === 0) {
+                continue;
+            }
+
+            $data = array_combine($header, $row);
+
+            $nama = trim($data['nama_barang'] ?? '');
+
+            if ($nama === '') {
+                continue;
+            }
+
+            $satuan = trim($data['satuan'] ?? 'dus');
+            $harga = (int) ($data['harga'] ?? 0);
+
+            $kode = 'ATK-' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
+            $nextNumber++;
+
+            $barang = Barang::create([
+                'kode' => $kode,
+                'nama' => $nama,
+                'satuan' => 'dus',
+                'harga_satuan' => $harga
+            ]);
+
+            BarangAuditLog::create([
+                'barang_id' => $barang->id,
+                'user_id' => $userId,
+                'action' => 'import',
+                'old_data' => null,
+                'new_data' => json_encode($barang->toArray())
+            ]);
+
+            $imported++;
+        }
+
+        fclose($handle);
 
         return response()->json([
             'success' => true,
-            'message' => 'Import barang ATK berhasil'
+            'message' => "Import berhasil. {$imported} barang ditambahkan."
         ]);
 
-    } catch (\Throwable $e) {
-        DB::rollBack();
-        
-        // Log error agar kamu bisa cek di storage/logs/laravel.log jika gagal lagi
-        Log::error('Import Error: ' . $e->getMessage());
+    } catch (\Exception $e) {
 
         return response()->json([
             'success' => false,
-            'message' => 'Gagal Import: ' . $e->getMessage()
+            'message' => $e->getMessage()
         ], 500);
     }
 }
@@ -387,6 +466,7 @@ class BarangController extends Controller
             }
 
             DB::commit();
+            $this->reindexKodeBarang();
 
             return response()->json([
                 'success' => true,
@@ -402,4 +482,20 @@ class BarangController extends Controller
         }
     }
 
+    private function reindexKodeBarang(){
+        $barangs = Barang::orderByRaw("CAST(SUBSTRING(kode,5) AS UNSIGNED)")->get();
+
+        $no = 1;
+
+        foreach ($barangs as $barang) {
+            $kodeBaru = 'ATK-' . str_pad($no, 3, '0', STR_PAD_LEFT);
+
+            if ($barang->kode !== $kodeBaru) {
+                $barang->kode = $kodeBaru;
+                $barang->save();
+            }
+
+            $no++;
+        }
+    }
 }

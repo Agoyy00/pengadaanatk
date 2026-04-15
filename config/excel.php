@@ -314,8 +314,9 @@ return [
     ],
 
     'temporary_files' => [
-    'local_path' => storage_path('app/temp'),
+    'local_path' => '/tmp',
     'remote_disk' => null,
+
         /*
         |--------------------------------------------------------------------------
         | Local Temporary Path Permissions

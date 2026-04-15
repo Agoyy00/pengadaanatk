@@ -45,19 +45,20 @@ Route::middleware('auth:sanctum')->group(function () {
     | Barang
     */
     Route::get('/barang', [BarangController::class, 'index']);
-    Route::get('/barang/{barang}', [BarangController::class, 'show']);
-    Route::get('/barang/{barang}/logs', [BarangController::class, 'logs']);
-
     Route::post('/barang', [BarangController::class, 'store']);
-    Route::patch('/barang/{barang}', [BarangController::class, 'update']);
-    Route::delete('/barang/{barang}', [BarangController::class, 'destroy']);
+
+    Route::post('/barang/bulk/delete', [BarangController::class, 'bulkDelete']);
+    Route::post('/barang/import-excel', [BarangController::class, 'importExcel']);
+    Route::post('/barang/import', [PengajuanController::class, 'importBarangATK']);
+
+    Route::get('/barang/{barang}/logs', [BarangController::class, 'logs']);
     Route::patch('/barang/{barang}/harga', [BarangController::class, 'updateHarga']);
 
-    Route::post('/barang/import-excel', [BarangController::class, 'importExcel']);
+    Route::get('/barang/{barang}', [BarangController::class, 'show'])->whereNumber('barang');
+    Route::patch('/barang/{barang}', [BarangController::class, 'update'])->whereNumber('barang');
+    Route::delete('/barang/{barang}', [BarangController::class, 'destroy'])->whereNumber('barang');
 
-    /*
-    | Pengajuan ATK
-    */
+
     Route::get('/pengajuan', [PengajuanController::class, 'index']);
     Route::post('/pengajuan', [PengajuanController::class, 'store']);
     Route::get('/pengajuan/check/{user}',[PengajuanController::class, 'checkLimit']);
@@ -65,10 +66,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::patch('/pengajuan/{pengajuan}/status', [PengajuanController::class, 'updateStatus']);
     Route::patch('/pengajuan/{pengajuan}/revisi', [PengajuanController::class, 'revisiItems']);
-    Route::post('/barang/bulk-delete', [BarangController::class, 'bulkDelete']);
-
-
-
     /*
     | Approval (Super Admin)
     */
@@ -121,6 +118,6 @@ Route::middleware('auth:sanctum')->group(function () {
     /*
     | Import
     */
-    Route::post('/barang/import', [PengajuanController::class, 'importBarangATK']);
+   
 
 });

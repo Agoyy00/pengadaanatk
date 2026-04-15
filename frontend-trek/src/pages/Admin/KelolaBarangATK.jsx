@@ -307,7 +307,7 @@ const onDeleteSelected = async () => {
 
   setLoading(true);
   try {
-    const res = await fetch(`${API_BASE}/barang/bulk-delete`, {
+    const res = await fetch(`${API_BASE}/barang/bulk/delete`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -351,7 +351,7 @@ const onDeleteSelected = async () => {
   formData.append("actor_user_id", currentUser.id);
 
   try {
-    const res = await fetch(`${API_BASE}/barang/import`, {
+    const res = await fetch(`${API_BASE}/barang/import-excel`, {
       method: "POST",
       body: formData,
       headers: {
