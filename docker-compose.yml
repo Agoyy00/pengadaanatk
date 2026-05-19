@@ -1,0 +1,30 @@
+version: '3'
+
+services:
+  frontend:
+    build: ./frontend-trek
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend-trek:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+
+  backend:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    depends_on:
+      - mysql
+
+  mysql:
+    image: mysql:8
+    restart: always
+    environment:
+      MYSQL_DATABASE: pengajuan_atk
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3307:3306"

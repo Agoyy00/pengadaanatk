@@ -28,13 +28,13 @@ export default function ImportExcelBarang({
           Unggah file Excel untuk menambahkan data barang secara massal.
           Pastikan format kolom sesuai contoh di bawah.
         </p>
-
+        
         {/* CONTOH FORMAT */}
         <div className="import-instruction">
           <div className="instruction-title">
             Contoh format file Excel
           </div>
-
+        
           <div className="import-table-wrapper">
             <table className="import-table">
               <thead>
@@ -75,6 +75,16 @@ export default function ImportExcelBarang({
             <b>C</b> = Harga (angka tanpa titik)
           </div>
         </div>
+
+        <div className="import-download">
+          <p>Contoh template excel <a
+          href="http://127.0.0.1:8000/download-template"
+          className="download-btn"
+          >
+          Download Template Excel
+        </a></p>
+          
+      </div>
 
         {/* FILE INPUT */}
         <div className="import-file-wrapper">

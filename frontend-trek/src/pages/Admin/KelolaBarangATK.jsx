@@ -4,7 +4,7 @@ import "../../css/layout.css";
 import "../../css/Barang.css";
 import ImportExcelBarang from "../../components/ImportExcelBarang";
 
-const API_BASE = "https://atk.yarsi.ac.id/api";
+const API_BASE = import.meta.env.VITE_API_BASE;
 const token = localStorage.getItem("token");
 
 const normalizeRole = (role) =>
