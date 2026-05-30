@@ -26,42 +26,57 @@
     const currentUser = storedUser ? JSON.parse(storedUser) : null;
 
    async function handleSubmit(e) {
-  e.preventDefault();
-  setLoadingUsers(true); // Gunakan loading state saat mengecek LDAP
-  setMessage("");
-  setErrorMsg("");
+    e.preventDefault();
+    setLoadingUsers(true);
+    setMessage("");
+    setErrorMsg("");
 
-  try {
-    const res = await fetch(`${API_BASE}/users`, {
-      method: "POST",
-      headers: { 
-        "Content-Type": "application/json", 
-        "Authorization": `Bearer ${token}` 
-      },
-      body: JSON.stringify({ 
-        email: email, 
-        role: role 
-      }),
-    });
+    // 1. Bersihkan spasi dan ubah ke lowercase biar seragam
+    let cleanEmail = email.trim().toLowerCase();
 
-    const data = await res.json();
+    // 2. Jika user memasukkan email lengkap, potong domainnya untuk standarisasi backend
+    if (cleanEmail.includes("@")) {
+      cleanEmail = cleanEmail.split("@")[0];
+    }
 
-    if (!res.ok || !data.success) {
-      // Ini akan muncul jika LDAP tidak menemukan user
-      setErrorMsg(data.message || "User tidak ditemukan di database kampus.");
+    // 3. Validasi dasar: pastikan input tidak kosong setelah dibersihkan
+    if (!cleanEmail) {
+      setErrorMsg("Username tidak boleh kosong.");
       setLoadingUsers(false);
       return;
     }
 
-    setMessage(`Berhasil! ${data.user.name} telah ditambahkan.`);
-    setEmail("");
-    await loadUsers();
-  } catch (err) {
-    setErrorMsg("Terjadi kesalahan koneksi server.");
-  } finally {
-    setLoadingUsers(false);
+    try {
+      const res = await fetch(`${API_BASE}/users`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json", 
+          "Authorization": `Bearer ${token}` 
+        },
+        // Kirim format username yang sudah bersih ke backend
+        body: JSON.stringify({ 
+          email: cleanEmail, 
+          role: role 
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        setErrorMsg(data.message || "User tidak ditemukan di database kampus.");
+        setLoadingUsers(false);
+        return;
+      }
+
+      setMessage(`Berhasil! ${data.user.name} telah ditambahkan.`);
+      setEmail("");
+      await loadUsers();
+    } catch (err) {
+      setErrorMsg("Terjadi kesalahan koneksi server.");
+    } finally {
+      setLoadingUsers(false);
+    }
   }
-}
 
   const formatRole = (role) => {
     if (!role) return "-";
