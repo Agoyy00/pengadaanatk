@@ -1,30 +1,29 @@
-  import { FaEye, FaEyeSlash } from "react-icons/fa";
-  import React, { useState, useMemo, useEffect} from "react";
-  import { useNavigate } from "react-router-dom";
-  import "../../css/User.css";
-  import "../../css/layout.css";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
+import React, { useState, useMemo, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import "../../css/User.css";
+import "../../css/layout.css";
 
-  const API_BASE = import.meta.env.VITE_API_BASE;
+const API_BASE = import.meta.env.VITE_API_BASE;
 
-  export default function TambahUser() {
-    const navigate = useNavigate();
+export default function TambahUser() {
+  const navigate = useNavigate();
 
-    const [name, setName] = useState("");
-    const [email, setEmail] = useState("");
-    const [role, setRole] = useState("user");
-    const [password, setPassword] = useState("");
-    const [message, setMessage] = useState("");
-    const [errorMsg, setErrorMsg] = useState("");
-    const [showPassword, setShowPassword] = useState(false);
-    const [users, setUsers] = useState([]);
-    const [loadingUsers, setLoadingUsers] = useState(false);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState("user");
+  const [password, setPassword] = useState("");
+  const [message, setMessage] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [users, setUsers] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
 
+  // Ambil user login (harusnya superadmin)
+  const storedUser = localStorage.getItem("user");
+  const currentUser = storedUser ? JSON.parse(storedUser) : null;
 
-    // Ambil user login (harusnya superadmin)
-    const storedUser = localStorage.getItem("user");
-    const currentUser = storedUser ? JSON.parse(storedUser) : null;
-
-   // ==========================================
+  // ==========================================
   // 1. FUNGSI SUBMIT (POST USER)
   // ==========================================
   async function handleSubmit(e) {
@@ -129,7 +128,6 @@
     if (!window.confirm(confirmText)) return;
 
     try {
-      // Ambil token segar di sini juga biar aman dari ReferenceError
       const freshToken = localStorage.getItem("token");
 
       const res = await fetch(`${API_BASE}/users/${user.id}`, {
@@ -153,77 +151,41 @@
     }
   }
 
-  const formatRole = (role) => {
-    if (!role) return "-";
+  const formatRole = (roleName) => {
+    if (!roleName) return "-";
 
-    return role
+    return roleName
       .toLowerCase()
       .replace(/_/g, " ")
       .replace(/\b\w/g, (c) => c.toUpperCase());
   };
 
-   async function loadUsers() {
-    setLoadingUsers(true);
-    const res = await fetch(`${API_BASE}/users` , {
-      headers: { "Authorization": `Bearer ${token}` },
-    });
-    const data = await res.json();
-    setUsers(data);
-    setLoadingUsers(false);
-  }
-
+  // Pemicu load data saat halaman dibuka pertama kali
   useEffect(() => {
-  loadUsers();
-}, []);
+    loadUsers();
+  }, []);
 
-async function deleteUser(user) {
-  if (user.role?.name === "superadmin") {
-    alert("Super Admin tidak boleh dihapus");
-    return;
-  }
-
-  const confirmText =
-    user.role?.name === "admin"
-      ? "Ini akun ADMIN. Yakin mau hapus?"
-      : "Yakin hapus user ini?";
-
-  if (!window.confirm(confirmText)) return;
-
-  const res = await fetch(`${API_BASE}/users/${user.id}`, {
-    method: "DELETE",
-    headers: { "Authorization": `Bearer ${token}` },
-  });
-
-  const data = await res.json();
-
-  if (!res.ok || !data.success) {
-    alert(data.message || "Gagal menghapus user");
-    return;
-  }
-
-  setUsers((prev) => prev.filter((u) => u.id !== user.id));
-}
-    const sidebarMenus = useMemo(() => {
+  const sidebarMenus = useMemo(() => {
     return [
-      { label: "Dashboard Super Admin", to: "/dashboardsuperadmin"},
+      { label: "Dashboard Super Admin", to: "/dashboardsuperadmin" },
       { label: "Approval", to: "/approval" },
-      { label: "Tambah User", to: "/tambahuser", active: true  },
+      { label: "Tambah User", to: "/tambahuser", active: true },
       { label: "Atur Periode", to: "/periode" },
       { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang" },
       { label: "Analisis Dan Grafik", to: "/superadmin/grafik-belanja" },
     ];
   }, []);
 
-    return (
-      <div className="layout">
-        {/* SIDEBAR */}
-        <aside className="sidebar">
-          <div>
-            <div className="sidebar-logo">Sistem Pengajuan ATK</div>
-            <div className="sidebar-subtitle">Universitas Yarsi</div>
-          </div>
+  return (
+    <div className="layout">
+      {/* SIDEBAR */}
+      <aside className="sidebar">
+        <div>
+          <div className="sidebar-logo">Sistem Pengajuan ATK</div>
+          <div className="sidebar-subtitle">Universitas Yarsi</div>
+        </div>
 
-          <nav className="sidebar-menu">
+        <nav className="sidebar-menu">
           {sidebarMenus.map((m) => (
             <div
               key={m.label}
@@ -240,53 +202,54 @@ async function deleteUser(user) {
           ))}
         </nav>
 
-          <div
-            className="logout"
-            onClick={() => {
-              localStorage.removeItem("user");
-              window.location.href = "/";
-            }}
-            style={{ cursor: "pointer" }}
-          >
-            Log Out
+        <div
+          className="logout"
+          onClick={() => {
+            localStorage.removeItem("user");
+            localStorage.removeItem("token");
+            window.location.href = "/";
+          }}
+          style={{ cursor: "pointer" }}
+        >
+          Log Out
+        </div>
+      </aside>
+
+      {/* MAIN */}
+      <main className="main">
+        <header className="topbar">
+          <div>
+            <div className="topbar-title">Tambah User Baru</div>
+            <div className="topbar-sub">
+              Super Admin dapat menambahkan akun admin / user baru.
+            </div>
           </div>
-        </aside>
+          <div className="topbar-right">
+            <span>Role: </span>
+            <span className="role-pill">{formatRole(currentUser?.role?.name || currentUser?.role)}</span>
+          </div>
+        </header>
 
-        {/* MAIN */}
-        <main className="main">
-          <header className="topbar">
-            <div>
-              <div className="topbar-title">Tambah User Baru</div>
-              <div className="topbar-sub">
-                Super Admin dapat menambahkan akun admin / user baru.
-              </div>
+        <section className="main-content">
+          <div className="card">
+            <div className="card-title">Form Tambah User</div>
+            <div className="card-subtitle">
+              Isi data user yang akan dibuat. 
             </div>
-            <div className="topbar-right">
-              <span>Role: </span>
-              <span className="role-pill">{formatRole(currentUser?.role)}</span>
-            </div>
-          </header>
 
-          <section className="main-content">
-            <div className="card">
-              <div className="card-title">Form Tambah User</div>
-              <div className="card-subtitle">
-                Isi data user yang akan dibuat. 
-              </div>
-
-              <form onSubmit={handleSubmit}>
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 16,
-                    maxWidth: 400,
-                  }}
-                >
-                  <div className="form-group2">
+            <form onSubmit={handleSubmit}>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 16,
+                  maxWidth: 400,
+                }}
+              >
+                <div className="form-group2">
                   <label>Username / Email Kampus</label>
                   <input
-                    type="text" // Gunakan text agar tidak dipaksa format email oleh browser
+                    type="text"
                     className="input-text"
                     placeholder="Contoh: alzkar.muhammad atau alzkarmuhammad@yarsi.ac.id"
                     value={email}
@@ -297,72 +260,77 @@ async function deleteUser(user) {
                   </p>
                 </div>
 
-                  <div className="form-group">
-                    <label>Role</label>
-                    <select
-                      className="select-input"
-                      value={role}
-                      onChange={(e) => setRole(e.target.value)}
-                    >
-                      <option value="user">User</option>
-                      <option value="admin">Admin</option>
-                      <option value="superadmin">Super Admin</option>
-                    </select>
-                  </div>
-
-                  <button type="submit" className="btn btn-primary">
-                    Simpan User
-                  </button>
-
-                  {message && (
-                    <p style={{ color: "green", marginTop: 8 }}>{message}</p>
-                  )}
-                  {errorMsg && (
-                    <p className="error-text" style={{ marginTop: 8 }}>
-                      {errorMsg}
-                    </p>
-                  )}
+                <div className="form-group">
+                  <label>Role</label>
+                  <select
+                    className="select-input"
+                    value={role}
+                    onChange={(e) => setRole(e.target.value)}
+                  >
+                    <option value="user">User</option>
+                    <option value="admin">Admin</option>
+                    <option value="superadmin">Super Admin</option>
+                  </select>
                 </div>
-              </form>
-            </div>
-            <div className="card" style={{ marginTop: 24 }}>
-              <div className="card-title">Daftar User</div>
-              {loadingUsers ? (
-                <p>Memuat user...</p>
-              ) : (
-                <div style={{ overflowX: "auto" }}>
-                  <table className="table" style={{ width: "100%" }}>
-                    <thead>
-                      <tr>
-                        <th>Nama</th>
-                        <th>Email</th>
-                        <th>Role</th>
-                        <th style={{ textAlign: "center" }}>Aksi</th>
+
+                <button type="submit" className="btn btn-primary">
+                  Simpan User
+                </button>
+
+                {message && (
+                  <p style={{ color: "green", marginTop: 8 }}>{message}</p>
+                )}
+                {errorMsg && (
+                  <p className="error-text" style={{ marginTop: 8 }}>
+                    {errorMsg}
+                  </p>
+                )}
+              </div>
+            </form>
+          </div>
+          <div className="card" style={{ marginTop: 24 }}>
+            <div className="card-title">Daftar User</div>
+            {loadingUsers ? (
+              <p>Memuat user...</p>
+            ) : (
+              <div style={{ overflowX: "auto" }}>
+                <table className="table" style={{ width: "100%" }}>
+                  <thead>
+                    <tr>
+                      <th>Nama</th>
+                      <th>Email</th>
+                      <th>Role</th>
+                      <th style={{ textAlign: "center" }}>Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {users.map((u) => (
+                      <tr key={u.id}>
+                        <td>{u.name}</td>
+                        <td>{u.email}</td>
+                        <td>
+                          <span className={`role-badge role-${u.role?.name || u.role}`}>
+                            {formatRole(u.role?.name || u.role)}
+                          </span>
+                        </td>
+                        <td style={{ textAlign: "center" }}>
+                          <button
+                            className="btn btn-danger"
+                            disabled={(u.role?.name || u.role) === "superadmin"}
+                            onClick={() => deleteUser(u)}
+                          >
+                            Hapus
+                          </button>
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {users.map((u) => (
-                        <tr key={u.id}>
-                          <td>{u.name}</td>
-                          <td>{u.email}</td>
-                          <td><span className={`role-badge role-${u.role?.name}`}>{formatRole(u.role?.name || u.role)}</span></td>
-                          <td style={{ textAlign: "center" }}>
-                            <button
-                              className="btn btn-danger"
-                              disabled={u.role?.name === "superadmin"}
-                              onClick={() => deleteUser(u)}
-                            > Hapus
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          </section>
-        </main>
-      </div>
-    );
-  }
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </section>
+      </main>
+    </div>
+  );
+}
