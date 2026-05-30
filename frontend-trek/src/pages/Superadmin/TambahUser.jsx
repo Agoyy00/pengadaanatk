@@ -24,22 +24,22 @@
     const storedUser = localStorage.getItem("user");
     const currentUser = storedUser ? JSON.parse(storedUser) : null;
 
-   async function handleSubmit(e) {
+   // ==========================================
+  // 1. FUNGSI SUBMIT (POST USER)
+  // ==========================================
+  async function handleSubmit(e) {
     e.preventDefault();
     setLoadingUsers(true);
     setMessage("");
     setErrorMsg("");
 
-    // 1. Bersihkan spasi dan ubah ke lowercase biar seragam
+    const freshToken = localStorage.getItem("token");
     let cleanEmail = email.trim().toLowerCase();
-    const storedUser = localStorage.getItem("user");
 
-    // 2. Jika user memasukkan email lengkap, potong domainnya untuk standarisasi backend
     if (cleanEmail.includes("@")) {
       cleanEmail = cleanEmail.split("@")[0];
     }
 
-    // 3. Validasi dasar: pastikan input tidak kosong setelah dibersihkan
     if (!cleanEmail) {
       setErrorMsg("Username tidak boleh kosong.");
       setLoadingUsers(false);
@@ -52,9 +52,8 @@
         headers: { 
           "Content-Type": "application/json", 
           "Accept": "application/json",
-          "Authorization": `Bearer ${token}` 
+          "Authorization": `Bearer ${freshToken}` 
         },
-        // Kirim format username yang sudah bersih ke backend
         body: JSON.stringify({ 
           email: cleanEmail, 
           role: role 
@@ -62,6 +61,12 @@
       });
 
       const data = await res.json();
+
+      if (res.status === 401) {
+        setErrorMsg("Sesi login habis. Silakan Log Out dan masuk kembali.");
+        setLoadingUsers(false);
+        return;
+      }
 
       if (!res.ok || !data.success) {
         setErrorMsg(data.message || "User tidak ditemukan di database kampus.");
@@ -76,6 +81,75 @@
       setErrorMsg("Terjadi kesalahan koneksi server.");
     } finally {
       setLoadingUsers(false);
+    }
+  }
+
+  // ==========================================
+  // 2. FUNGSI LOAD DATA (GET USERS)
+  // ==========================================
+  async function loadUsers() {
+    setLoadingUsers(true);
+    try {
+      const freshToken = localStorage.getItem("token");
+      const baseUrl = API_BASE || import.meta.env.VITE_API_BASE || "";
+
+      const res = await fetch(`${baseUrl}/users`, {
+        method: "GET",
+        headers: { 
+          "Authorization": `Bearer ${freshToken}`,
+          "Accept": "application/json"
+        },
+      });
+
+      if (!res.ok) throw new Error(`Error: ${res.status}`);
+
+      const data = await res.json();
+      setUsers(data);
+    } catch (err) {
+      console.error("Gagal memuat user:", err);
+    } finally {
+      setLoadingUsers(false);
+    }
+  }
+
+  // ==========================================
+  // 3. FUNGSI HAPUS DATA (DELETE USER)
+  // ==========================================
+  async function deleteUser(user) {
+    if (user.role?.name === "superadmin") {
+      alert("Super Admin tidak boleh dihapus");
+      return;
+    }
+
+    const confirmText =
+      user.role?.name === "admin"
+        ? "Ini akun ADMIN. Yakin mau hapus?"
+        : "Yakin hapus user ini?";
+
+    if (!window.confirm(confirmText)) return;
+
+    try {
+      // Ambil token segar di sini juga biar aman dari ReferenceError
+      const freshToken = localStorage.getItem("token");
+
+      const res = await fetch(`${API_BASE}/users/${user.id}`, {
+        method: "DELETE",
+        headers: { 
+          "Authorization": `Bearer ${freshToken}`,
+          "Accept": "application/json"
+        },
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        alert(data.message || "Gagal menghapus user");
+        return;
+      }
+
+      setUsers((prev) => prev.filter((u) => u.id !== user.id));
+    } catch (err) {
+      alert("Terjadi kesalahan saat menghapus user.");
     }
   }
 
