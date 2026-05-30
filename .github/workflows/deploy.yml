@@ -22,6 +22,11 @@ jobs:
         script: |
           cd ~/pengadaanatk1/pengadaanatk
           git pull origin main
+
+          php artisan config:cache
+          php artisan route:cache
+          php artisan route:clear
           php artisan config:clear
           php artisan cache:clear
+
           pm2 restart atk-backend

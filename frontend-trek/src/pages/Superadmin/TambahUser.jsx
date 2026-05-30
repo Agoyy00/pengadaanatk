@@ -33,6 +33,7 @@
 
     // 1. Bersihkan spasi dan ubah ke lowercase biar seragam
     let cleanEmail = email.trim().toLowerCase();
+    const storedUser = localStorage.getItem("user");
 
     // 2. Jika user memasukkan email lengkap, potong domainnya untuk standarisasi backend
     if (cleanEmail.includes("@")) {
