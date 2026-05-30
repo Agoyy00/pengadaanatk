@@ -28,5 +28,5 @@ jobs:
           php artisan route:clear
           php artisan config:clear
 
-
           pm2 restart atk-backend
+          pm2 restart atk-frontend
