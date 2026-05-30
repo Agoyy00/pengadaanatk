@@ -52,6 +52,7 @@
         method: "POST",
         headers: { 
           "Content-Type": "application/json", 
+          "Accept": "application/json",
           "Authorization": `Bearer ${token}` 
         },
         // Kirim format username yang sudah bersih ke backend
