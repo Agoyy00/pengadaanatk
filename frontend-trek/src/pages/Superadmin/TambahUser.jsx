@@ -5,7 +5,6 @@
   import "../../css/layout.css";
 
   const API_BASE = import.meta.env.VITE_API_BASE;
-  const token = localStorage.getItem("token");
 
   export default function TambahUser() {
     const navigate = useNavigate();
