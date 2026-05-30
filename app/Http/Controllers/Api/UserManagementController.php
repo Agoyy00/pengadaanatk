@@ -15,6 +15,13 @@ class UserManagementController extends Controller
      * GET /api/users
      * (Untuk Super Admin melihat daftar user)
      */
+    public function index()
+    {
+        // Mengambil semua user beserta relasi rolenya dari database RDS MySQL YARSI
+        $users = User::with('role')->get();
+        return response()->json($users, 200);
+    }
+
     /**
      * POST /api/users
      * Super Admin menambah user baru (Bypass Jaringan LDAP Kampus)
