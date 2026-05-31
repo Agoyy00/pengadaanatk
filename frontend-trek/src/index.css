@@ -1,0 +1,102 @@
+* {
+    box-sizing: border-box;
+    font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+  width: 350px;
+  margin: 40px auto;
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  background: #3be125;
+  font-family: sans-serif;  
+}
+
+/* Form */
+.login-form {
+  margin-top: 20px;
+}
+
+/* Group input */
+.form-group {
+  margin-bottom: 15px;
+}
+
+/* Label */
+.form-group label {
+  font-weight: bold;
+  margin-bottom: 5px;
+  display: block;
+}
+
+/* Input */
+.form-group input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+/* Tombol */
+.btn-login {
+  width: 100%;
+  padding: 10px;
+  background: #007bff;
+  border: none;
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+  font-size: 15px;
+}
+
+.btn-login:hover {
+  background: #005fcc;
+}
+
+
+body {
+  margin: 0;
+  display: flex;
+  place-items: center;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color: #213547;
+    background-color: #ffffff;
+  }
+  a:hover {
+    color: #747bff;
+  }
+  button {
+    background-color: #f9f9f9;
+  }
+}
+
+  /* HILANGKAN GARIS BAWAH MENU ITEM (ACTIVE / NON-ACTIVE) */
+  .logout{
+    text-decoration: none !important;
+  }
+.menu-item,
+.menu-item a,
+.menu-item a:hover,
+.menu-item a:focus,
+.menu-item.active,
+.menu-item.active a {
+  text-decoration: none !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
+}

@@ -1,0 +1,492 @@
+/* =========================
+   MODAL & OVERLAY
+   ========================= */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: radial-gradient(circle at top,rgba(255, 255, 255, 0.08),transparent 40%),rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-box-small {
+  width: 100%;
+  max-width: 850px;
+  height: auto;
+  max-height: 90vh;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow:0 30px 80px rgba(0, 0, 0, 0.4),inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  border-radius: 16px;
+  display: flex;
+  overflow: hidden;
+  position: relative;
+  animation: modalEnter 0.6s ease-out;
+}
+
+@keyframes modalEnter {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* =========================
+   CLOSE BUTTON
+   ========================= */
+/* =========================
+   CLOSE BUTTON (MODIFIED)
+   ========================= */
+.close-btn-small {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  
+  /* Background merah solid atau sedikit transparan */
+  background: #ef4444; 
+  color: #ffffff; /* Icon X jadi putih */
+  
+  border: none;
+  width: 32px;
+  height: 32px;
+  font-size: 14px;
+  border-radius: 8px; /* Kotak sedikit membulat agar lebih modern */
+  cursor: pointer;
+  z-index: 10;
+  
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  /* Transisi hanya untuk warna, bukan gerakan */
+  transition: background-color 0.2s ease, opacity 0.2s ease;
+}
+
+.close-btn-small:hover {
+  background: #dc2626; /* Merah lebih gelap saat hover */
+  color: #ffffff;
+  
+  /* Hilangkan transform: scale agar tidak membesar (lebay) */
+  transform: none; 
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.close-btn-small:active {
+  /* Sedikit efek tekan tapi tidak merubah ukuran */
+  background: #b91c1c;
+  transform: translateY(1px); 
+}
+/* =========================
+   CONTAINER
+   ========================= */
+.login-container-small {
+  display: flex;
+  width: 100%;
+  min-height: 520px;
+}
+
+/* =========================
+   LEFT SIDE - GAMBAR
+   ========================= */
+.left-side-small {
+  flex: 1;
+  background:radial-gradient(circle at top, rgba(59,130,246,0.15), transparent 40%),linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 40px 30px;
+  border-right: 1px solid #e2e8f0;
+}
+
+.logo-atas-small {
+  width: 100%;
+  max-width: 160px;
+  height: auto;
+  object-fit: contain;
+  margin-bottom: 20px;
+  filter: drop-shadow(0 8px 16px rgba(0,0,0,0.15));
+}
+
+.logo-bawah-small {
+  width: 100%;
+  max-width: 320px;
+  height: auto;
+  object-fit: contain;
+  margin-top: auto;
+  filter: drop-shadow(0 8px 16px rgba(0,0,0,0.15));
+}
+
+/* =========================
+   RIGHT SIDE - FORM
+   ========================= */
+.right-side-small {
+  flex: 1;
+  background: white;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 40px 45px;
+}
+
+.login-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 24px 0;
+  text-align: center;
+}
+
+/* =========================
+   PENGUMUMAN PERIODE
+   ========================= */
+.periode-box-login {
+  background: #f8fafc;
+  padding: 14px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  border-left: 4px solid #94a3b8;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.periode-box-login strong {
+  display: block;
+  color: #1e293b;
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+
+.periode-box-login p {
+  color: #475569;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.periode-box-login.open {
+  border-left-color: #16a34a;
+  background: #f0fdf4;
+}
+
+.periode-box-login.open strong {
+  color: #166534;
+}
+
+.periode-box-login.upcoming {
+  border-left-color: #f97316;
+  background: #fff7ed;
+}
+
+.periode-box-login.upcoming strong {
+  color: #9a3412;
+}
+
+.periode-box-login.closed {
+  border-left-color: #ef4444;
+  background: #fef2f2;
+}
+
+.periode-box-login.closed strong {
+  color: #991b1b;
+}
+
+/* =========================
+   FORM
+   ========================= */
+.login-form-small {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.input-label {
+  display: block;
+  text-align: left;
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.login-form-small input[type="email"],
+.login-form-small input[type="text"],
+.login-form-small input[type="password"] {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 8px;
+  background: white;
+  font-size: 14px;
+  color: #1e293b;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.login-form-small input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.login-form-small input::placeholder {
+  color: #94a3b8;
+}
+
+/* =========================
+   PASSWORD WRAPPER
+   ========================= */
+/* =========================
+   PASSWORD WRAPPER
+   ========================= */
+.password-wrapper-small {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-wrapper-small input {
+  padding-right: 45px;
+}
+
+.show-password-btn-small {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  /* Transform ini wajib untuk menjaga posisi di tengah vertikal */
+  transform: translateY(-50%);
+
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+
+  width: 24px;
+  height: 24px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  cursor: pointer;
+  color: #64748b;
+  
+  /* Hilangkan semua transisi agar tidak ada gerakan */
+  transition: color 0.2s ease; 
+}
+
+.show-password-btn-small:hover {
+  color: #334155;
+  /* Pastikan transform tetap sama agar tidak gerak ke bawah */
+  transform: translateY(-50%) !important;
+}
+
+/* Hilangkan efek gerak pada state active/focus */
+.show-password-btn-small:focus,
+.show-password-btn-small:active {
+  outline: none;
+  box-shadow: none;
+  transform: translateY(-50%) !important;
+}
+
+/* Pastikan icon di dalamnya juga tidak memiliki transisi gerak */
+.show-password-btn-small svg {
+  display: block;
+  transition: none !important;
+}
+
+/* =========================
+   CHECKBOX
+   ========================= */
+.checkbox-small {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #475569;
+  cursor: pointer;
+  margin-top: 4px;
+}
+
+.checkbox-small input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.checkbox-small span {
+  user-select: none;
+}
+
+/* =========================
+   SUBMIT BUTTON
+   ========================= */
+.submit-btn-small {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+
+  background:
+    linear-gradient(
+      180deg,
+      rgba(37, 99, 235, 0.95) 0%,
+      rgba(29, 78, 216, 0.95) 100%
+    );
+
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+
+  box-shadow:
+    0 10px 25px rgba(37, 99, 235, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    filter 0.2s ease;
+}
+
+.submit-btn-small:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+
+  box-shadow:
+    0 14px 35px rgba(37, 99, 235, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.submit-btn-small:active {
+  transform: translateY(0);
+  box-shadow:
+    0 8px 18px rgba(37, 99, 235, 0.35),
+    inset 0 3px 6px rgba(0, 0, 0, 0.25);
+}
+
+.submit-btn-small:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 3px rgba(59, 130, 246, 0.45),
+    0 10px 25px rgba(37, 99, 235, 0.35);
+}
+
+/* =========================
+   RESPONSIVE
+   ========================= */
+@media (max-width: 768px) {
+  .modal-box-small {
+    max-width: 95%;
+    flex-direction: column;
+    max-height: 95vh;
+    overflow-y: auto;
+  }
+
+  .login-container-small {
+    flex-direction: column;
+    min-height: auto;
+  }
+
+  .left-side-small {
+    padding: 30px 20px;
+    border-right: none;
+    border-bottom: 1px solid #e2e8f0;
+    min-height: 200px;
+  }
+
+  .logo-atas-small {
+    max-width: 120px;
+  }
+
+  .logo-bawah-small {
+    max-width: 240px;
+  }
+
+  .right-side-small {
+    padding: 30px 25px;
+  }
+
+  .login-title {
+    font-size: 24px;
+    margin-bottom: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal-overlay {
+    padding: 10px;
+  }
+
+  .right-side-small {
+    padding: 25px 20px;
+  }
+
+  .login-form-small {
+    gap: 14px;
+  }
+
+  .input-label {
+    font-size: 13px;
+  }
+
+  .login-form-small input[type="email"],
+  .login-form-small input[type="text"],
+  .login-form-small input[type="password"] {
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 768px) {
+  .modal-overlay {
+    align-items: flex-start;
+  }
+
+  .modal-box-small {
+    flex-direction: column;
+    margin-top: 40px;
+    margin-bottom: 40px;
+  }
+
+  .login-container-small {
+    flex-direction: column;
+  }
+
+  .left-side-small {
+    border-bottom: 1px solid #e2e8f0;
+  }
+}
+
+@media (max-width: 600px) {
+  .left-side-small {
+    display: none;
+  }
+
+  .right-side-small {
+    padding: 25px;
+  }
+}
+
+@supports (-webkit-touch-callout: none) {
+  .modal-overlay {
+    height: 100dvh;
+  }
+}

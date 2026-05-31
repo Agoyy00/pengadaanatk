@@ -1,0 +1,226 @@
+/* OVERLAY */
+.import-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+/* PANEL */
+.import-panel {
+  background: #ffffff;
+  width: 620px; /* ⬅️ DIBESARIN */
+  max-width: 95%;
+  border-radius: 14px;
+  padding: 22px 24px 24px;
+  position: relative;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+  animation: slideUp 0.25s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* CLOSE */
+.import-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  cursor: pointer;
+  color: black;
+}
+
+/* TITLE */
+.import-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+/* DESC */
+.import-desc {
+  margin: 8px 0 14px;
+  color: #555;
+  font-size: 14px;
+}
+
+/* INSTRUCTION */
+.import-instruction {
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+.instruction-title {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+/* TABLE WRAPPER (ANTI OVERFLOW) */
+.import-table-wrapper {
+  overflow-x: auto;
+}
+
+/* TABLE */
+.import-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  min-width: 520px;
+}
+
+.import-table th,
+.import-table td {
+  border: 1px solid #e5e7eb;
+  padding: 6px 8px;
+}
+
+.import-table th {
+  background: #eef2ff;
+  font-weight: 700;
+  text-align: center;
+}
+
+.row-index {
+  width: 36px;
+  text-align: center;
+  background: #f1f5f9;
+  font-weight: 600;
+}
+
+/* NOTE */
+.import-note {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #444;
+  line-height: 1.5;
+}
+
+/* FILE */
+.import-file-wrapper {
+  margin-top: 14px;
+}
+
+.import-file {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #2563eb;
+}
+
+/* ACTIONS */
+.import-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+/* BUTTONS (PREFIXED – AMAN) */
+.import-btn-cancel {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  cursor: pointer;
+  font-weight: 600;
+  color: black;
+}
+
+.import-btn-submit {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  background: #2563eb;
+  color: #ffffff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.import-btn-submit:disabled {
+  background: #93c5fd;
+  cursor: not-allowed;
+}
+
+/* Tablet */
+@media (max-width: 992px) {
+
+  .import-panel {
+    width: 90%;
+    padding: 20px;
+  }
+
+  .import-title {
+    font-size: 18px;
+  }
+
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+
+  .import-overlay {
+    padding: 16px; /* biar gak mepet layar */
+  }
+
+  .import-panel {
+    width: 100%;
+    padding: 18px;
+    border-radius: 12px;
+  }
+
+  .import-title {
+    font-size: 16px;
+  }
+
+  .import-desc {
+    font-size: 13px;
+  }
+
+  .instruction-title {
+    font-size: 12px;
+  }
+
+  .import-note {
+    font-size: 11px;
+  }
+
+  .import-actions {
+    flex-direction: column; /* tombol jadi vertikal */
+  }
+
+  .import-btn-cancel,
+  .import-btn-submit {
+    width: 100%;
+  }
+
+}
+
+/* Small Mobile */
+@media (max-width: 480px) {
+
+  .import-panel {
+    padding: 14px;
+  }
+
+  .import-table {
+    font-size: 12px;
+  }
+
+}

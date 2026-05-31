@@ -1,0 +1,127 @@
+.info-banner {
+  background-color: #e3f2fd;
+  border-left: 4px solid #1976d2;
+  padding: 10px 12px;
+  border-radius: 4px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  color: #000000;
+}
+
+.notif-banner {
+  background-color: #fff3cd;
+  border-left: 4px solid #ff9800;
+  padding: 10px 12px;
+  border-radius: 4px;
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+}
+
+.notif-close {
+  background: transparent;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.status-card {
+  margin-top: 10px;
+  padding: 12px 16px;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  background: #fafafa;
+}
+
+.badge-status {
+  display: inline-block;
+  border-radius: 999px;
+  font-weight: 600;
+  color: rgb(43, 10, 107) !important;
+  padding: 4px 10px;
+  font-size: 11px;
+  letter-spacing: 0.4px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+}
+
+.status-diajukan {
+  background-color: #2196f3;
+}
+
+.status-diverifikasi {
+  background-color: #9c27b0;
+}
+
+.status-ditolak {
+  background-color: #f44336;
+}
+
+.status-disetujui {
+  background-color: #4caf50;
+}
+
+.revisi-note {
+  font-size: 11px;
+  color: #b91c1c;
+}
+
+.revisi-block {
+  margin-top: 8px;
+}
+
+/* Tablet */
+@media (max-width: 992px) {
+
+  .info-banner,
+  .notif-banner {
+    font-size: 13px;
+    padding: 10px;
+  }
+
+  .status-card {
+    padding: 12px;
+  }
+
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+
+  .notif-banner {
+    flex-direction: column;      /* jadi vertikal */
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .notif-close {
+    align-self: flex-end;        /* tombol tetap di kanan */
+  }
+
+  .badge-status {
+    font-size: 10px;
+    padding: 4px 8px;
+  }
+
+  .status-card {
+    padding: 10px;
+  }
+
+}
+
+/* Small mobile */
+@media (max-width: 480px) {
+
+  .info-banner,
+  .notif-banner {
+    font-size: 12px;
+    padding: 8px 10px;
+  }
+
+  .badge-status {
+    font-size: 9px;
+    padding: 3px 7px;
+  }
+
+}

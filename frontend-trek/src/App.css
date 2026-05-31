@@ -1,0 +1,226 @@
+#root {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body{
+  background-color:#ffffff;
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #ffffff;
+}
+
+.landing {
+  height: 100vh;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  position: relative;
+}
+
+.landing-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(10, 47, 82, 0.65),
+    rgba(10, 47, 82, 0.85)
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.landing-content {
+  text-align: center;
+  color: #ffffff;
+  max-width: 720px;
+  padding: 24px;
+  animation: fadeUp 1.2s ease-out;
+}
+
+.landing-content h1 {
+  font-size: 44px;
+  font-weight: 700;
+  margin-bottom: 10px;
+  letter-spacing: 0.6px;
+  text-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+}
+
+.landing-content p {
+  font-size: 20px;
+  font-weight: 500;
+  margin-bottom: 6px;
+  opacity: 0.95;
+  color: white;
+  text-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
+}
+
+.landing-content span {
+  font-size: 15px;
+  opacity: 0.85;
+  text-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
+}
+
+.landing::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 30% 30%, rgba(255,255,255,0.08), transparent 40%),
+    radial-gradient(circle at 70% 60%, rgba(255,255,255,0.06), transparent 45%);
+  pointer-events: none;
+}
+
+/* glass card */
+.glass {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 36px 44px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow:
+    0 20px 40px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.floating {
+  animation: floaty 6s ease-in-out infinite;
+}
+
+@keyframes floaty {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0); }
+} 
+
+.landing-divider {
+  width: 60px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.6);
+  margin: 24px auto;
+  border-radius: 2px;
+}
+
+.landing-btn {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #fff;
+  padding: 12px 28px;
+  font-size: 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  transition: all 0.3s ease;
+}
+
+.landing-btn:hover {
+  background: #ffffff;
+  color: #0a2f52;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+  transform: translateY(-2px);
+}
+
+/* animasi halus */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* responsive */
+@media (max-width: 768px) {
+  .landing-content h1 {
+    font-size: 30px;
+  }
+
+  .landing-content p {
+    font-size: 16px;
+  }
+
+  .landing-content span {
+    font-size: 14px;
+  }
+}
+
+.periode-toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 320px;
+
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(6px);
+
+  padding: 15px 18px;
+  border-radius: 12px;
+
+  box-shadow: 0 4px 15px rgba(0,0,0,0.25);
+  z-index: 9999;
+
+  animation: slideIn 0.4s ease-out;
+}
+
+.periode-toast-title {
+  font-size: 17px;
+  font-weight: 700;
+  margin-bottom: 6px;
+  color: #222;
+}
+
+.periode-toast-text {
+  font-size: 14px;
+  line-height: 20px;
+  color: #444;
+}
+
+.periode-toast.open { border-left: 6px solid #28a745; }
+.periode-toast.upcoming { border-left: 6px solid #ffc107; }
+.periode-toast.closed { border-left: 6px solid #dc3545; }
+.periode-toast.none { border-left: 6px solid #6c757d; }
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(50px); }
+  to { opacity: 1; transform: translateX(0); }
+}
