@@ -54,36 +54,36 @@ class BarangController extends Controller
 
     // GET /api/barang?q=
     public function index(Request $request)
-{
-    $q = $request->q;
+    {
+        $q = $request->q;
 
-    $barang = Barang::where('nama', 'like', "%$q%")
-        ->get()
-        ->map(function ($b) {
-            return [
-                'id' => $b->id,
-                'nama' => $b->nama,
-                'kode' => $b->kode,
-                'stok' => $b->stok,
-                'satuan' => $b->satuan,
-                'harga_satuan' => $b->harga_satuan,
+        $barang = Barang::where('nama', 'like', "%$q%")
+            ->get()
+            ->map(function ($b) {
+                return [
+                    'id' => $b->id,
+                    'nama' => $b->nama,
+                    'kode' => $b->kode,
+                    'stok' => $b->stok,
+                    'satuan' => $b->satuan,
+                    'harga_satuan' => $b->harga_satuan,
 
-                // 🔴 INI KUNCINYA
-                'foto' => $b->gambar
-                ? '/storage/barang/' . $b->gambar
-                : null,
+                    // 🔴 SEKARANG MENGGUNAKAN URL UTUH DARI S3 BUCKET
+                    'foto' => $b->gambar
+                        ? Storage::disk('s3')->url('barang/' . $b->gambar)
+                        : null,
                 ];  
             });
 
-    return response()->json($barang);
-}
+        return response()->json($barang);
+    }
 
     public function show(Barang $barang)
     {
         return response()->json($barang);
     }
 
-    // ✅ GET /api/barang/{barang}/logs
+    // GET /api/barang/{barang}/logs
     public function logs(Barang $barang)
     {
         $logs = BarangAuditLog::with(['user:id,name,role'])
@@ -133,23 +133,23 @@ class BarangController extends Controller
             'kode'        => $kode,
             'satuan'      => $satuan,
             'harga_satuan'=> $harga,
-            
         ]);
 
+        // 🔴 PROSES UPLOAD KE S3 BUCKET
         if ($request->hasFile('gambar')) {
-    $file = $request->file('gambar');
-    $filename = time().'_'.uniqid().'.'.$file->getClientOriginalExtension();
+            $file = $request->file('gambar');
+            $filename = time().'_'.uniqid().'.'.$file->getClientOriginalExtension();
 
-    Storage::disk('public')->putFileAs(
-        'barang',
-        $file,
-        $filename
-    );
+            // Disimpan ke disk 's3', folder 'barang'
+            Storage::disk('s3')->putFileAs(
+                'barang',
+                $file,
+                $filename
+            );
 
-    $barang->gambar = $filename;
-    $barang->save();
-}
-
+            $barang->gambar = $filename;
+            $barang->save();
+        }
 
         $this->writeLog($barang->id, (int)$validated['actor_user_id'], 'create', null, $barang->toArray());
 
@@ -200,27 +200,27 @@ class BarangController extends Controller
         $barang->harga_satuan = $harga;
         $barang->save();
 
+        // 🔴 PROSES UPDATE & HAPUS FILE LAMA DI S3
         if ($request->hasFile('gambar')) {
-    // hapus gambar lama
-            if ($barang->gambar && Storage::disk('public')->exists('barang/' . $barang->gambar)) {
-                Storage::disk('public')->delete('barang/' . $barang->gambar);
+            // Hapus gambar lama dari S3 jika ada
+            if ($barang->gambar && Storage::disk('s3')->exists('barang/' . $barang->gambar)) {
+                Storage::disk('s3')->delete('barang/' . $barang->gambar);
             }
 
             $file = $request->file('gambar');
             $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-            Storage::disk('public')->putFileAs(
-    'barang',
-    $file,
-    $filename
-);
-
+            
+            // Upload gambar baru ke S3
+            Storage::disk('s3')->putFileAs(
+                'barang',
+                $file,
+                $filename
+            );
 
             $barang->gambar = $filename;
             $barang->save();
         }
 
-
-        // ✅ LOG UPDATE
         $this->writeLog($barang->id, (int)$validated['actor_user_id'], 'update', $old, $barang->toArray());
 
         return response()->json([
@@ -232,60 +232,51 @@ class BarangController extends Controller
 
     // DELETE /api/barang/{barang}
     public function destroy(Request $request, Barang $barang)
-{
-    // =========================
-    // VALIDASI USER PENGHAPUS
-    // =========================
-    $actorUserId = $request->input('actor_user_id');
+    {
+        $actorUserId = $request->input('actor_user_id');
 
-    if (!$actorUserId || !\App\Models\User::where('id', $actorUserId)->exists()) {
+        if (!$actorUserId || !\App\Models\User::where('id', $actorUserId)->exists()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User penghapus tidak valid.'
+            ], 422);
+        }
+
+        $dipakai = \Illuminate\Support\Facades\DB::table('pengajuan_items')
+            ->where('barang_id', $barang->id)
+            ->exists();
+
+        if ($dipakai) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Barang tidak bisa dihapus karena sudah digunakan dalam pengajuan.'
+            ], 409);
+        }
+
+        $oldData = $barang->toArray();
+
+        // 🔴 HAPUS FILE GAMBAR DARI S3 SEBELUM DATABASE DIHAPUS
+        if ($barang->gambar && Storage::disk('s3')->exists('barang/' . $barang->gambar)) {
+            Storage::disk('s3')->delete('barang/' . $barang->gambar);
+        }
+
+        \App\Models\BarangAuditLog::create([
+            'barang_id' => $barang->id,
+            'user_id'   => $actorUserId,
+            'action'    => 'delete',
+            'old_data'  => json_encode($oldData),
+            'new_data'  => null,
+        ]);
+
+        $barang->delete();
+        $this->reindexKodeBarang();
+
         return response()->json([
-            'success' => false,
-            'message' => 'User penghapus tidak valid.'
-        ], 422);
+            'success' => true,
+            'message' => 'Barang berhasil dihapus.'
+        ]);
     }
 
-    // =========================
-    // CEK: BARANG SUDAH DIPAKAI ATAU BELUM
-    // =========================
-    $dipakai = \Illuminate\Support\Facades\DB::table('pengajuan_items')
-        ->where('barang_id', $barang->id)
-        ->exists();
-
-    if ($dipakai) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Barang tidak bisa dihapus karena sudah digunakan dalam pengajuan.'
-        ], 409);
-    }
-
-    // =========================
-    // SIMPAN DATA LAMA (UNTUK LOG)
-    // =========================
-    $oldData = $barang->toArray();
-
-    // =========================
-    // TULIS LOG DULU (PENTING!)
-    // =========================
-    \App\Models\BarangAuditLog::create([
-        'barang_id' => $barang->id, // MASIH ADA
-        'user_id'   => $actorUserId,
-        'action'    => 'delete',
-        'old_data'  => json_encode($oldData),
-        'new_data'  => null,
-    ]);
-
-    // =========================
-    // BARU HAPUS BARANG
-    // =========================
-    $barang->delete();
-    $this->reindexKodeBarang();
-
-    return response()->json([
-        'success' => true,
-        'message' => 'Barang berhasil dihapus.'
-    ]);
-}
     // PATCH /api/barang/{barang}/harga
     public function updateHarga(Request $request, Barang $barang)
     {
@@ -299,7 +290,6 @@ class BarangController extends Controller
         $barang->harga_satuan = $validated['harga_satuan'];
         $barang->save();
 
-        // ✅ LOG UPDATE HARGA
         $this->writeLog($barang->id, (int)$validated['actor_user_id'], 'update_harga', $old, $barang->toArray());
 
         return response()->json([
@@ -309,125 +299,112 @@ class BarangController extends Controller
         ]);
     }
 
-public function importExcel(Request $request)
-{
-    $request->validate([
-        'file' => 'required|file|mimes:csv,txt'
-    ]);
-
-    try {
-
-        $file = $request->file('file');
-        $handle = fopen($file->getPathname(), 'r');
-
-        if (!$handle) {
-            throw new \Exception("File tidak bisa dibuka.");
-        }
-
-        // ambil baris pertama untuk detect delimiter
-        $firstLine = fgets($handle);
-
-        if (!$firstLine) {
-            throw new \Exception("File kosong atau header tidak ditemukan.");
-        }
-
-        // daftar delimiter yang mungkin
-        $delimiters = [",", ";", "|", "\t"];
-
-        $delimiter = ",";
-        $maxCount = 0;
-
-        foreach ($delimiters as $d) {
-            $count = count(str_getcsv($firstLine, $d));
-            if ($count > $maxCount) {
-                $maxCount = $count;
-                $delimiter = $d;
-            }
-        }
-
-        // kembali ke awal file
-        rewind($handle);
-
-        // baca header
-        $header = fgetcsv($handle, 0, $delimiter);
-
-        if (!$header) {
-            throw new \Exception("Header CSV tidak ditemukan.");
-        }
-
-        // hapus BOM
-        $header[0] = preg_replace('/^\xEF\xBB\xBF/', '', $header[0]);
-
-        // normalisasi header
-        $header = array_map(function ($h) {
-            $h = strtolower(trim($h));
-            $h = str_replace(' ', '_', $h);
-            return $h;
-        }, $header);
-
-        $userId = auth()->id();
-
-        $lastBarang = Barang::where('kode', 'like', 'ATK-%')
-            ->selectRaw("MAX(CAST(SUBSTRING(kode, 5) AS UNSIGNED)) as max_code")
-            ->first();
-
-        $nextNumber = ($lastBarang->max_code ?? 0) + 1;
-
-        $imported = 0;
-
-        while (($row = fgetcsv($handle, 0, $delimiter)) !== false) {
-
-            if (count($row) === 0) {
-                continue;
-            }
-
-            $data = array_combine($header, $row);
-
-            $nama = trim($data['nama_barang'] ?? '');
-
-            if ($nama === '') {
-                continue;
-            }
-
-            $satuan = trim($data['satuan'] ?? 'dus');
-            $harga = (int) ($data['harga'] ?? 0);
-
-            $kode = 'ATK-' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
-            $nextNumber++;
-
-            $barang = Barang::create([
-                'kode' => $kode,
-                'nama' => $nama,
-                'satuan' => 'dus',
-                'harga_satuan' => $harga
-            ]);
-
-            BarangAuditLog::create([
-                'barang_id' => $barang->id,
-                'user_id' => $userId,
-                'action' => 'import',
-                'old_data' => null,
-                'new_data' => json_encode($barang->toArray())
-            ]);
-
-            $imported++;
-        }
-
-        fclose($handle);
-
-        return response()->json([
-            'success' => true,
-            'message' => "Import berhasil. {$imported} barang ditambahkan."
+    public function importExcel(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:csv,txt'
         ]);
 
-    } catch (\Exception $e) {
+        try {
+            $file = $request->file('file');
+            $handle = fopen($file->getPathname(), 'r');
 
-        return response()->json([
-            'success' => false,
-            'message' => $e->getMessage()
-        ], 500);
+            if (!$handle) {
+                throw new \Exception("File tidak bisa dibuka.");
+            }
+
+            $firstLine = fgets($handle);
+
+            if (!$firstLine) {
+                throw new \Exception("File kosong atau header tidak ditemukan.");
+            }
+
+            $delimiters = [",", ";", "|", "\t"];
+            $delimiter = ",";
+            $maxCount = 0;
+
+            foreach ($delimiters as $d) {
+                $count = count(str_getcsv($firstLine, $d));
+                if ($count > $maxCount) {
+                    $maxCount = $count;
+                    $delimiter = $d;
+                }
+            }
+
+            rewind($handle);
+            $header = fgetcsv($handle, 0, $delimiter);
+
+            if (!$header) {
+                throw new \Exception("Header CSV tidak ditemukan.");
+            }
+
+            $header[0] = preg_replace('/^\xEF\xBB\xBF/', '', $header[0]);
+
+            $header = array_map(function ($h) {
+                $h = strtolower(trim($h));
+                $h = str_replace(' ', '_', $h);
+                return $h;
+            }, $header);
+
+            $userId = auth()->id();
+
+            $lastBarang = Barang::where('kode', 'like', 'ATK-%')
+                ->selectRaw("MAX(CAST(SUBSTRING(kode, 5) AS UNSIGNED)) as max_code")
+                ->first();
+
+            $nextNumber = ($lastBarang->max_code ?? 0) + 1;
+            $imported = 0;
+
+            while (($row = fgetcsv($handle, 0, $delimiter)) !== false) {
+                if (count($row) === 0) {
+                    continue;
+                }
+
+                $data = array_combine($header, $row);
+                $nama = trim($data['nama_barang'] ?? '');
+
+                if ($nama === '') {
+                    continue;
+                }
+
+                $satuan = trim($data['satuan'] ?? 'dus');
+                $harga = (int) ($data['harga'] ?? 0);
+
+                $kode = 'ATK-' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
+                $nextNumber++;
+
+                $barang = Barang::create([
+                    'kode' => $kode,
+                    'nama' => $nama,
+                    'satuan' => 'dus',
+                    'harga_satuan' => $harga
+                ]);
+
+                BarangAuditLog::create([
+                    'barang_id' => $barang->id,
+                    'user_id' => $userId,
+                    'action' => 'import',
+                    'old_data' => null,
+                    'new_data' => json_encode($barang->toArray())
+                ]);
+
+                $imported++;
+            }
+
+            fclose($handle);
+
+            return response()->json([
+                'success' => true,
+                'message' => "Import berhasil. {$imported} barang ditambahkan."
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
-}
 
     public function bulkDelete(Request $request)
     {
@@ -458,8 +435,9 @@ public function importExcel(Request $request)
                     null
                 );
 
-                if ($barang->gambar && Storage::disk('public')->exists('barang/'.$barang->gambar)) {
-                    Storage::disk('public')->delete('barang/'.$barang->gambar);
+                // 🔴 HAPUS FILE GAMBAR DARI S3 SAAT BULK DELETE
+                if ($barang->gambar && Storage::disk('s3')->exists('barang/'.$barang->gambar)) {
+                    Storage::disk('s3')->delete('barang/'.$barang->gambar);
                 }
 
                 $barang->delete();
