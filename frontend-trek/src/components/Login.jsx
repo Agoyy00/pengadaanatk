@@ -12,12 +12,16 @@ function Login({ onClose }) {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
 
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    setLoading(true); // Set loading aktif saat tombol diklik
+    setLoading(true);
+    setErrorMsg("");
+    setSuccessMsg("");
 
     try {
       const res = await fetch(`${import.meta.env.VITE_API_BASE}/login`, {
@@ -33,7 +37,7 @@ function Login({ onClose }) {
       const data = await res.json();
 
       if (!res.ok) {
-        alert(data.message || "Login gagal");
+        setErrorMsg(data.message || "Login gagal. Periksa username dan password Anda.");
         setLoading(false);
         return;
       }
@@ -42,20 +46,21 @@ function Login({ onClose }) {
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
 
-      alert("Login berhasil");
+      setSuccessMsg("Login berhasil! Mengalihkan halaman...");
 
-      // REDIRECT BERDASARKAN ROLE DARI BACKEND
-      window.location.href =
-        data.user.role === "superadmin"
-          ? "/dashboardsuperadmin"
-          : data.user.role === "admin"
-          ? "/dashboardadmin"
-          : "/dashboarduser";
+      // Redirect setelah jeda agar notifikasi sukses terbaca
+      setTimeout(() => {
+        window.location.href =
+          data.user.role === "superadmin"
+            ? "/dashboardsuperadmin"
+            : data.user.role === "admin"
+            ? "/dashboardadmin"
+            : "/dashboarduser";
+      }, 1200);
 
     } catch (err) {
       console.error("FETCH ERROR:", err);
-      alert("Terjadi kesalahan saat menghubungi server");
-    } finally {
+      setErrorMsg("Terjadi kesalahan saat menghubungi server.");
       setLoading(false);
     }
   };
@@ -87,6 +92,38 @@ function Login({ onClose }) {
               Silakan login menggunakan akun YARSI yang <br /> 
               <span style={{ color: '#3b82f6', fontWeight: '600' }}>Sudah Terdaftar</span>
             </p>
+
+            {errorMsg && (
+              <div style={{
+                background: "#fee2e2",
+                color: "#ef4444",
+                border: "1px solid #fecaca",
+                padding: "10px 14px",
+                borderRadius: "8px",
+                fontSize: "13px",
+                fontWeight: "600",
+                marginBottom: "16px",
+                textAlign: "center"
+              }}>
+                ⚠️ {errorMsg}
+              </div>
+            )}
+
+            {successMsg && (
+              <div style={{
+                background: "#dcfce7",
+                color: "#16a34a",
+                border: "1px solid #bbf7d0",
+                padding: "10px 14px",
+                borderRadius: "8px",
+                fontSize: "13px",
+                fontWeight: "600",
+                marginBottom: "16px",
+                textAlign: "center"
+              }}>
+                ✓ {successMsg}
+              </div>
+            )}
 
             <form onSubmit={handleLogin} className="login-form-small">
               {/* USERNAME (Bukan Email) */}
