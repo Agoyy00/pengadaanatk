@@ -22,6 +22,7 @@ class Pengajuan extends Model
         'total_nilai',
         'total_jumlah_diajukan',
         'user_id',
+        'catatan_admin',
 
         'verified_by',
         'verified_at',

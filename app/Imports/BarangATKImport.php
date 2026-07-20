@@ -7,7 +7,7 @@ use App\Models\BarangAuditLog;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 
-class BarangAtkImport implements ToModel, WithHeadingRow
+class BarangATKImport implements ToModel, WithHeadingRow
 {
     protected int $actorUserId;
     protected int $nextNumber;

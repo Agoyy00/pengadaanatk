@@ -16,7 +16,7 @@ class UserSeeder extends Seeder
             [
                 'name'     => 'Super Admin ATK',
                 'password' => Hash::make('password123'),
-                'role'     => 'superadmin',   // 👈 PENTING
+                'role_id'  => 1,
             ]
         );
 
@@ -26,7 +26,7 @@ class UserSeeder extends Seeder
             [
                 'name'     => 'Admin ATK',
                 'password' => Hash::make('password123'),
-                'role'     => 'admin',
+                'role_id'  => 2,
             ]
         );
 
@@ -36,7 +36,7 @@ class UserSeeder extends Seeder
             [
                 'name'     => 'User ATK',
                 'password' => Hash::make('password123'),
-                'role'     => 'user',
+                'role_id'  => 3,
             ]
         );
     }

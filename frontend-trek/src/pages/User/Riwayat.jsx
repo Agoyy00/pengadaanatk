@@ -86,6 +86,12 @@ export default function Riwayat() {
             Buat Pengajuan Baru
           </Link>
           <div className="menu-item disabled">Riwayat pengajuan</div>
+          <Link to="/stock-opname" className="menu-item">
+            Stock Opname Barang
+          </Link>
+          <Link to="/template-dokumen" className="menu-item">
+            Template Dokumen
+          </Link>
         </nav>
 
         <Link to="/" className="logout">

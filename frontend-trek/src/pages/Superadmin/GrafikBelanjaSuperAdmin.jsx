@@ -49,6 +49,8 @@ const [showAnalisis, setShowAnalisis] = useState(false);
       { label: "Atur Periode", to: "/periode" },
       { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang" },
       { label: "Analisis & Grafik", to: "/superadmin/analisis", active: true },
+      { label: "Stock Opname Barang", to: "/stock-opname" },
+      { label: "Template Dokumen", to: "/template-dokumen" },
     ],
     []
   );

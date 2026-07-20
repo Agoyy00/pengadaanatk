@@ -26,6 +26,8 @@ import Approval from "./pages/Superadmin/Approval";
 import TambahUser from "./pages/Superadmin/TambahUser";
 import DaftarBarangATKSuperAdmin from "./pages/Superadmin/DaftarBarangATKSuperAdmin";
 import GrafikBelanjaSuperAdmin from "./pages/Superadmin/GrafikBelanjaSuperAdmin";
+import StockOpname from "./pages/StockOpname";
+import TemplateDokumen from "./pages/TemplateDokumen";
 
 
 // SUPER ADMIN - FITUR BARU
@@ -330,6 +332,24 @@ function App() {
         />
 
           <Route path="/verifikasi/:id" element={<DetailVerifikasi />} />
+
+          {/* ✅ ROUTES BARU: Stock Opname & Template Dokumen */}
+          <Route
+            path="/stock-opname"
+            element={
+              <RequireAuth allowRoles={["user", "admin", "superadmin"]}>
+                <StockOpname />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/template-dokumen"
+            element={
+              <RequireAuth allowRoles={["user", "admin", "superadmin"]}>
+                <TemplateDokumen />
+              </RequireAuth>
+            }
+          />
 
         {/* fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />

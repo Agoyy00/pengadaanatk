@@ -233,16 +233,40 @@ const downloadPdfAdmin = async (id, status) => {
     }
   };
 
-  const filteredData = data.filter(
-    (p) => p.status === filterStatus
-  );
-  
-      const sidebarMenus = [
-      { label: "Dashboard Admin", to: "/approval"},
-      { label: "Verifikasi", to: "/verifikasi", active: true  },
-      { label: "Kelola Barang ATK", to: "/kelola-barang" },
-      { label: "Grafik Usulan Barang", to: "/grafik-usulan-barang" },
-      ];
+  const [selectedUnit, setSelectedUnit] = useState("all");
+
+  const uniqueUnits = React.useMemo(() => {
+    return [...new Set(data.map((p) => p.unit))].filter(Boolean);
+  }, [data]);
+
+  const filteredData = React.useMemo(() => {
+    const statusFiltered = data.filter((p) => p.status === filterStatus);
+
+    if (selectedUnit === "all") {
+      // Tampilkan hanya pengajuan pertama (terbaru) untuk setiap unit
+      const seenUnits = new Set();
+      return statusFiltered.filter((p) => {
+        if (!p.unit) return true;
+        if (seenUnits.has(p.unit)) {
+          return false;
+        }
+        seenUnits.add(p.unit);
+        return true;
+      });
+    } else {
+      // Tampilkan semua pengajuan dari unit terpilih
+      return statusFiltered.filter((p) => p.unit === selectedUnit);
+    }
+  }, [data, filterStatus, selectedUnit]);
+
+  const sidebarMenus = [
+    { label: "Dashboard Admin", to: "/dashboardadmin" },
+    { label: "Verifikasi", to: "/verifikasi", active: true },
+    { label: "Kelola Barang ATK", to: "/kelola-barang" },
+    { label: "Grafik Usulan Barang", to: "/grafik-usulan-barang" },
+    { label: "Stock Opname Barang", to: "/stock-opname" },
+    { label: "Template Dokumen", to: "/template-dokumen" },
+  ];
 
       const [editingId, setEditingId] = useState(null);
       const [draftItems, setDraftItems] = useState({});
@@ -404,19 +428,37 @@ const [selectedPengajuan, setSelectedPengajuan] = useState(null);
               Admin dapat memverifikasi, merevisi, atau menolak pengajuan ATK.
             </div>
 
-            {/* FILTER STATUS */}
-            <div style={{ marginBottom: 12, display: "flex", gap: 8, alignItems: "center" }}>
-              <span style={{ fontSize: 13 }} className="A">Filter status:</span>
-              <select
-              className="select-input"
-              style={{ maxWidth: 220 }}
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-            >
-              <option value="diajukan">Diajukan</option>
-              <option value="diverifikasi_admin">Diverifikasi Admin</option>
-              <option value="ditolak_admin">Ditolak Admin</option>
-            </select>
+            {/* FILTER STATUS & UNIT */}
+            <div style={{ marginBottom: 16, display: "flex", gap: 16, flexWrap: "wrap", alignItems: "center" }}>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <span style={{ fontSize: 13, fontWeight: 600 }}>Filter Status:</span>
+                <select
+                  className="select-input"
+                  style={{ minWidth: 150 }}
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                >
+                  <option value="diajukan">Diajukan</option>
+                  <option value="diverifikasi_admin">Diverifikasi Admin</option>
+                  <option value="ditolak_admin">Ditolak Admin</option>
+                  <option value="disetujui">Disetujui Super Admin</option>
+                </select>
+              </div>
+
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <span style={{ fontSize: 13, fontWeight: 600 }}>Filter Unit:</span>
+                <select
+                  className="select-input"
+                  style={{ minWidth: 180 }}
+                  value={selectedUnit}
+                  onChange={(e) => setSelectedUnit(e.target.value)}
+                >
+                  <option value="all">Semua Unit</option>
+                  {uniqueUnits.map((u) => (
+                    <option key={u} value={u}>{u}</option>
+                  ))}
+                </select>
+              </div>
             </div>
             {loading && <p>Sedang memuat...</p>}
             {errorMsg && <p className="error-text">{errorMsg}</p>}
@@ -447,7 +489,20 @@ const [selectedPengajuan, setSelectedPengajuan] = useState(null);
                             <td>{p.id}</td>
                             <td>{p.nama_pemohon}</td>
                             <td>{p.tahun_akademik}</td>
-                            <td>{p.unit}</td>
+                            <td>
+                              <span
+                                style={{
+                                  color: "#0284c7",
+                                  textDecoration: "underline",
+                                  cursor: "pointer",
+                                  fontWeight: 600
+                                }}
+                                onClick={() => setSelectedUnit(p.unit)}
+                                title={`Klik untuk melihat semua pengajuan dari ${p.unit}`}
+                              >
+                                {p.unit}
+                              </span>
+                            </td>
                             <td>{p.jabatan}</td>
                             <td>{renderStatusBadge(p.status)}</td>
                             <td>
@@ -509,45 +564,37 @@ const [selectedPengajuan, setSelectedPengajuan] = useState(null);
                                 📄 PDF Admin
                               </button>
                               )}
+                              
                               {p.status === "diajukan" && (
-                                <>
-                                  <button
+                                <button
                                   className="btn-status-verif"
                                   onClick={() => setSelectedPengajuan(p)}
                                 >
-                                  Verifikasi
-                                </button> 
-                                {editingId === p.id && (
-                                <button
-                                  className="btn-status-verif"
-                                  onClick={() => submitVerifikasi(p.id)}
-                                >
-                                  Submit Verifikasi
+                                  Verifikasi / Tolak
                                 </button>
-                              )}  
-                                  <button
-                                    className="btn-status-tolak"
-                                    disabled={processingId === p.id}
-                                    onClick={() =>
-                                      handleUpdateStatus(p.id, "ditolak")
-                                    }
-                                  >
-                                    {processingId === p.id
-                                      ? "Memproses..."
-                                      : "Tolak"}
-                                  </button>
-                                </>
                               )}
                               
-                              {p.status === "diverifikasi_admin" && (<span className="status-text done">✓ Pengajuan diverifikasi</span>)}
-                              {p.status === "ditolak" && (
-                                <span className="status-text rejected">
-                                  ✗ Pengajuan ditolak
+                              {p.status === "diverifikasi_admin" && (
+                                <span className="status-text done" style={{ color: "#10b981", fontWeight: "bold" }}>
+                                  ✓ Pengajuan diverifikasi
                                 </span>
+                              )}
+                              
+                              {p.status === "ditolak_admin" && (
+                                <div style={{ textAlign: "left" }}>
+                                  <span className="status-text rejected" style={{ color: "#ef4444", fontWeight: "bold", display: "block" }}>
+                                    ✗ Pengajuan ditolak Admin
+                                  </span>
+                                  {p.catatan_admin && (
+                                    <div style={{ fontSize: "11px", color: "#ef4444", marginTop: "4px" }}>
+                                      Catatan: <i>{p.catatan_admin}</i>
+                                    </div>
+                                  )}
+                                </div>
                               )}
 
                               {p.status === "disetujui" && (
-                                <span className="status-text approved">
+                                <span className="status-text approved" style={{ color: "#10b981", fontWeight: "bold" }}>
                                   ✓ Pengajuan disetujui
                                 </span>
                               )}

@@ -157,6 +157,8 @@ export default function Periode() {
       { label: "Atur Periode", to: "/periode", active: true },
       { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang" },
       { label: "Analisis Dan Grafik", to: "/superadmin/grafik-belanja" },
+      { label: "Stock Opname Barang", to: "/stock-opname" },
+      { label: "Template Dokumen", to: "/template-dokumen" },
     ];
   }, []);
 

@@ -121,11 +121,10 @@ class BarangController extends Controller
         }
 
         $existsNama = Barang::whereRaw('LOWER(nama) = ?', [strtolower($nama)])
-            ->whereRaw('LOWER(satuan) = ?', [strtolower($satuan)])
             ->exists();
 
         if ($existsNama) {
-            return response()->json(['success' => false, 'message' => 'Barang dengan nama & satuan sama sudah ada.'], 422);
+            return response()->json(['success' => false, 'message' => 'Barang dengan nama yang sama sudah ada.'], 422);
         }
 
         $barang = Barang::create([
@@ -187,11 +186,10 @@ class BarangController extends Controller
         }
 
         $existsNama = Barang::whereRaw('LOWER(nama) = ?', [strtolower($nama)])
-            ->whereRaw('LOWER(satuan) = ?', [strtolower($satuan)])
             ->where('id', '!=', $barang->id)
             ->exists();
         if ($existsNama) {
-            return response()->json(['success' => false, 'message' => 'Nama + satuan duplikat dengan barang lain.'], 422);
+            return response()->json(['success' => false, 'message' => 'Nama barang duplikat dengan barang lain.'], 422);
         }
 
         $barang->nama = $nama;

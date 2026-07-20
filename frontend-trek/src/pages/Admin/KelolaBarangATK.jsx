@@ -96,6 +96,8 @@ const [errors, setErrors] = useState({});
     { label: "Verifikasi", to: "/verifikasi" },
     { label: "Kelola Barang ATK", to: "/kelola-barang", active: true },
     { label: "Grafik Usulan Barang", to: "/grafik-usulan-barang" },
+    { label: "Stock Opname Barang", to: "/stock-opname" },
+    { label: "Template Dokumen", to: "/template-dokumen" },
   ];
 }, []);
 
@@ -136,6 +138,17 @@ const [errors, setErrors] = useState({});
 
     if (!nama) e.nama = "Nama barang wajib diisi.";
     if (nama.length > 255) e.nama = "Nama terlalu panjang (maks 255).";
+
+    // Validasi nama unik (tidak boleh ada nama barang ganda)
+    const nameLower = nama.toLowerCase();
+    const exactMatch = barangs.some(
+      (b) =>
+        b.nama.trim().toLowerCase() === nameLower &&
+        (mode === "create" || b.id !== selected?.id)
+    );
+    if (exactMatch) {
+      e.nama = "Nama barang sudah terdaftar di sistem (duplikasi tidak diperbolehkan).";
+    }
 
     if (!kode) e.kode = "Kode barang wajib diisi.";
     if (kode.length > 50) e.kode = "Kode terlalu panjang (maks 50).";
@@ -648,6 +661,96 @@ const onDeleteSelected = async () => {
                   />
                   {errors.nama && (
                     <div style={{ color: "#ef4444", marginTop: 6 }}>{errors.nama}</div>
+                  )}
+
+                  {/* Real-time search/duplicate check */}
+                  {form.nama.trim().length > 0 && (
+                    <div style={{ marginTop: 8 }}>
+                      {(() => {
+                        const keyword = form.nama.trim().toLowerCase();
+                        const matches = barangs.filter((b) =>
+                          b.nama.toLowerCase().includes(keyword)
+                        );
+                        const exactMatch = barangs.some(
+                          (b) =>
+                            b.nama.trim().toLowerCase() === keyword &&
+                            (mode === "create" || b.id !== selected?.id)
+                        );
+
+                        return (
+                          <div>
+                            {exactMatch && (
+                              <div
+                                style={{
+                                  color: "#ef4444",
+                                  fontWeight: 700,
+                                  fontSize: 12,
+                                  marginBottom: 6,
+                                  padding: "6px 10px",
+                                  background: "#fee2e2",
+                                  borderRadius: 8,
+                                  border: "1px solid #fecaca",
+                                }}
+                              >
+                                ⚠️ Nama barang sudah terdaftar di sistem! Duplikasi tidak diperbolehkan.
+                              </div>
+                            )}
+
+                            {matches.length > 0 ? (
+                              <div>
+                                <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 4 }}>
+                                  🔍 {matches.length} barang serupa ditemukan (Scroll untuk melihat):
+                                </div>
+                                <div
+                                  style={{
+                                    maxHeight: "120px",
+                                    overflowY: "auto",
+                                    border: "1px solid #e5e7eb",
+                                    borderRadius: "8px",
+                                    background: "#ffffff",
+                                    boxShadow: "0 2px 5px rgba(0,0,0,0.05)",
+                                  }}
+                                >
+                                  {matches.map((b) => (
+                                    <div
+                                      key={b.id}
+                                      style={{
+                                        padding: "8px 12px",
+                                        borderBottom: "1px solid #f3f4f6",
+                                        fontSize: "12px",
+                                        color: "#374151",
+                                        display: "flex",
+                                        justifyContent: "space-between",
+                                        alignItems: "center",
+                                      }}
+                                    >
+                                      <span><b>{b.nama}</b></span>
+                                      <span style={{ fontSize: "11px", color: "#9ca3af" }}>
+                                        {b.kode} ({b.satuan})
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            ) : (
+                              <div
+                                style={{
+                                  color: "#16a34a",
+                                  fontWeight: 600,
+                                  fontSize: 12,
+                                  padding: "6px 10px",
+                                  background: "#dcfce7",
+                                  borderRadius: 8,
+                                  border: "1px solid #bbf7d0",
+                                }}
+                              >
+                                ✓ Nama barang tersedia untuk ditambahkan.
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </div>
                   )}
 
                   <label style={{ display: "block", marginTop: 10, marginBottom: 6 }}>

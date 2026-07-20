@@ -108,6 +108,8 @@ export default function DashboardSuperAdmin() {
   { label: "Verifikasi", to: "/verifikasi" },
   { label: "Kelola Barang ATK", to: "/kelola-barang" },
   { label: "Grafik Usulan Barang", to: "/grafik-usulan-barang" },
+  { label: "Stock Opname Barang", to: "/stock-opname" },
+  { label: "Template Dokumen", to: "/template-dokumen" },
 ];
 
   return (

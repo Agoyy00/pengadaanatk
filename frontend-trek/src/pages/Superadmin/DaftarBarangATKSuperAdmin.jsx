@@ -98,6 +98,8 @@ const [errors, setErrors] = useState({});
         { label: "Atur Periode", to: "/periode" },
         { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang", active: true },
         { label: "Analisis Dan Grafik", to: "/superadmin/grafik-belanja" },
+        { label: "Stock Opname Barang", to: "/stock-opname" },
+        { label: "Template Dokumen", to: "/template-dokumen" },
       ];
     }, []);
 

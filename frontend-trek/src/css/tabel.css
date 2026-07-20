@@ -1,47 +1,78 @@
-
-table thead th {
-  background: linear-gradient(180deg, #e5e7eb, #d1d5db);
-  color: #111827;
-  font-weight: 600;
-  font-size: 13px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 12px 10px;
-  border-bottom: 1px solid #cbd5e1;
-}
-
-
-/* TABEL */
+/* ===== PREMIUM TABLE STYLING ===== */
 .table-wrapper {
-    margin-top: 16px;
+    margin-top: 20px;
     overflow-x: auto;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
 }
 
 .table-title {
     margin-top: 18px;
-    font-size: 14px;
-    font-weight: 600;
+    font-size: 15px;
+    font-weight: 700;
+    color: #0f172a;
 }
 
 table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 13px;
-    margin-top: 8px;
-    min-width: 700px;
-    border-radius: 8px;
-    overflow: hidden;
-    border: 1px solid var(--border-soft);
+    font-size: 13.5px;
+    min-width: 900px;
+    background-color: #ffffff;
 }
 
+/* Header style with Ocean Blue Gradient */
+table thead th {
+    background: linear-gradient(135deg, #0e7490 0%, #06b6d4 100%);
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 14px 16px;
+    border-bottom: 2px solid #0891b2;
+    border-top: none;
+}
+
+/* Table body rows */
 th, td {
-    padding: 6px 8px;
-    border-bottom: 1px solid #ddd;
+    padding: 14px 16px;
     text-align: left;
-    background: #f8fafc;
-    color: #000000;
+    transition: background-color 0.2s ease;
 }
 
-th {
-    font-weight: 600;
+td {
+    border-bottom: 1px solid #f1f5f9;
+    color: #334155;
+    line-height: 1.5;
+}
+
+/* Alternating Row Colors */
+table tbody tr:nth-child(even) td {
+    background-color: #f8fafc;
+}
+
+table tbody tr:nth-child(odd) td {
+    background-color: #ffffff;
+}
+
+/* Hover Row Highlight */
+table tbody tr:hover td {
+    background-color: #f0f9ff !important;
+    color: #0369a1;
+}
+
+/* Badges list styling inside table */
+table td li {
+    list-style: none;
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px dashed #e2e8f0;
+}
+
+table td li:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
 }

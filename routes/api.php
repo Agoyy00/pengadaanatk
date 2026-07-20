@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\BarangUsulanController;
 use App\Http\Controllers\Api\PengajuanAdminPdfController;
 use App\Http\Controllers\Api\Superadmin\PengajuanPdfSuperadminController;
+use App\Http\Controllers\Api\StockOpnameController;
 /*
 |--------------------------------------------------------------------------
 | Auth
@@ -116,8 +117,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/barang-usulan/statistik', [BarangUsulanController::class, 'statistik']);
 
     /*
-    | Import
+    | Stock Opname
     */
-   
+    Route::get('/stock-opname', [StockOpnameController::class, 'index']);
+    Route::post('/stock-opname', [StockOpnameController::class, 'store']);
+    Route::patch('/stock-opname/{id}/verify', [StockOpnameController::class, 'verify']);
+    Route::patch('/stock-opname/{id}/approve', [StockOpnameController::class, 'approve']);
+    Route::patch('/stock-opname/{id}/reject', [StockOpnameController::class, 'reject']);
+    Route::delete('/stock-opname/{id}', [StockOpnameController::class, 'destroy']);
 
 });

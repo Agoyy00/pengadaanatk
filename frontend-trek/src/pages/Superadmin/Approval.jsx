@@ -23,6 +23,8 @@ export default function Approval() {
         { label: "Atur Periode", to: "/periode" },
         { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang"},
         { label: "Analisis Dan Grafik", to: "/superadmin/grafik-belanja" },
+        { label: "Stock Opname Barang", to: "/stock-opname" },
+        { label: "Template Dokumen", to: "/template-dokumen" },
       ];
     }, []);
 

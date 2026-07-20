@@ -139,6 +139,12 @@ export default function DashboardUser() {
           <Link to="/riwayat" className="menu-item">
             Riwayat Pengajuan
           </Link>
+          <Link to="/stock-opname" className="menu-item">
+            Stock Opname Barang
+          </Link>
+          <Link to="/template-dokumen" className="menu-item">
+            Template Dokumen
+          </Link>
         </nav>
 
         <Link to="/" className="logout">

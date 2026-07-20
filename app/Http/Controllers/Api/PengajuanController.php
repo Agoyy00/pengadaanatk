@@ -190,17 +190,25 @@ class PengajuanController extends Controller
     // ================= ADMIN =================
     if ($user->role_id === 2) {
 
-        if ($pengajuan->status !== 'diajukan' || $nextStatus !== 'diverifikasi_admin') {
+        if ($pengajuan->status !== 'diajukan' || !in_array($nextStatus, ['diverifikasi_admin', 'ditolak_admin'])) {
             return response()->json([
                 'success' => false,
-                'message' => 'Admin hanya boleh memverifikasi pengajuan',
+                'message' => 'Admin hanya boleh memverifikasi atau menolak pengajuan',
+            ], 422);
+        }
+
+        if ($nextStatus === 'ditolak_admin' && empty($request->input('catatan_admin'))) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Catatan penolakan wajib diisi saat menolak pengajuan.',
             ], 422);
         }
 
         $pengajuan->update([
-            'status'      => 'diverifikasi_admin',
-            'verified_by' => Auth::id(),
-            'verified_at' => now(),
+            'status'        => $nextStatus,
+            'catatan_admin' => $request->input('catatan_admin'),
+            'verified_by'   => Auth::id(),
+            'verified_at'   => now(),
         ]);
 
         // hapus notif admin
@@ -208,21 +216,34 @@ class PengajuanController extends Controller
             ->where('user_id', $user->id)
             ->delete();
 
-        // notif ke superadmin
-        $superAdmins = User::where('role_id', 1)->get();
-        foreach ($superAdmins as $sa) {
+        if ($nextStatus === 'diverifikasi_admin') {
+            // notif ke superadmin
+            $superAdmins = User::where('role_id', 1)->get();
+            foreach ($superAdmins as $sa) {
+                Notification::create([
+                    'user_id'      => $sa->id,
+                    'title'        => 'Pengajuan Menunggu Persetujuan',
+                    'message'      => 'Pengajuan ATK telah diverifikasi admin.',
+                    'pengajuan_id' => $pengajuan->id,
+                    'is_read'      => false,
+                ]);
+            }
+            $message = 'Pengajuan berhasil diverifikasi admin';
+        } else {
+            // notif ke user pemohon
             Notification::create([
-                'user_id'      => $sa->id,
-                'title'        => 'Pengajuan Menunggu Persetujuan',
-                'message'      => 'Pengajuan ATK telah diverifikasi admin.',
+                'user_id'      => $pengajuan->user_id,
+                'title'        => 'Pengajuan ATK Ditolak',
+                'message'      => 'Pengajuan ATK Anda ditolak oleh Admin. Catatan: ' . $request->input('catatan_admin'),
                 'pengajuan_id' => $pengajuan->id,
                 'is_read'      => false,
             ]);
+            $message = 'Pengajuan berhasil ditolak admin';
         }
 
         return response()->json([
             'success' => true,
-            'message' => 'Pengajuan berhasil diverifikasi admin',
+            'message' => $message,
             'pengajuan' => $pengajuan,
         ]);
     }
