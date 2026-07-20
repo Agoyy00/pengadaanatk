@@ -1,6 +1,6 @@
-/* =========================
-   MODAL & OVERLAY
-   ========================= */
+/* ==========================================
+   MODAL & OVERLAY (MODERN GLASSMORPHISM)
+   ========================================== */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -10,32 +10,32 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  background: radial-gradient(circle at top,rgba(255, 255, 255, 0.08),transparent 40%),rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(4px);
+  background: rgba(15, 23, 42, 0.6); /* Slate-900 with opacity */
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   z-index: 1000;
   padding: 20px;
 }
 
 .modal-box-small {
   width: 100%;
-  max-width: 850px;
+  max-width: 820px;
   height: auto;
   max-height: 90vh;
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  box-shadow:0 30px 80px rgba(0, 0, 0, 0.4),inset 0 1px 0 rgba(255, 255, 255, 0.6);
-  border-radius: 16px;
+  background: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  border-radius: 24px;
   display: flex;
   overflow: hidden;
   position: relative;
-  animation: modalEnter 0.6s ease-out;
+  animation: modalEnter 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 @keyframes modalEnter {
   from {
     opacity: 0;
-    transform: translateY(20px) scale(0.98);
+    transform: translateY(24px) scale(0.96);
   }
   to {
     opacity: 1;
@@ -43,172 +43,114 @@
   }
 }
 
-/* =========================
-   CLOSE BUTTON
-   ========================= */
-/* =========================
-   CLOSE BUTTON (MODIFIED)
-   ========================= */
+/* ==========================================
+   CLOSE BUTTON (MINIMALIST CIRCLE ROTATE)
+   ========================================== */
 .close-btn-small {
   position: absolute;
-  top: 16px;
-  right: 16px;
-  
-  /* Background merah solid atau sedikit transparan */
-  background: #ef4444; 
-  color: #ffffff; /* Icon X jadi putih */
-  
+  top: 20px;
+  right: 20px;
+  background: #f1f5f9; 
+  color: #64748b; 
   border: none;
-  width: 32px;
-  height: 32px;
-  font-size: 14px;
-  border-radius: 8px; /* Kotak sedikit membulat agar lebih modern */
+  width: 36px;
+  height: 36px;
+  font-size: 12px;
+  border-radius: 50%; 
   cursor: pointer;
   z-index: 10;
-  
   display: flex;
   align-items: center;
   justify-content: center;
-  
-  /* Transisi hanya untuk warna, bukan gerakan */
-  transition: background-color 0.2s ease, opacity 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .close-btn-small:hover {
-  background: #dc2626; /* Merah lebih gelap saat hover */
-  color: #ffffff;
-  
-  /* Hilangkan transform: scale agar tidak membesar (lebay) */
-  transform: none; 
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+  background: #fee2e2; 
+  color: #ef4444;
+  transform: rotate(90deg) scale(1.05);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);
 }
 
 .close-btn-small:active {
-  /* Sedikit efek tekan tapi tidak merubah ukuran */
-  background: #b91c1c;
-  transform: translateY(1px); 
+  transform: rotate(90deg) scale(0.95);
 }
-/* =========================
-   CONTAINER
-   ========================= */
+
+/* ==========================================
+   CONTAINER LAYOUT
+   ========================================== */
 .login-container-small {
   display: flex;
   width: 100%;
   min-height: 520px;
 }
 
-/* =========================
-   LEFT SIDE - GAMBAR
-   ========================= */
+/* ==========================================
+   LEFT SIDE - PRETTY SOFT SKY/GREEN GRADIENT
+   ========================================== */
 .left-side-small {
-  flex: 1;
-  background:radial-gradient(circle at top, rgba(59,130,246,0.15), transparent 40%),linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  flex: 1.1;
+  background: linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 100%); /* soft green to sky blue */
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   align-items: center;
-  padding: 40px 30px;
+  padding: 44px 32px;
   border-right: 1px solid #e2e8f0;
 }
 
+/* Frame Yarsi logo like an iOS App Icon */
 .logo-atas-small {
-  width: 100%;
-  max-width: 160px;
-  height: auto;
+  width: 90px;
+  height: 90px;
   object-fit: contain;
-  margin-bottom: 20px;
-  filter: drop-shadow(0 8px 16px rgba(0,0,0,0.15));
+  background: #ffffff;
+  padding: 10px;
+  border-radius: 20px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
+/* Smooth rounded borders for stationary image */
 .logo-bawah-small {
   width: 100%;
-  max-width: 320px;
+  max-width: 290px;
   height: auto;
   object-fit: contain;
   margin-top: auto;
-  filter: drop-shadow(0 8px 16px rgba(0,0,0,0.15));
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 12px 20px rgba(0, 0, 0, 0.06);
 }
 
-/* =========================
-   RIGHT SIDE - FORM
-   ========================= */
+/* ==========================================
+   RIGHT SIDE - CLEAN FORM AREA
+   ========================================== */
 .right-side-small {
-  flex: 1;
-  background: white;
+  flex: 1.2;
+  background: #ffffff;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 40px 45px;
+  padding: 44px 48px;
 }
 
 .login-title {
-  font-size: 28px;
-  font-weight: 700;
-  color: #1e293b;
-  margin: 0 0 24px 0;
+  font-size: 26px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 8px 0;
   text-align: center;
+  letter-spacing: -0.5px;
 }
 
-/* =========================
-   PENGUMUMAN PERIODE
-   ========================= */
-.periode-box-login {
-  background: #f8fafc;
-  padding: 14px 16px;
-  border-radius: 10px;
-  font-size: 13px;
-  border-left: 4px solid #94a3b8;
-  margin-bottom: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-}
-
-.periode-box-login strong {
-  display: block;
-  color: #1e293b;
-  font-size: 14px;
-  margin-bottom: 6px;
-}
-
-.periode-box-login p {
-  color: #475569;
-  margin: 0;
-  line-height: 1.5;
-}
-
-.periode-box-login.open {
-  border-left-color: #16a34a;
-  background: #f0fdf4;
-}
-
-.periode-box-login.open strong {
-  color: #166534;
-}
-
-.periode-box-login.upcoming {
-  border-left-color: #f97316;
-  background: #fff7ed;
-}
-
-.periode-box-login.upcoming strong {
-  color: #9a3412;
-}
-
-.periode-box-login.closed {
-  border-left-color: #ef4444;
-  background: #fef2f2;
-}
-
-.periode-box-login.closed strong {
-  color: #991b1b;
-}
-
-/* =========================
-   FORM
-   ========================= */
+/* ==========================================
+   FORM INPUTS (SOFT SLATE STYLE)
+   ========================================== */
 .login-form-small {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
 }
 
 .input-group {
@@ -218,86 +160,74 @@
 }
 
 .input-label {
-  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: #475569;
   text-align: left;
-  font-size: 14px;
-  font-weight: 600;
-  color: #334155;
 }
 
-.login-form-small input[type="email"],
 .login-form-small input[type="text"],
 .login-form-small input[type="password"] {
   width: 100%;
-  padding: 11px 14px;
-  border: 1.5px solid #cbd5e1;
-  border-radius: 8px;
-  background: white;
+  padding: 12px 16px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
   font-size: 14px;
-  color: #1e293b;
-  transition: all 0.2s ease;
+  font-weight: 500;
+  color: #0f172a;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   box-sizing: border-box;
 }
 
 .login-form-small input:focus {
   outline: none;
+  background: #ffffff;
   border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
 }
 
 .login-form-small input::placeholder {
   color: #94a3b8;
 }
 
-/* =========================
-   PASSWORD WRAPPER
-   ========================= */
-/* =========================
-   PASSWORD WRAPPER
-   ========================= */
+/* ==========================================
+   PASSWORD TOGGLE BUTTON
+   ========================================== */
 .password-wrapper-small {
   position: relative;
   display: flex;
   align-items: center;
+  width: 100%;
 }
 
 .password-wrapper-small input {
-  padding-right: 45px;
+  padding-right: 48px;
 }
 
 .show-password-btn-small {
   position: absolute;
-  right: 12px;
+  right: 14px;
   top: 50%;
-  /* Transform ini wajib untuk menjaga posisi di tengah vertikal */
   transform: translateY(-50%);
-
   border: none;
   background: transparent;
   padding: 0;
-  margin: 0;
-
   width: 24px;
   height: 24px;
-
   display: flex;
   align-items: center;
   justify-content: center;
-
   cursor: pointer;
   color: #64748b;
-  
-  /* Hilangkan semua transisi agar tidak ada gerakan */
   transition: color 0.2s ease; 
 }
 
 .show-password-btn-small:hover {
-  color: #334155;
-  /* Pastikan transform tetap sama agar tidak gerak ke bawah */
+  color: #0f172a;
   transform: translateY(-50%) !important;
 }
 
-/* Hilangkan efek gerak pada state active/focus */
 .show-password-btn-small:focus,
 .show-password-btn-small:active {
   outline: none;
@@ -305,93 +235,59 @@
   transform: translateY(-50%) !important;
 }
 
-/* Pastikan icon di dalamnya juga tidak memiliki transisi gerak */
-.show-password-btn-small svg {
-  display: block;
-  transition: none !important;
-}
-
-/* =========================
+/* ==========================================
    CHECKBOX
-   ========================= */
+   ========================================== */
 .checkbox-small {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   font-size: 14px;
+  font-weight: 500;
   color: #475569;
   cursor: pointer;
   margin-top: 4px;
 }
 
 .checkbox-small input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   cursor: pointer;
+  accent-color: #3b82f6; /* Modern Blue accent */
 }
 
-.checkbox-small span {
-  user-select: none;
-}
-
-/* =========================
-   SUBMIT BUTTON
-   ========================= */
+/* ==========================================
+   SUBMIT BUTTON (OCEAN BLUE GRADIENT)
+   ========================================== */
 .submit-btn-small {
   width: 100%;
-  padding: 12px 16px;
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.4);
-
-  background:
-    linear-gradient(
-      180deg,
-      rgba(37, 99, 235, 0.95) 0%,
-      rgba(29, 78, 216, 0.95) 100%
-    );
-
+  padding: 12px 18px;
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
   color: #ffffff;
   font-size: 15px;
-  font-weight: 600;
-  letter-spacing: 0.3px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
   cursor: pointer;
-
-  box-shadow:
-    0 10px 25px rgba(37, 99, 235, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.25);
-
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease,
-    filter 0.2s ease;
+  box-shadow: 0 4px 15px rgba(2, 132, 199, 0.25);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .submit-btn-small:hover {
   transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(2, 132, 199, 0.35);
   filter: brightness(1.05);
-
-  box-shadow:
-    0 14px 35px rgba(37, 99, 235, 0.45),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 .submit-btn-small:active {
   transform: translateY(0);
-  box-shadow:
-    0 8px 18px rgba(37, 99, 235, 0.35),
-    inset 0 3px 6px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 4px 10px rgba(2, 132, 199, 0.2);
 }
 
-.submit-btn-small:focus-visible {
-  outline: none;
-  box-shadow:
-    0 0 0 3px rgba(59, 130, 246, 0.45),
-    0 10px 25px rgba(37, 99, 235, 0.35);
-}
-
-/* =========================
-   RESPONSIVE
-   ========================= */
+/* ==========================================
+   RESPONSIVE DESIGN
+   ========================================== */
 @media (max-width: 768px) {
   .modal-box-small {
     max-width: 95%;
@@ -406,87 +302,37 @@
   }
 
   .left-side-small {
-    padding: 30px 20px;
+    padding: 32px 24px;
     border-right: none;
     border-bottom: 1px solid #e2e8f0;
-    min-height: 200px;
+    min-height: 180px;
+    flex-direction: row;
+    justify-content: space-around;
   }
 
   .logo-atas-small {
-    max-width: 120px;
+    width: 70px;
+    height: 70px;
+    border-radius: 14px;
+    padding: 8px;
   }
 
   .logo-bawah-small {
-    max-width: 240px;
+    max-width: 180px;
+    margin-top: 0;
   }
 
   .right-side-small {
-    padding: 30px 25px;
-  }
-
-  .login-title {
-    font-size: 24px;
-    margin-bottom: 20px;
+    padding: 32px 28px;
   }
 }
 
-@media (max-width: 480px) {
-  .modal-overlay {
-    padding: 10px;
-  }
-
-  .right-side-small {
-    padding: 25px 20px;
-  }
-
-  .login-form-small {
-    gap: 14px;
-  }
-
-  .input-label {
-    font-size: 13px;
-  }
-
-  .login-form-small input[type="email"],
-  .login-form-small input[type="text"],
-  .login-form-small input[type="password"] {
-    padding: 10px 12px;
-    font-size: 13px;
-  }
-}
-
-@media (max-width: 768px) {
-  .modal-overlay {
-    align-items: flex-start;
-  }
-
-  .modal-box-small {
-    flex-direction: column;
-    margin-top: 40px;
-    margin-bottom: 40px;
-  }
-
-  .login-container-small {
-    flex-direction: column;
-  }
-
+@media (max-width: 580px) {
   .left-side-small {
-    border-bottom: 1px solid #e2e8f0;
+    display: none; /* Hide illustrative side on small phones for focus */
   }
-}
-
-@media (max-width: 600px) {
-  .left-side-small {
-    display: none;
-  }
-
+  
   .right-side-small {
-    padding: 25px;
-  }
-}
-
-@supports (-webkit-touch-callout: none) {
-  .modal-overlay {
-    height: 100dvh;
+    padding: 36px 24px;
   }
 }
