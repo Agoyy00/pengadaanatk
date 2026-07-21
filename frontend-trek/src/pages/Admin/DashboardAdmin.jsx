@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../../css/layout.css";
+import RoleSwitcher from "../../components/RoleSwitcher";
 
 const API_BASE = import.meta.env.VITE_API_BASE;
 
@@ -158,7 +159,7 @@ export default function DashboardSuperAdmin() {
           
         <div className="topbar-right">
           <span>Role: </span>
-          <span className="role-pill">{formatRole(currentUser?.role)}</span>
+          <RoleSwitcher />
         </div>
         </header>
 

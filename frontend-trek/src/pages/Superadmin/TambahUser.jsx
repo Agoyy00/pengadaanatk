@@ -3,6 +3,7 @@ import React, { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../../css/User.css";
 import "../../css/layout.css";
+import RoleSwitcher from "../../components/RoleSwitcher";
 
 const API_BASE = import.meta.env.VITE_API_BASE;
 
@@ -168,11 +169,11 @@ export default function TambahUser() {
   const sidebarMenus = useMemo(() => {
     return [
       { label: "Dashboard Super Admin", to: "/dashboardsuperadmin" },
-      { label: "Approval", to: "/approval" },
-      { label: "Tambah User", to: "/tambahuser", active: true },
+      { label: "Approval Pengajuan", to: "/approval" },
+      { label: "Tambah & Kelola User", to: "/tambahuser", active: true },
       { label: "Atur Periode", to: "/periode" },
       { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang" },
-      { label: "Analisis Dan Grafik", to: "/superadmin/grafik-belanja" },
+      { label: "Grafik Belanja", to: "/superadmin/grafik-belanja" },
       { label: "Stock Opname Barang", to: "/stock-opname" },
       { label: "Template Dokumen", to: "/template-dokumen" },
     ];
@@ -228,7 +229,7 @@ export default function TambahUser() {
           </div>
           <div className="topbar-right">
             <span>Role: </span>
-            <span className="role-pill">{formatRole(currentUser?.role?.name || currentUser?.role)}</span>
+            <RoleSwitcher />
           </div>
         </header>
 

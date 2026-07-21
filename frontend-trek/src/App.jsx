@@ -51,10 +51,10 @@ function RequireAuth({ children, allowRoles = [] }) {
   const role = normalizeRole(user.role);
   const allow = allowRoles.map(normalizeRole);
 
-  if (allow.length > 0 && !allow.includes(role)) {
-    // kalau role tidak sesuai, lempar ke dashboard masing-masing
-    if (role === "superadmin") return <Navigate to="/dashboardsuperadmin" replace />;
+  // ✅ Superadmin selalu diizinkan mengakses semua halaman & fitur di seluruh aplikasi!
+  if (role === "superadmin") return children;
 
+  if (allow.length > 0 && !allow.includes(role)) {
     if (role === "admin") return <Navigate to="/dashboardadmin" replace />;
     return <Navigate to="/dashboarduser" replace />;
   }

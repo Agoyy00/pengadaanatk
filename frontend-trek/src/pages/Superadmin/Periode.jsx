@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import "../../css/layout.css";
+import RoleSwitcher from "../../components/RoleSwitcher";
 
 const API_BASE = import.meta.env.VITE_API_BASE;
 const token = localStorage.getItem("token");
@@ -8,12 +9,14 @@ const token = localStorage.getItem("token");
 export default function Periode() {
   const navigate = useNavigate();
 
-  const [tahunAkademik, setTahunAkademik] = useState(getTahunAkademikOtomatis()); 
+  const [tahunAkademik, setTahunAkademik] = useState(getTahunAkademikOtomatis());
   const [mulai, setMulai] = useState("");
   const [selesai, setSelesai] = useState("");
   const [message, setMessage] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [activePeriodeId, setActivePeriodeId] = useState(null);
+  const [periodes, setPeriodes] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   const storedUser = localStorage.getItem("user");
   const currentUser = storedUser ? JSON.parse(storedUser) : null;
@@ -28,49 +31,62 @@ export default function Periode() {
   };
 
   const daftarTahunAkademik = useMemo(() => {
-  const baseYear = new Date().getFullYear();
-  return [
-    `${baseYear - 1}/${baseYear}`,
-    `${baseYear}/${baseYear + 1}`,
-    `${baseYear + 1}/${baseYear + 2}`,
-  ];
-}, []);
-
+    const baseYear = new Date().getFullYear();
+    return [
+      `${baseYear - 1}/${baseYear}`,
+      `${baseYear}/${baseYear + 1}`,
+      `${baseYear + 1}/${baseYear + 2}`,
+    ];
+  }, []);
 
   function getTahunAkademikOtomatis() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth() + 1; // 1-12
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1; // 1-12
 
-  // Jika bulan >= Juli, tahun akademik baru
-  if (month >= 7) {
-    return `${year}/${year + 1}`;
-  } else {
-    return `${year - 1}/${year}`;
-  }
-}
-
-
-  // Load periode aktif/akan-datang saat halaman dibuka
-  useEffect(() => {
-    async function loadPeriode() {
-      try {
-        const res = await fetch(`${API_BASE}/periode/active`);
-        const data = await res.json();
-
-        if (data.periode) {
-          const p = data.periode;
-          setActivePeriodeId(p.id);
-          setTahunAkademik(p.tahun_akademik || "2024/2025");
-          setMulai(p.mulai?.slice(0, 16) || "");
-          setSelesai(p.selesai?.slice(0, 16) || "");
-        }
-      } catch (err) {
-        console.error("Gagal load periode:", err);
-      }
+    // Jika bulan >= Juli, tahun akademik baru
+    if (month >= 7) {
+      return `${year}/${year + 1}`;
+    } else {
+      return `${year - 1}/${year}`;
     }
+  }
 
-    loadPeriode();
+  // Load periode aktif dan daftar semua periode
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      // 1. Ambil periode aktif
+      const resActive = await fetch(`${API_BASE}/periode/active`);
+      const dataActive = await resActive.json();
+
+      if (dataActive.periode) {
+        const p = dataActive.periode;
+        setActivePeriodeId(p.id);
+        setTahunAkademik(p.tahun_akademik || getTahunAkademikOtomatis());
+        setMulai(p.mulai?.slice(0, 16) || "");
+        setSelesai(p.selesai?.slice(0, 16) || "");
+      }
+
+      // 2. Ambil daftar semua periode untuk Super Admin
+      const resAll = await fetch(`${API_BASE}/periode`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const dataAll = await resAll.json();
+      if (Array.isArray(dataAll.data)) {
+        setPeriodes(dataAll.data);
+      } else if (Array.isArray(dataAll)) {
+        setPeriodes(dataAll);
+      }
+    } catch (err) {
+      console.error("Gagal load periode:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
   }, []);
 
   async function handleSimpan(e) {
@@ -92,7 +108,10 @@ export default function Periode() {
     try {
       const res = await fetch(`${API_BASE}/periode`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify(payload),
       });
 
@@ -106,19 +125,16 @@ export default function Periode() {
 
       setActivePeriodeId(data.periode.id);
       setMessage(
-        `Periode ${data.periode.tahun_akademik} disimpan dari ${mulai.replace(
-          "T",
-          " "
-        )} sampai ${selesai.replace("T", " ")}.`
+        `Periode ${data.periode.tahun_akademik} berhasil disimpan.`
       );
+      loadData();
     } catch (err) {
       console.error("Error jaringan:", err);
       setErrorMsg("Terjadi kesalahan jaringan.");
     }
   }
 
-  async function handleHapus() {
-    if (!activePeriodeId) return;
+  async function handleHapusPeriode(id) {
     const yakin = window.confirm("Yakin ingin menghapus periode ini?");
     if (!yakin) return;
 
@@ -126,8 +142,8 @@ export default function Periode() {
     setErrorMsg("");
 
     try {
-      const res = await fetch(`${API_BASE}/periode/${activePeriodeId}`, {
-        headers: { "Authorization": `Bearer ${token}` },
+      const res = await fetch(`${API_BASE}/periode/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
         method: "DELETE",
       });
 
@@ -135,32 +151,88 @@ export default function Periode() {
 
       if (!res.ok || !data.success) {
         console.error("Gagal hapus periode:", data);
-        setErrorMsg("Terjadi kesalahan saat menghapus periode.");
+        setErrorMsg(data.message || "Terjadi kesalahan saat menghapus periode.");
         return;
       }
 
-      setMessage("Periode berhasil dihapus.");
-      setActivePeriodeId(null);
-      setMulai("");
-      setSelesai("");
+      setMessage("Periode berhasil dihapus ✅");
+      if (id === activePeriodeId) {
+        setActivePeriodeId(null);
+        setMulai("");
+        setSelesai("");
+      }
+      loadData();
     } catch (err) {
       console.error("Error jaringan:", err);
       setErrorMsg("Terjadi kesalahan jaringan.");
     }
   }
 
- const sidebarMenus = useMemo(() => {
+  const sidebarMenus = useMemo(() => {
     return [
-      { label: "Dashboard Super Admin", to: "/dashboardsuperadmin"},
-      { label: "Approval", to: "/approval" },
-      { label: "Tambah User", to: "/tambahuser" },
+      { label: "Dashboard Super Admin", to: "/dashboardsuperadmin" },
+      { label: "Approval Pengajuan", to: "/approval" },
+      { label: "Tambah & Kelola User", to: "/tambahuser" },
       { label: "Atur Periode", to: "/periode", active: true },
       { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang" },
-      { label: "Analisis Dan Grafik", to: "/superadmin/grafik-belanja" },
+      { label: "Grafik Belanja", to: "/superadmin/grafik-belanja" },
       { label: "Stock Opname Barang", to: "/stock-opname" },
       { label: "Template Dokumen", to: "/template-dokumen" },
     ];
   }, []);
+
+  const getStatusBadge = (p) => {
+    const now = new Date();
+    const start = new Date(p.mulai);
+    const end = new Date(p.selesai);
+
+    if (now >= start && now <= end) {
+      return (
+        <span
+          style={{
+            padding: "4px 10px",
+            borderRadius: "9999px",
+            fontSize: "12px",
+            fontWeight: 600,
+            backgroundColor: "#dcfce7",
+            color: "#16a34a",
+          }}
+        >
+          ● Sedang Buka
+        </span>
+      );
+    } else if (now < start) {
+      return (
+        <span
+          style={{
+            padding: "4px 10px",
+            borderRadius: "9999px",
+            fontSize: "12px",
+            fontWeight: 600,
+            backgroundColor: "#dbeafe",
+            color: "#2563eb",
+          }}
+        >
+          Akan Datang
+        </span>
+      );
+    } else {
+      return (
+        <span
+          style={{
+            padding: "4px 10px",
+            borderRadius: "9999px",
+            fontSize: "12px",
+            fontWeight: 600,
+            backgroundColor: "#fee2e2",
+            color: "#dc2626",
+          }}
+        >
+          Sudah Ditutup
+        </span>
+      );
+    }
+  };
 
   return (
     <div className="layout">
@@ -171,22 +243,22 @@ export default function Periode() {
           <div className="sidebar-subtitle">Universitas Yarsi</div>
         </div>
 
-         <nav className="sidebar-menu">
-        {sidebarMenus.map((m) => (
-          <div
-            key={m.label}
-            className={`menu-item ${m.active ? "disabled" : ""}`}
-            style={{ cursor: m.active ? "default" : "pointer" }}
-            onClick={() => {
-              if (!m.active) {
-                navigate(m.to);
-              }
-            }}
-          >
-            {m.label}
-          </div>
-        ))}
-      </nav>
+        <nav className="sidebar-menu">
+          {sidebarMenus.map((m) => (
+            <div
+              key={m.label}
+              className={`menu-item ${m.active ? "disabled" : ""}`}
+              style={{ cursor: m.active ? "default" : "pointer" }}
+              onClick={() => {
+                if (!m.active) {
+                  navigate(m.to);
+                }
+              }}
+            >
+              {m.label}
+            </div>
+          ))}
+        </nav>
 
         <div className="logout" onClick={() => navigate("/")}>
           Log Out
@@ -197,23 +269,23 @@ export default function Periode() {
       <main className="main">
         <header className="topbar">
           <div>
-            <div className="topbar-title">Atur Periode Pengajuan</div>
+            <div className="topbar-title">Atur & Kelola Periode Pengajuan</div>
             <div className="topbar-sub">
-              Admin dapat mengatur waktu buka & tutup pengajuan.
+              Super Admin dapat menambah, mengubah, dan menghapus periode pengajuan.
             </div>
           </div>
           <div className="topbar-right">
-          <span>Role: </span>
-          <span className="role-pill">{formatRole(currentUser?.role)}</span>
-        </div>
+            <span>Role: </span>
+            <RoleSwitcher />
+          </div>
         </header>
 
         <section className="main-content">
+          {/* CARD FORM ATUR PERIODE */}
           <div className="card">
-            <div className="card-title">Atur Periode</div>
+            <div className="card-title">Tambah / Update Periode</div>
             <div className="card-subtitle">
-              Masukkan tahun akademik, tanggal & jam dimulainya pengajuan hingga
-              batas akhirnya.
+              Masukkan tahun akademik, tanggal & jam dimulainya pengajuan hingga batas akhirnya.
             </div>
 
             <form onSubmit={handleSimpan}>
@@ -227,17 +299,17 @@ export default function Periode() {
               >
                 <div>
                   <label className="A">Tahun Akademik</label>
-                 <select
-                  className="input-text"
-                  value={tahunAkademik}
-                  onChange={(e) => setTahunAkademik(e.target.value)}
-                >
-                  {daftarTahunAkademik.map((ta) => (
-                    <option key={ta} value={ta}>
-                      {ta}
-                    </option>
-                  ))}
-                </select>
+                  <select
+                    className="input-text"
+                    value={tahunAkademik}
+                    onChange={(e) => setTahunAkademik(e.target.value)}
+                  >
+                    {daftarTahunAkademik.map((ta) => (
+                      <option key={ta} value={ta}>
+                        {ta}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
@@ -269,17 +341,93 @@ export default function Periode() {
                     <button
                       type="button"
                       className="btn btn-danger"
-                      onClick={handleHapus}
+                      onClick={() => handleHapusPeriode(activePeriodeId)}
                     >
-                      Hapus Periode
+                      Hapus Periode Aktif
                     </button>
                   )}
                 </div>
 
-                {message && <p style={{ color: "green" }}>{message}</p>}
+                {message && <p style={{ color: "green", fontWeight: 600 }}>{message}</p>}
                 {errorMsg && <p className="error-text">{errorMsg}</p>}
               </div>
             </form>
+          </div>
+
+          {/* CARD DAFTAR PERIODE */}
+          <div className="card" style={{ marginTop: 24 }}>
+            <div className="card-title">Daftar Periode Pengajuan</div>
+            <div className="card-subtitle" style={{ marginBottom: 16 }}>
+              Daftar seluruh periode yang telah dibuat di sistem.
+            </div>
+
+            {loading ? (
+              <p>Memuat data periode...</p>
+            ) : periodes.length === 0 ? (
+              <p style={{ color: "#6b7280" }}>Belum ada periode yang dibuat.</p>
+            ) : (
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+                  <thead>
+                    <tr style={{ borderBottom: "2px solid #e5e7eb", background: "#f9fafb" }}>
+                      <th style={{ padding: "12px 16px" }}>Tahun Akademik</th>
+                      <th style={{ padding: "12px 16px" }}>Mulai Pengajuan</th>
+                      <th style={{ padding: "12px 16px" }}>Deadline</th>
+                      <th style={{ padding: "12px 16px" }}>Status</th>
+                      <th style={{ padding: "12px 16px", textAlign: "right" }}>Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {periodes.map((p) => {
+                      const dateMulai = p.mulai
+                        ? new Date(p.mulai).toLocaleString("id-ID", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
+                        : "-";
+                      const dateSelesai = p.selesai
+                        ? new Date(p.selesai).toLocaleString("id-ID", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
+                        : "-";
+
+                      return (
+                        <tr key={p.id} style={{ borderBottom: "1px solid #f3f4f6" }}>
+                          <td style={{ padding: "14px 16px", fontWeight: 600 }}>{p.tahun_akademik}</td>
+                          <td style={{ padding: "14px 16px", fontSize: 14 }}>{dateMulai}</td>
+                          <td style={{ padding: "14px 16px", fontSize: 14 }}>{dateSelesai}</td>
+                          <td style={{ padding: "14px 16px" }}>{getStatusBadge(p)}</td>
+                          <td style={{ padding: "14px 16px", textAlign: "right" }}>
+                            <button
+                              onClick={() => handleHapusPeriode(p.id)}
+                              style={{
+                                padding: "6px 12px",
+                                fontSize: "12px",
+                                borderRadius: "8px",
+                                border: "none",
+                                backgroundColor: "#ef4444",
+                                color: "white",
+                                fontWeight: 600,
+                                cursor: "pointer",
+                              }}
+                            >
+                              Hapus
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </section>
       </main>

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../../css/layout.css";
+import RoleSwitcher from "../../components/RoleSwitcher";
 
 const API_BASE = import.meta.env.VITE_API_BASE;
 const token = localStorage.getItem("token");
@@ -125,11 +126,11 @@ export default function DashboardSuperAdmin() {
   const sidebarMenus = useMemo(() => {
     return [
       { label: "Dashboard Super Admin", to: "/dashboardsuperadmin", active: true },
-      { label: "Approval", to: "/approval" },
-      { label: "Tambah User", to: "/tambahuser" },
+      { label: "Approval Pengajuan", to: "/approval" },
+      { label: "Tambah & Kelola User", to: "/tambahuser" },
       { label: "Atur Periode", to: "/periode" },
       { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang" },
-      { label: "Analisis Dan Grafik", to: "/superadmin/grafik-belanja" },
+      { label: "Grafik Belanja", to: "/superadmin/grafik-belanja" },
       { label: "Stock Opname Barang", to: "/stock-opname" },
       { label: "Template Dokumen", to: "/template-dokumen" },
     ];
@@ -192,9 +193,9 @@ export default function DashboardSuperAdmin() {
           </div>
 
           <div className="topbar-right">
-          <span>Role: </span>
-          <span className="role-pill">{formatRole(currentUser?.role)}</span>
-        </div>  
+            <span>Role: </span>
+            <RoleSwitcher />
+          </div>  
         </header>
 
         {/* CONTENT */}

@@ -96,4 +96,25 @@ class UserManagementController extends Controller
 
         return response()->json(['success' => true, 'user' => $user]);
     }
+
+    /**
+     * DELETE /api/users/{user}
+     * Super Admin menghapus user
+     */
+    public function destroy(User $user)
+    {
+        if ($user->role_id === 1) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Akun Super Admin tidak boleh dihapus.'
+            ], 400);
+        }
+
+        $user->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'User berhasil dihapus.'
+        ]);
+    }
 }

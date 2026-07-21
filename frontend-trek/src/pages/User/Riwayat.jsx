@@ -1,15 +1,27 @@
-import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useEffect, useState, useMemo } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import "../../css/Riwayat.css";
 import "../../css/layout.css";
+import RoleSwitcher from "../../components/RoleSwitcher";
 
 const API_BASE = import.meta.env.VITE_API_BASE;
 const token = localStorage.getItem("token");
 
 export default function Riwayat() {
+  const navigate = useNavigate();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
+
+  const sidebarMenus = useMemo(() => {
+    return [
+      { label: "Dashboard User", to: "/dashboarduser" },
+      { label: "Buat Pengajuan Baru", to: "/pengajuan" },
+      { label: "Riwayat Pengajuan", to: "/riwayat", active: true },
+      { label: "Stock Opname Barang", to: "/stock-opname" },
+      { label: "Template Dokumen", to: "/template-dokumen" },
+    ];
+  }, []);
 
   // ambil user login
   const storedUser = localStorage.getItem("user");
@@ -79,19 +91,18 @@ export default function Riwayat() {
         </div>
 
         <nav className="sidebar-menu">
-          <Link to="/dashboarduser" className="menu-item">
-            Dashboard
-          </Link>
-          <Link to="/pengajuan" className="menu-item">
-            Buat Pengajuan Baru
-          </Link>
-          <div className="menu-item disabled">Riwayat pengajuan</div>
-          <Link to="/stock-opname" className="menu-item">
-            Stock Opname Barang
-          </Link>
-          <Link to="/template-dokumen" className="menu-item">
-            Template Dokumen
-          </Link>
+          {sidebarMenus.map((m) => (
+            <div
+              key={m.label}
+              className={`menu-item ${m.active ? "disabled" : ""}`}
+              style={{ cursor: m.active ? "default" : "pointer" }}
+              onClick={() => {
+                if (!m.active) navigate(m.to);
+              }}
+            >
+              {m.label}
+            </div>
+          ))}
         </nav>
 
         <Link to="/" className="logout">
@@ -110,9 +121,9 @@ export default function Riwayat() {
             </div>
           </div>
           <div className="topbar-right">
-          <span>Role: </span>
-          <span className="role-pill">{formatRole(currentUser?.role)}</span>
-        </div>
+            <span>Role: </span>
+            <RoleSwitcher />
+          </div>
         </header>
 
         {/* MAIN CONTENT */}

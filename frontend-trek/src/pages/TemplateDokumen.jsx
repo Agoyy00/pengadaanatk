@@ -1,6 +1,7 @@
 import { useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../css/layout.css";
+import RoleSwitcher from "../components/RoleSwitcher";
 
 const normalizeRole = (role) =>
   String(role || "")
@@ -33,19 +34,19 @@ export default function TemplateDokumen() {
   const sidebarMenus = useMemo(() => {
     if (role === "superadmin") {
       return [
-        { label: "Dashboard Superadmin", to: "/dashboardsuperadmin" },
+        { label: "Dashboard Super Admin", to: "/dashboardsuperadmin" },
         { label: "Approval Pengajuan", to: "/approval" },
-        { label: "Kelola Periode", to: "/periode" },
-        { label: "Tambah User", to: "/tambahuser" },
-        { label: "Grafik Belanja", to: "/superadmin/grafik-belanja" },
+        { label: "Tambah & Kelola User", to: "/tambahuser" },
+        { label: "Atur Periode", to: "/periode" },
         { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang" },
+        { label: "Grafik Belanja", to: "/superadmin/grafik-belanja" },
         { label: "Stock Opname Barang", to: "/stock-opname" },
         { label: "Template Dokumen", to: "/template-dokumen", active: true },
       ];
     } else if (role === "admin") {
       return [
         { label: "Dashboard Admin", to: "/dashboardadmin" },
-        { label: "Verifikasi", to: "/verifikasi" },
+        { label: "Verifikasi Pengajuan", to: "/verifikasi" },
         { label: "Kelola Barang ATK", to: "/kelola-barang" },
         { label: "Grafik Usulan Barang", to: "/grafik-usulan-barang" },
         { label: "Stock Opname Barang", to: "/stock-opname" },
@@ -54,7 +55,7 @@ export default function TemplateDokumen() {
     } else {
       return [
         { label: "Dashboard User", to: "/dashboarduser" },
-        { label: "Form Pengajuan", to: "/pengajuan" },
+        { label: "Buat Pengajuan Baru", to: "/pengajuan" },
         { label: "Riwayat Pengajuan", to: "/riwayat" },
         { label: "Stock Opname Barang", to: "/stock-opname" },
         { label: "Template Dokumen", to: "/template-dokumen", active: true },
@@ -112,7 +113,7 @@ export default function TemplateDokumen() {
 
           <div className="topbar-right">
             <span style={{ marginRight: 8 }}>Pengguna: <b>{currentUser?.name}</b></span>
-            <span className="role-pill">{formatRole(currentUser?.role)}</span>
+            <RoleSwitcher />
           </div>
         </header>
 

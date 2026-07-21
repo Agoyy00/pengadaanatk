@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import "../css/layout.css";
 import "../css/Barang.css";
+import RoleSwitcher from "../components/RoleSwitcher";
 
 const API_BASE = import.meta.env.VITE_API_BASE;
 const token = localStorage.getItem("token");
@@ -55,19 +56,19 @@ export default function StockOpname() {
   const sidebarMenus = useMemo(() => {
     if (role === "superadmin") {
       return [
-        { label: "Dashboard Superadmin", to: "/dashboardsuperadmin" },
+        { label: "Dashboard Super Admin", to: "/dashboardsuperadmin" },
         { label: "Approval Pengajuan", to: "/approval" },
-        { label: "Kelola Periode", to: "/periode" },
-        { label: "Tambah User", to: "/tambahuser" },
-        { label: "Grafik Belanja", to: "/superadmin/grafik-belanja" },
+        { label: "Tambah & Kelola User", to: "/tambahuser" },
+        { label: "Atur Periode", to: "/periode" },
         { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang" },
+        { label: "Grafik Belanja", to: "/superadmin/grafik-belanja" },
         { label: "Stock Opname Barang", to: "/stock-opname", active: true },
         { label: "Template Dokumen", to: "/template-dokumen" },
       ];
     } else if (role === "admin") {
       return [
         { label: "Dashboard Admin", to: "/dashboardadmin" },
-        { label: "Verifikasi", to: "/verifikasi" },
+        { label: "Verifikasi Pengajuan", to: "/verifikasi" },
         { label: "Kelola Barang ATK", to: "/kelola-barang" },
         { label: "Grafik Usulan Barang", to: "/grafik-usulan-barang" },
         { label: "Stock Opname Barang", to: "/stock-opname", active: true },
@@ -76,7 +77,7 @@ export default function StockOpname() {
     } else {
       return [
         { label: "Dashboard User", to: "/dashboarduser" },
-        { label: "Form Pengajuan", to: "/pengajuan" },
+        { label: "Buat Pengajuan Baru", to: "/pengajuan" },
         { label: "Riwayat Pengajuan", to: "/riwayat" },
         { label: "Stock Opname Barang", to: "/stock-opname", active: true },
         { label: "Template Dokumen", to: "/template-dokumen" },
@@ -414,7 +415,7 @@ export default function StockOpname() {
 
           <div className="topbar-right">
             <span style={{ marginRight: 8 }}>Pengguna: <b>{currentUser?.name}</b></span>
-            <span className="role-pill">{formatRole(currentUser?.role)}</span>
+            <RoleSwitcher />
           </div>
         </header>
 
@@ -438,8 +439,8 @@ export default function StockOpname() {
                 </p>
               </div>
 
-              {/* Action Button for User/Admin */}
-              {(role === "user" || role === "admin") && (
+              {/* Action Button for User/Admin/Superadmin */}
+              {(role === "user" || role === "admin" || role === "superadmin") && (
                 <button
                   onClick={openCreate}
                   style={{
@@ -610,7 +611,7 @@ export default function StockOpname() {
                             )}
 
                             {/* Superadmin actions */}
-                            {role === "superadmin" && o.status === "verified" && (
+                            {role === "superadmin" && (o.status === "verified" || o.status === "pending") && (
                               <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
                                 <button
                                   onClick={() => handleApprove(o.id)}
@@ -643,25 +644,6 @@ export default function StockOpname() {
                                   Tolak
                                 </button>
                               </div>
-                            )}
-
-                            {/* Optional reject pending from superadmin */}
-                            {role === "superadmin" && o.status === "pending" && (
-                              <button
-                                onClick={() => handleReject(o.id)}
-                                style={{
-                                  padding: "6px 10px",
-                                  fontSize: 12,
-                                  borderRadius: 8,
-                                  border: "1px solid #dc2626",
-                                  background: "transparent",
-                                  color: "#dc2626",
-                                  fontWeight: 600,
-                                  cursor: "pointer",
-                                }}
-                              >
-                                Tolak
-                              </button>
                             )}
 
                             {o.status !== "pending" && o.status !== "verified" && (

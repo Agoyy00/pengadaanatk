@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "../../css/DashboardUser.css";
 import "../../css/layout.css";
+import RoleSwitcher from "../../components/RoleSwitcher";
 
 const API_BASE = import.meta.env.VITE_API_BASE;
 const token = localStorage.getItem("token");
@@ -122,6 +123,16 @@ export default function DashboardUser() {
         item.jumlah_disetujui !== item.jumlah_diajukan
     ) || [];
 
+  const sidebarMenus = useMemo(() => {
+    return [
+      { label: "Dashboard User", to: "/dashboarduser", active: true },
+      { label: "Buat Pengajuan Baru", to: "/pengajuan" },
+      { label: "Riwayat Pengajuan", to: "/riwayat" },
+      { label: "Stock Opname Barang", to: "/stock-opname" },
+      { label: "Template Dokumen", to: "/template-dokumen" },
+    ];
+  }, []);
+
   return (
     <div className="layout">
       {/* SIDEBAR */}
@@ -132,19 +143,18 @@ export default function DashboardUser() {
         </div>
 
         <nav className="sidebar-menu">
-          <div className="menu-item disabled">Dashboard</div>
-          <Link to="/pengajuan" className="menu-item">
-            Buat Pengajuan Baru
-          </Link>
-          <Link to="/riwayat" className="menu-item">
-            Riwayat Pengajuan
-          </Link>
-          <Link to="/stock-opname" className="menu-item">
-            Stock Opname Barang
-          </Link>
-          <Link to="/template-dokumen" className="menu-item">
-            Template Dokumen
-          </Link>
+          {sidebarMenus.map((m) => (
+            <div
+              key={m.label}
+              className={`menu-item ${m.active ? "disabled" : ""}`}
+              style={{ cursor: m.active ? "default" : "pointer" }}
+              onClick={() => {
+                if (!m.active) navigate(m.to);
+              }}
+            >
+              {m.label}
+            </div>
+          ))}
         </nav>
 
         <Link to="/" className="logout">
@@ -163,9 +173,9 @@ export default function DashboardUser() {
             </div>
           </div>
           <div className="topbar-right">
-          <span>Role: </span>
-          <span className="role-pill">{formatRole(currentUser?.role)}</span>
-        </div>
+            <span>Role: </span>
+            <RoleSwitcher />
+          </div>
         </header>
 
         {/* CONTENT */}

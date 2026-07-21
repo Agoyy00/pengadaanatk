@@ -109,9 +109,12 @@ class PeriodeController extends Controller
      */
     public function index()
     {
-        $periode = Periode::orderByDesc('mulai')->first();
+        $periodes = Periode::orderByDesc('created_at')->get();
 
-        return response()->json($periode);
+        return response()->json([
+            'success' => true,
+            'data'    => $periodes,
+        ]);
     }
 
     /**

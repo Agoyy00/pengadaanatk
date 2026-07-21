@@ -9,15 +9,21 @@ class RoleSeeder extends Seeder
 {
     public function run(): void
     {
-        // Role Admin
+        // Role Super Admin
         DB::table('roles')->updateOrInsert(
             ['id' => 1],
+            ['name' => 'superadmin']
+        );
+
+        // Role Admin
+        DB::table('roles')->updateOrInsert(
+            ['id' => 2],
             ['name' => 'admin']
         );
 
         // Role User
         DB::table('roles')->updateOrInsert(
-            ['id' => 2],
+            ['id' => 3],
             ['name' => 'user']
         );
     }

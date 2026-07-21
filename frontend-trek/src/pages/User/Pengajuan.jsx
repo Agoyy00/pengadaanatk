@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "../../css/Pengajuan.css";
 import "../../css/layout.css";
+import RoleSwitcher from "../../components/RoleSwitcher";
 
 function Pengajuan() {
   const [currentStep, setCurrentStep] = useState(1);
@@ -428,6 +429,16 @@ const [loadingSubmit, setLoadingSubmit] = useState(false); // opsional spinner
 }, [currentUser]);
 
 
+  const sidebarMenus = useMemo(() => {
+    return [
+      { label: "Dashboard User", to: "/dashboarduser" },
+      { label: "Buat Pengajuan Baru", to: "/pengajuan", active: true },
+      { label: "Riwayat Pengajuan", to: "/riwayat" },
+      { label: "Stock Opname Barang", to: "/stock-opname" },
+      { label: "Template Dokumen", to: "/template-dokumen" },
+    ];
+  }, []);
+
   return (
     <div className="layout">
       {/* SIDEBAR */}
@@ -438,19 +449,18 @@ const [loadingSubmit, setLoadingSubmit] = useState(false); // opsional spinner
         </div>
 
         <nav className="sidebar-menu">
-          <Link to="/dashboarduser" className="menu-item">
-            Dashboard
-          </Link>
-          <div className="menu-item disabled">Buat Pengajuan Baru</div>
-          <Link to="/riwayat" className="menu-item">
-            Riwayat Pengajuan
-          </Link>
-          <Link to="/stock-opname" className="menu-item">
-            Stock Opname Barang
-          </Link>
-          <Link to="/template-dokumen" className="menu-item">
-            Template Dokumen
-          </Link>
+          {sidebarMenus.map((m) => (
+            <div
+              key={m.label}
+              className={`menu-item ${m.active ? "disabled" : ""}`}
+              style={{ cursor: m.active ? "default" : "pointer" }}
+              onClick={() => {
+                if (!m.active) navigate(m.to);
+              }}
+            >
+              {m.label}
+            </div>
+          ))}
         </nav>
 
         <Link to="/" className="logout">
@@ -469,9 +479,9 @@ const [loadingSubmit, setLoadingSubmit] = useState(false); // opsional spinner
             </div>
           </div>
           <div className="topbar-right">
-          <span>Role: </span>
-          <span className="role-pill">{formatRole(currentUser?.role)}</span>
-        </div>
+            <span>Role: </span>
+            <RoleSwitcher />
+          </div>
         </header>
 
         {/* MAIN CONTENT */}

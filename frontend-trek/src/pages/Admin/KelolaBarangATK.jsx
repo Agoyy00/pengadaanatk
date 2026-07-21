@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import "../../css/layout.css";
 import "../../css/Barang.css";
 import ImportExcelBarang from "../../components/ImportExcelBarang";
+import RoleSwitcher from "../../components/RoleSwitcher";
 
 const API_BASE = import.meta.env.VITE_API_BASE;
 const token = localStorage.getItem("token");
@@ -433,10 +434,10 @@ const onDeleteSelected = async () => {
             <div className="topbar-title">Kelola Barang ATK</div>
             <div className="topbar-sub">Daftar barang agar konsisten & rapi</div>
           </div>
-         <div className="topbar-right">
-          <span>Role: </span>
-          <span className="role-pill">{formatRole(currentUser?.role)}</span>
-        </div>
+          <div className="topbar-right">
+            <span>Role: </span>
+            <RoleSwitcher />
+          </div>
         </header>
 
         <section className="main-content">

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import RoleSwitcher from "../../components/RoleSwitcher";
 import {
   BarChart,
   Bar,
@@ -106,7 +107,7 @@ export default function GrafikUsulanBarangPage() {
           </div>
           <div className="topbar-right">
             <span>Role: </span>
-            <span className="role-pill">{formatRole(user?.role)}</span>
+            <RoleSwitcher />
           </div>
         </header>
 

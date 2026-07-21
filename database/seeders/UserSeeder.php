@@ -19,8 +19,16 @@ class UserSeeder extends Seeder
                 'role_id'  => 1,
             ]
         );
+        User::updateOrCreate(
+            ['email' => 'superadmin@yarsi.ac.id'],
+            [
+                'name'     => 'Super Admin YARSI',
+                'password' => Hash::make('password123'),
+                'role_id'  => 1,
+            ]
+        );
 
-        // Admin
+        // ADMIN
         User::updateOrCreate(
             ['email' => 'admin@atk.test'],
             [
@@ -29,12 +37,28 @@ class UserSeeder extends Seeder
                 'role_id'  => 2,
             ]
         );
+        User::updateOrCreate(
+            ['email' => 'admin@yarsi.ac.id'],
+            [
+                'name'     => 'Admin YARSI',
+                'password' => Hash::make('password123'),
+                'role_id'  => 2,
+            ]
+        );
 
-        // User biasa
+        // USER BIASA
         User::updateOrCreate(
             ['email' => 'user@atk.test'],
             [
                 'name'     => 'User ATK',
+                'password' => Hash::make('password123'),
+                'role_id'  => 3,
+            ]
+        );
+        User::updateOrCreate(
+            ['email' => 'user@yarsi.ac.id'],
+            [
+                'name'     => 'User YARSI',
                 'password' => Hash::make('password123'),
                 'role_id'  => 3,
             ]

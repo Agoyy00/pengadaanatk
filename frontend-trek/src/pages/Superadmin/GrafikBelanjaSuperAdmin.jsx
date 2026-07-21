@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import RoleSwitcher from "../../components/RoleSwitcher";
 import {
   BarChart,
   Bar,
@@ -44,11 +45,11 @@ const [showAnalisis, setShowAnalisis] = useState(false);
   const sidebarMenus = useMemo(
     () => [
       { label: "Dashboard Super Admin", to: "/dashboardsuperadmin" },
-      { label: "Approval", to: "/approval" },
-      { label: "Tambah User", to: "/tambahuser" },
+      { label: "Approval Pengajuan", to: "/approval" },
+      { label: "Tambah & Kelola User", to: "/tambahuser" },
       { label: "Atur Periode", to: "/periode" },
       { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang" },
-      { label: "Analisis & Grafik", to: "/superadmin/analisis", active: true },
+      { label: "Grafik Belanja", to: "/superadmin/grafik-belanja", active: true },
       { label: "Stock Opname Barang", to: "/stock-opname" },
       { label: "Template Dokumen", to: "/template-dokumen" },
     ],
@@ -208,6 +209,10 @@ const [showAnalisis, setShowAnalisis] = useState(false);
             <div className="topbar-sub">
               Selamat datang: {currentUser?.name || "Super Admin"}
             </div>
+          </div>
+          <div className="topbar-right">
+            <span>Role: </span>
+            <RoleSwitcher />
           </div>
         </header>
 

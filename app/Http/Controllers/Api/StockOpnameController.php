@@ -18,8 +18,7 @@ class StockOpnameController extends Controller
         $query = StockOpname::with(['barang', 'user']);
 
         // Jika role user biasa, batasi hanya data miliknya sendiri
-        $roleNormalized = strtolower(str_replace([' ', '_'], '', $user->role ?? ''));
-        if ($roleNormalized === 'user' || $user->role_id === 3) {
+        if ($user->isUser()) {
             $query->where('user_id', $user->id);
         }
 
@@ -65,9 +64,8 @@ class StockOpnameController extends Controller
     {
         $stockOpname = StockOpname::findOrFail($id);
         $user = $request->user();
-        $roleNormalized = strtolower(str_replace([' ', '_'], '', $user->role ?? ''));
 
-        if ($roleNormalized === 'user' || $user->role_id === 3) {
+        if ($user->isUser()) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
@@ -86,9 +84,8 @@ class StockOpnameController extends Controller
     {
         $stockOpname = StockOpname::findOrFail($id);
         $user = $request->user();
-        $roleNormalized = strtolower(str_replace([' ', '_'], '', $user->role ?? ''));
 
-        if ($roleNormalized !== 'superadmin' && $user->role_id !== 1) {
+        if (!$user->isSuperAdmin()) {
             return response()->json(['success' => false, 'message' => 'Hanya Superadmin yang dapat menyetujui stock opname.'], 403);
         }
 
@@ -127,9 +124,8 @@ class StockOpnameController extends Controller
     {
         $stockOpname = StockOpname::findOrFail($id);
         $user = $request->user();
-        $roleNormalized = strtolower(str_replace([' ', '_'], '', $user->role ?? ''));
 
-        if ($roleNormalized === 'user' || $user->role_id === 3) {
+        if ($user->isUser()) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
@@ -148,14 +144,13 @@ class StockOpnameController extends Controller
     {
         $stockOpname = StockOpname::findOrFail($id);
         $user = $request->user();
-        $roleNormalized = strtolower(str_replace([' ', '_'], '', $user->role ?? ''));
 
         // Hanya pembuat atau admin/superadmin yang bisa hapus jika status pending
-        if (($roleNormalized === 'user' || $user->role_id === 3) && $stockOpname->user_id !== $user->id) {
+        if ($user->isUser() && $stockOpname->user_id !== $user->id) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
-        if ($stockOpname->status !== 'pending') {
+        if ($stockOpname->status !== 'pending' && !$user->isSuperAdmin()) {
             return response()->json(['success' => false, 'message' => 'Hanya laporan dengan status pending yang dapat dihapus.'], 400);
         }
 

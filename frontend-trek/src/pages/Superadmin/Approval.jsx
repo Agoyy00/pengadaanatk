@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import "../../css/layout.css";
 import "../../css/tabel.css";
+import RoleSwitcher from "../../components/RoleSwitcher";
 
 const API_BASE = import.meta.env.VITE_API_BASE;
 const token = localStorage.getItem("token");
@@ -17,12 +18,12 @@ export default function Approval() {
 
   const sidebarMenus = useMemo(() => {
       return [
-        { label: "Dashboard Super Admin", to: "/dashboardsuperadmin"},
-        { label: "Approval", to: "/approval", active: true },
-        { label: "Tambah User", to: "/tambahuser" },
+        { label: "Dashboard Super Admin", to: "/dashboardsuperadmin" },
+        { label: "Approval Pengajuan", to: "/approval", active: true },
+        { label: "Tambah & Kelola User", to: "/tambahuser" },
         { label: "Atur Periode", to: "/periode" },
-        { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang"},
-        { label: "Analisis Dan Grafik", to: "/superadmin/grafik-belanja" },
+        { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang" },
+        { label: "Grafik Belanja", to: "/superadmin/grafik-belanja" },
         { label: "Stock Opname Barang", to: "/stock-opname" },
         { label: "Template Dokumen", to: "/template-dokumen" },
       ];
@@ -173,9 +174,9 @@ console.log(token); // harus ada
             </div>
           </div>
           <div className="topbar-right">
-          <span>Role: </span>
-          <span className="role-pill">{formatRole(currentUser?.role)}</span>
-        </div>
+            <span>Role: </span>
+            <RoleSwitcher />
+          </div>
         </header>
 
         <section className="main-content">

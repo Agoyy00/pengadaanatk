@@ -1,10 +1,11 @@
 // frontend-trek/src/components/Verifikasi.jsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import "../../css/layout.css";
 import "../../css/tabel.css";
 import "../../css/verifikasi.css";
 import DetailVerifikasi from "../../components/DetailVerifikasi";
+import RoleSwitcher from "../../components/RoleSwitcher";
 
 
 const API_BASE = import.meta.env.VITE_API_BASE;
@@ -149,6 +150,32 @@ const downloadPdfAdmin = async (id, status) => {
 
   const storedUser = localStorage.getItem("user");
   const currentUser = storedUser ? JSON.parse(storedUser) : null;
+  const role = (currentUser?.role || "").toLowerCase();
+
+  const sidebarMenus = useMemo(() => {
+    if (role === "superadmin") {
+      return [
+        { label: "Dashboard Super Admin", to: "/dashboardsuperadmin" },
+        { label: "Approval Pengajuan", to: "/approval" },
+        { label: "Tambah & Kelola User", to: "/tambahuser" },
+        { label: "Atur Periode", to: "/periode" },
+        { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang" },
+        { label: "Grafik Belanja", to: "/superadmin/grafik-belanja" },
+        { label: "Stock Opname Barang", to: "/stock-opname" },
+        { label: "Template Dokumen", to: "/template-dokumen" },
+      ];
+    } else {
+      return [
+        { label: "Dashboard Admin", to: "/dashboardadmin" },
+        { label: "Verifikasi Pengajuan", to: "/verifikasi", active: true },
+        { label: "Kelola Barang ATK", to: "/kelola-barang" },
+        { label: "Grafik Usulan Barang", to: "/grafik-usulan-barang" },
+        { label: "Stock Opname Barang", to: "/stock-opname" },
+        { label: "Template Dokumen", to: "/template-dokumen" },
+      ];
+    }
+  }, [role]);
+
   const formatRole = (role) => {
     if (!role) return "-";
 
@@ -259,14 +286,7 @@ const downloadPdfAdmin = async (id, status) => {
     }
   }, [data, filterStatus, selectedUnit]);
 
-  const sidebarMenus = [
-    { label: "Dashboard Admin", to: "/dashboardadmin" },
-    { label: "Verifikasi", to: "/verifikasi", active: true },
-    { label: "Kelola Barang ATK", to: "/kelola-barang" },
-    { label: "Grafik Usulan Barang", to: "/grafik-usulan-barang" },
-    { label: "Stock Opname Barang", to: "/stock-opname" },
-    { label: "Template Dokumen", to: "/template-dokumen" },
-  ];
+
 
       const [editingId, setEditingId] = useState(null);
       const [draftItems, setDraftItems] = useState({});
@@ -416,9 +436,9 @@ const [selectedPengajuan, setSelectedPengajuan] = useState(null);
             <div className="topbar-sub">Selamat datang: Admin ATK</div>
           </div>
           <div className="topbar-right">
-          <span>Role: </span>
-          <span className="role-pill">{formatRole(currentUser?.role)}</span>
-        </div>
+            <span>Role: </span>
+            <RoleSwitcher />
+          </div>
         </header>
 
         <section className="main-content">

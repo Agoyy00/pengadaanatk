@@ -84,8 +84,8 @@ function Login({ onClose }) {
               textAlign: 'center',
               fontSize: '13px',
               color: '#64748b', // Warna slate grey yang elegan
-              marginTop: '-15px', // Menarik posisi ke atas agar dekat dengan judul
-              marginBottom: '25px',
+              marginTop: '6px', 
+              marginBottom: '32px',
               lineHeight: '1.5',
               fontWeight: '400'
             }}>
