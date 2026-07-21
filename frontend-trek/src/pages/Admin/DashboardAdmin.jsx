@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import "../../css/layout.css";
 import RoleSwitcher from "../../components/RoleSwitcher";
 
@@ -7,6 +7,7 @@ const API_BASE = import.meta.env.VITE_API_BASE;
 
 export default function DashboardSuperAdmin() {
   const navigate = useNavigate();
+  const location = useLocation();
   const token = localStorage.getItem("token");
 
   // =========================
@@ -106,7 +107,7 @@ export default function DashboardSuperAdmin() {
 
   const sidebarMenus = [
   { label: "Dashboard Admin", to: "/dashboardadmin", active: true },
-  { label: "Verifikasi", to: "/verifikasi" },
+  { label: "Verifikasi Pengajuan", to: "/verifikasi" },
   { label: "Kelola Barang ATK", to: "/kelola-barang" },
   { label: "Grafik Usulan Barang", to: "/grafik-usulan-barang" },
   { label: "Stock Opname Barang", to: "/stock-opname" },
@@ -122,18 +123,21 @@ export default function DashboardSuperAdmin() {
         </div>
 
         <nav className="sidebar-menu">
-          {sidebarMenus.map((m) => (
-            <div
-              key={m.label}
-              className={`menu-item ${m.active ? "disabled" : ""}`}
-              style={{ cursor: m.active ? "default" : "pointer" }}
-              onClick={() => {
-                if (!m.active) navigate(m.to);
-              }}
-            >
-              {m.label}
-            </div>
-          ))}
+          {sidebarMenus.map((m) => {
+            const isActive = location.pathname === m.to;
+            return (
+              <div
+                key={m.label}
+                className={`menu-item ${isActive ? "active" : ""}`}
+                style={{ cursor: isActive ? "default" : "pointer" }}
+                onClick={() => {
+                  if (!isActive) navigate(m.to);
+                }}
+              >
+                {m.label}
+              </div>
+            );
+          })}
         </nav>
 
         <div

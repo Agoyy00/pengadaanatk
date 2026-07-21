@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import RoleSwitcher from "../../components/RoleSwitcher";
 import {
   BarChart,
@@ -29,6 +29,7 @@ const rupiah = (n) =>
 
 export default function SuperAdminAnalisisDashboard() {
   const navigate = useNavigate();
+  const location = useLocation();
   const storedUser = localStorage.getItem("user");
   const currentUser = storedUser ? JSON.parse(storedUser) : null;
 const [showAnalisis, setShowAnalisis] = useState(false);
@@ -179,15 +180,19 @@ const [showAnalisis, setShowAnalisis] = useState(false);
         </div>
 
         <nav className="sidebar-menu">
-          {sidebarMenus.map((m) => (
-            <div
-              key={m.label}
-              className={`menu-item ${m.active ? "disabled" : ""}`}
-              onClick={() => !m.active && navigate(m.to)}
-            >
-              {m.label}
-            </div>
-          ))}
+          {sidebarMenus.map((m) => {
+            const isActive = location.pathname === m.to;
+            return (
+              <div
+                key={m.label}
+                className={`menu-item ${isActive ? "active" : ""}`}
+                style={{ cursor: isActive ? "default" : "pointer" }}
+                onClick={() => !isActive && navigate(m.to)}
+              >
+                {m.label}
+              </div>
+            );
+          })}
         </nav>
 
         <div

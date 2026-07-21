@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import Swal from "sweetalert2";
 import "../../css/Pengajuan.css";
 import "../../css/layout.css";
 import RoleSwitcher from "../../components/RoleSwitcher";
 
 function Pengajuan() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [currentStep, setCurrentStep] = useState(1);
 
   const STORAGE_URL = `${import.meta.env.VITE_BACKEND_BASE}/storage/barang`;
@@ -48,8 +51,6 @@ const [loadingSubmit, setLoadingSubmit] = useState(false); // opsional spinner
 
   const API_BASE = import.meta.env.VITE_API_BASE;
   const BACKEND_BASE = import.meta.env.VITE_API_BASE;
-
-  const navigate = useNavigate();
 
   // ambil user login dari localStorage
   const storedUser = localStorage.getItem("user");
@@ -322,7 +323,12 @@ const [loadingSubmit, setLoadingSubmit] = useState(false); // opsional spinner
   const handleNextFromStep1 = () => {
     // ❗ Kalau sudah pernah mengajukan → stop di sini
     if (limitError) {
-      alert(limitError);
+      Swal.fire({
+        icon: "warning",
+        title: "Perhatian",
+        text: limitError,
+        confirmButtonColor: "#3b82f6",
+      });
       return;
     }
 
@@ -378,7 +384,12 @@ const [loadingSubmit, setLoadingSubmit] = useState(false); // opsional spinner
     e.preventDefault();
 
     if (!userId) {
-      alert("User belum login. Silakan login terlebih dahulu.");
+      Swal.fire({
+        icon: "warning",
+        title: "Belum Login",
+        text: "User belum login. Silakan login terlebih dahulu.",
+        confirmButtonColor: "#3b82f6",
+      });
       return;
     }
 
@@ -388,37 +399,60 @@ const [loadingSubmit, setLoadingSubmit] = useState(false); // opsional spinner
       jabatan,
       unit,
       user_id: userId,
-      items: items.map((item) => ({
-        id: item.id,
-        kebutuhanTotal: Number(item.kebutuhanTotal),
-        sisaStok: Number(item.sisaStok),
-        jumlahDiajukan: Number(item.jumlahDiajukan),
-        estimasiNilai: Number(item.estimasiNilai),
+      items: items.map((i) => ({
+        id: i.id,
+        kebutuhanTotal: Number(i.kebutuhanTotal),
+        sisaStok: Number(i.sisaStokSaatIni ?? i.sisaStok ?? 0),
+        jumlahDiajukan: Number(i.jumlahDiajukan),
+        estimasiNilai: Number(i.estimasiNilai),
       })),
-      total_nilai: totalNilai,
-      total_jumlah_diajukan: totalJumlahDiajukan,
     };
 
     try {
       const res = await fetch(`${API_BASE}/pengajuan`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}`, },
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
         body: JSON.stringify(payload),
       });
 
       const data = await res.json();
 
-      if (!res.ok || !data.success) {
-        alert(data.message || "Gagal mengirim pengajuan");
+      if (!res.ok || data.success === false) {
+        let msg = data.message;
+        if (data.errors) {
+          msg = Object.values(data.errors).flat().join("\n");
+        }
+        Swal.fire({
+          icon: "error",
+          title: "Pengajuan Gagal",
+          text: msg || "Gagal mengirim pengajuan",
+          confirmButtonColor: "#ef4444",
+        });
         console.error("Error pengajuan:", data);
         return;
       }
 
-      alert("Pengajuan berhasil dikirim!");
-      window.location.href = "/riwayat";
+      Swal.fire({
+        icon: "success",
+        title: "Pengajuan Berhasil!",
+        text: "Pengajuan ATK Anda telah sukses dikirim ke sistem.",
+        confirmButtonColor: "#10b981",
+        confirmButtonText: "Lihat Riwayat",
+      }).then(() => {
+        window.location.href = "/riwayat";
+      });
     } catch (err) {
       console.error("Error jaringan:", err);
-      alert("Terjadi kesalahan jaringan.");
+      Swal.fire({
+        icon: "error",
+        title: "Kesalahan Jaringan",
+        text: "Terjadi kesalahan saat terhubung ke server.",
+        confirmButtonColor: "#ef4444",
+      });
     }
   }
 
@@ -449,18 +483,21 @@ const [loadingSubmit, setLoadingSubmit] = useState(false); // opsional spinner
         </div>
 
         <nav className="sidebar-menu">
-          {sidebarMenus.map((m) => (
-            <div
-              key={m.label}
-              className={`menu-item ${m.active ? "disabled" : ""}`}
-              style={{ cursor: m.active ? "default" : "pointer" }}
-              onClick={() => {
-                if (!m.active) navigate(m.to);
-              }}
-            >
-              {m.label}
-            </div>
-          ))}
+          {sidebarMenus.map((m) => {
+            const isActive = location.pathname === m.to;
+            return (
+              <div
+                key={m.label}
+                className={`menu-item ${isActive ? "active" : ""}`}
+                style={{ cursor: isActive ? "default" : "pointer" }}
+                onClick={() => {
+                  if (!isActive) navigate(m.to);
+                }}
+              >
+                {m.label}
+              </div>
+            );
+          })}
         </nav>
 
         <Link to="/" className="logout">

@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import Swal from "sweetalert2";
 import "../../css/layout.css";
 import "../../css/tabel.css";
 import RoleSwitcher from "../../components/RoleSwitcher";
@@ -9,6 +10,7 @@ const token = localStorage.getItem("token");
 
 export default function Approval() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [pengajuan, setPengajuan] = useState([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState(null);
@@ -84,15 +86,31 @@ export default function Approval() {
       const json = await res.json();
 
       if (!res.ok || !json.success) {
-        alert(json.message || "Gagal update status");
+        Swal.fire({
+          icon: "error",
+          title: "Gagal Update",
+          text: json.message || "Gagal update status",
+          confirmButtonColor: "#ef4444",
+        });
         return;
       }
 
       setPengajuan(prev => prev.map(p => p.id === id ? { ...p, status: newStatus } : p));
-      alert("Status berhasil diubah");
+      Swal.fire({
+        icon: "success",
+        title: "Berhasil",
+        text: "Status pengajuan berhasil diubah.",
+        timer: 1500,
+        showConfirmButton: false,
+      });
     } catch (err) {
       console.error(err);
-      alert("Kesalahan jaringan");
+      Swal.fire({
+        icon: "error",
+        title: "Kesalahan Jaringan",
+        text: "Terjadi kesalahan saat mengupdate status.",
+        confirmButtonColor: "#ef4444",
+      });
     } finally {
       setProcessingId(null);
     }
@@ -114,7 +132,12 @@ console.log(token); // harus ada
     if (!res.ok) {
       const text = await res.text();
       console.error("Gagal download PDF:", text);
-      alert("Gagal download PDF, cek console");
+      Swal.fire({
+        icon: "error",
+        title: "Gagal Download",
+        text: "Gagal mengunduh dokumen PDF.",
+        confirmButtonColor: "#ef4444",
+      });
       return;
     }
 
@@ -130,7 +153,12 @@ console.log(token); // harus ada
 
   } catch (err) {
     console.error("Fetch error:", err);
-    alert("Kesalahan jaringan");
+    Swal.fire({
+      icon: "error",
+      title: "Kesalahan Jaringan",
+      text: "Terjadi kesalahan saat mendownload dokumen.",
+      confirmButtonColor: "#ef4444",
+    });
   }
 };
   return (
@@ -141,16 +169,21 @@ console.log(token); // harus ada
           <div className="sidebar-subtitle">Universitas Yarsi</div>
        
         <nav className="sidebar-menu">
-          {sidebarMenus.map((m) => (
-            <div
-              key={m.label}
-              className={`menu-item ${m.active ? "disabled" : ""}`}
-              style={{ cursor: m.active ? "default" : "pointer" }}
-              onClick={() => { if (!m.active) navigate(m.to); }}
-            >
-              {m.label}
-            </div>
-          ))}
+          {sidebarMenus.map((m) => {
+            const isActive = location.pathname === m.to;
+            return (
+              <div
+                key={m.label}
+                className={`menu-item ${isActive ? "active" : ""}`}
+                style={{ cursor: isActive ? "default" : "pointer" }}
+                onClick={() => {
+                  if (!isActive) navigate(m.to);
+                }}
+              >
+                {m.label}
+              </div>
+            );
+          })}
         </nav>
 
         <div

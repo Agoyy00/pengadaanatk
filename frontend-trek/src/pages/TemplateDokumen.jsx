@@ -1,5 +1,5 @@
 import { useMemo, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import "../css/layout.css";
 import RoleSwitcher from "../components/RoleSwitcher";
 
@@ -10,6 +10,7 @@ const normalizeRole = (role) =>
 
 export default function TemplateDokumen() {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const storedUser = localStorage.getItem("user");
   const currentUser = storedUser ? JSON.parse(storedUser) : null;
@@ -73,18 +74,21 @@ export default function TemplateDokumen() {
         </div>
 
         <nav className="sidebar-menu">
-          {sidebarMenus.map((m) => (
-            <div
-              key={m.label}
-              className={`menu-item ${m.active ? "disabled" : ""}`}
-              style={{ cursor: m.active ? "default" : "pointer" }}
-              onClick={() => {
-                if (!m.active) navigate(m.to);
-              }}
-            >
-              {m.label}
-            </div>
-          ))}
+          {sidebarMenus.map((m) => {
+            const isActive = location.pathname === m.to || m.active;
+            return (
+              <div
+                key={m.label}
+                className={`menu-item ${isActive ? "active" : ""}`}
+                style={{ cursor: isActive ? "default" : "pointer" }}
+                onClick={() => {
+                  if (!isActive) navigate(m.to);
+                }}
+              >
+                {m.label}
+              </div>
+            );
+          })}
         </nav>
 
         <div

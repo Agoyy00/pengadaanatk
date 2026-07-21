@@ -22,16 +22,16 @@ table {
     background-color: #ffffff;
 }
 
-/* Header style with Ocean Blue Gradient */
 table thead th {
-    background: linear-gradient(135deg, #0e7490 0%, #06b6d4 100%);
-    color: #ffffff;
+    font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+    background: linear-gradient(135deg, #0f172a 0%, #164e63 100%);
+    color: #ffffff !important;
     font-weight: 700;
-    font-size: 12px;
+    font-size: 12.5px;
     text-transform: uppercase;
     letter-spacing: 0.06em;
     padding: 14px 16px;
-    border-bottom: 2px solid #0891b2;
+    border-bottom: 2px solid #06b6d4;
     border-top: none;
 }
 

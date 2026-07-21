@@ -1,6 +1,6 @@
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import React, { useState, useMemo, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import "../../css/User.css";
 import "../../css/layout.css";
 import RoleSwitcher from "../../components/RoleSwitcher";
@@ -9,6 +9,7 @@ const API_BASE = import.meta.env.VITE_API_BASE;
 
 export default function TambahUser() {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -189,20 +190,23 @@ export default function TambahUser() {
         </div>
 
         <nav className="sidebar-menu">
-          {sidebarMenus.map((m) => (
-            <div
-              key={m.label}
-              className={`menu-item ${m.active ? "disabled" : ""}`}
-              style={{ cursor: m.active ? "default" : "pointer" }}
-              onClick={() => {
-                if (!m.active) {
-                  navigate(m.to);
-                }
-              }}
-            >
-              {m.label}
-            </div>
-          ))}
+          {sidebarMenus.map((m) => {
+            const isActive = location.pathname === m.to;
+            return (
+              <div
+                key={m.label}
+                className={`menu-item ${isActive ? "active" : ""}`}
+                style={{ cursor: isActive ? "default" : "pointer" }}
+                onClick={() => {
+                  if (!isActive) {
+                    navigate(m.to);
+                  }
+                }}
+              >
+                {m.label}
+              </div>
+            );
+          })}
         </nav>
 
         <div

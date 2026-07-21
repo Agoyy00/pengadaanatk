@@ -158,9 +158,13 @@
 }
 
 .table th {
-  background: #f3f4f6;
-  color: #374151;
-  font-weight: 600;
+  background: linear-gradient(135deg, #0f172a 0%, #164e63 100%);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 2px solid #06b6d4;
 }
 
 .table tr {

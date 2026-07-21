@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import "../../css/layout.css";
 import "../../css/Barang.css";
 import ImportExcelBarang from "../../components/ImportExcelBarang";
@@ -13,8 +13,9 @@ const normalizeRole = (role) =>
     .toLowerCase()
     .replace(/[\s_]+/g, "");
 
-export default function KelolaBarangATK() {
+export default function DaftarBarangATKSuperAdmin() {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const storedUser = localStorage.getItem("user");
   const currentUser = storedUser ? JSON.parse(storedUser) : null;
@@ -394,16 +395,19 @@ const onDeleteSelected = async () => {
         </div>
 
         <nav className="sidebar-menu">
-          {sidebarMenus.map((m) => (
-            <div
-              key={m.label}
-              className={`menu-item ${m.active ? "disabled" : ""}`}
-              style={{ cursor: m.active ? "default" : "pointer" }}
-              onClick={() => !m.active && navigate(m.to)}
-            >
-              {m.label}
-            </div>
-          ))}
+          {sidebarMenus.map((m) => {
+            const isActive = location.pathname === m.to;
+            return (
+              <div
+                key={m.label}
+                className={`menu-item ${isActive ? "active" : ""}`}
+                style={{ cursor: isActive ? "default" : "pointer" }}
+                onClick={() => !isActive && navigate(m.to)}
+              >
+                {m.label}
+              </div>
+            );
+          })}
         </nav>
 
         <div

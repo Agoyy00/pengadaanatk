@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import "../../css/layout.css";
 import RoleSwitcher from "../../components/RoleSwitcher";
 
@@ -8,6 +8,7 @@ const token = localStorage.getItem("token");
 
 export default function DashboardSuperAdmin() {
   const navigate = useNavigate();
+  const location = useLocation();
 
   // =========================
   // USER (localStorage)
@@ -155,18 +156,21 @@ export default function DashboardSuperAdmin() {
         </div>
 
         <nav className="sidebar-menu">
-          {sidebarMenus.map((m) => (
-            <div
-              key={m.label}
-              className={`menu-item ${m.active ? "disabled" : ""}`}
-              style={{ cursor: m.active ? "default" : "pointer" }}
-              onClick={() => {
-                if (!m.active) navigate(m.to);
-              }}
-            >
-              {m.label}
-            </div>
-          ))}
+          {sidebarMenus.map((m) => {
+            const isActive = location.pathname === m.to;
+            return (
+              <div
+                key={m.label}
+                className={`menu-item ${isActive ? "active" : ""}`}
+                style={{ cursor: isActive ? "default" : "pointer" }}
+                onClick={() => {
+                  if (!isActive) navigate(m.to);
+                }}
+              >
+                {m.label}
+              </div>
+            );
+          })}
         </nav>
 
         <div
