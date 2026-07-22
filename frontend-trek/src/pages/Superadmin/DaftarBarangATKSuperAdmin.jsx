@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import Swal from "sweetalert2";
 import "../../css/layout.css";
 import "../../css/Barang.css";
 import ImportExcelBarang from "../../components/ImportExcelBarang";
@@ -13,6 +14,32 @@ const normalizeRole = (role) =>
     .toLowerCase()
     .replace(/[\s_]+/g, "");
 
+// Helper Title Case for Satuan (e.g., "dus" -> "Dus", "rim" -> "Rim")
+const toTitleCase = (str) => {
+  if (!str) return "";
+  return String(str)
+    .trim()
+    .toLowerCase()
+    .split(/\s+/)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+};
+
+const DEFAULT_SATUAN_LIST = [
+  "Dus",
+  "Rim",
+  "Pcs",
+  "Box",
+  "Pack",
+  "Roll",
+  "Botol",
+  "Buku",
+  "Set",
+  "Lembars",
+  "Tube",
+  "Pad",
+];
+
 export default function DaftarBarangATKSuperAdmin() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -24,24 +51,22 @@ export default function DaftarBarangATKSuperAdmin() {
 
   const isChecked = (id) => checkedIds.includes(id);
 
-const toggleCheck = (id) => {
-  setCheckedIds((prev) =>
-    prev.includes(id)
-      ? prev.filter((x) => x !== id)
-      : [...prev, id]
-  );
-};
+  const toggleCheck = (id) => {
+    setCheckedIds((prev) =>
+      prev.includes(id)
+        ? prev.filter((x) => x !== id)
+        : [...prev, id]
+    );
+  };
 
-const toggleCheckAll = () => {
-  if (checkedIds.length === barangs.length) {
-    setCheckedIds([]);
-  } else {
-    setCheckedIds(barangs.map((b) => b.id));
-  }
-};
+  const toggleCheckAll = () => {
+    if (checkedIds.length === barangs.length) {
+      setCheckedIds([]);
+    } else {
+      setCheckedIds(barangs.map((b) => b.id));
+    }
+  };
 
-
-  // ✅ safety: kalau tidak ada user -> balik ke home
   useEffect(() => {
     if (!currentUser?.id) navigate("/", { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -58,16 +83,121 @@ const toggleCheckAll = () => {
   const [excelFile, setExcelFile] = useState(null);
   const [importOpen, setImportOpen] = useState(false);
 
+  // Custom Satuan State & Deleted Satuan State
+  const [customSatuanList, setCustomSatuanList] = useState([]);
+  const [deletedSatuanList, setDeletedSatuanList] = useState([]);
+
   const [form, setForm] = useState({
     nama: "",
     kode: "",
-    satuan: "",
+    satuan: "Dus",
     harga_satuan: "",
   });
 
+  // Unique list of all available satuan units
+  const allSatuanList = useMemo(() => {
+    const fromBarangs = barangs.map((b) => toTitleCase(b.satuan)).filter(Boolean);
+    const combined = Array.from(
+      new Set([...DEFAULT_SATUAN_LIST, ...customSatuanList, ...fromBarangs])
+    );
+    const deletedLower = deletedSatuanList.map(toTitleCase);
+    return combined
+      .filter((s) => !deletedLower.includes(toTitleCase(s)))
+      .sort();
+  }, [barangs, customSatuanList, deletedSatuanList]);
+
+  const handleTambahSatuan = async () => {
+    const { value: inputSatuan } = await Swal.fire({
+      title: "Tambah Satuan Barang Baru",
+      input: "text",
+      inputLabel: "Masukkan nama satuan (contoh: Rim, Roll, Pack, Botol)",
+      inputPlaceholder: "Contoh: Rim",
+      showCancelButton: true,
+      confirmButtonText: "Lanjut Konfirmasi",
+      cancelButtonText: "Batal",
+      confirmButtonColor: "#2563eb",
+      inputValidator: (val) => {
+        if (!val || !val.trim()) {
+          return "Nama satuan tidak boleh kosong!";
+        }
+      },
+    });
+
+    if (inputSatuan) {
+      const formatted = toTitleCase(inputSatuan);
+
+      // Verifikasi cegah typo
+      const confirmResult = await Swal.fire({
+        title: "Konfirmasi Satuan Baru",
+        html: `Apakah nama satuan <strong>"${formatted}"</strong> sudah benar dan bebas typo?`,
+        icon: "question",
+        showCancelButton: true,
+        confirmButtonText: "Ya, Benar",
+        cancelButtonText: "Perbaiki",
+        confirmButtonColor: "#16a34a",
+        cancelButtonColor: "#64748b",
+      });
+
+      if (confirmResult.isConfirmed) {
+        // Remove from deleted list if previously deleted
+        setDeletedSatuanList((prev) =>
+          prev.filter((s) => toTitleCase(s) !== formatted)
+        );
+        if (!customSatuanList.includes(formatted)) {
+          setCustomSatuanList((prev) => [...prev, formatted]);
+        }
+        setForm((prev) => ({ ...prev, satuan: formatted }));
+        Swal.fire({
+          icon: "success",
+          title: "Satuan Ditambahkan",
+          text: `Satuan "${formatted}" berhasil ditambahkan dan dipilih.`,
+          timer: 1500,
+          showConfirmButton: false,
+        });
+      }
+    }
+  };
+
+  const handleHapusSatuan = async () => {
+    const currentSatuan = form.satuan;
+    if (!currentSatuan) return;
+
+    const formatted = toTitleCase(currentSatuan);
+
+    const confirmResult = await Swal.fire({
+      title: "Hapus Satuan?",
+      html: `Apakah Anda yakin ingin menghapus satuan <strong>"${formatted}"</strong> dari daftar opsi pilihan?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Ya, Hapus Satuan",
+      cancelButtonText: "Batal",
+      confirmButtonColor: "#dc2626",
+      cancelButtonColor: "#64748b",
+    });
+
+    if (confirmResult.isConfirmed) {
+      setDeletedSatuanList((prev) => [...prev, formatted]);
+      setCustomSatuanList((prev) =>
+        prev.filter((s) => toTitleCase(s) !== formatted)
+      );
+
+      const remaining = allSatuanList.filter(
+        (s) => toTitleCase(s) !== formatted
+      );
+      setForm((prev) => ({ ...prev, satuan: remaining[0] || "" }));
+
+      Swal.fire({
+        icon: "success",
+        title: "Satuan Dihapus",
+        text: `Satuan "${formatted}" berhasil dihapus dari daftar opsi.`,
+        timer: 1500,
+        showConfirmButton: false,
+      });
+    }
+  };
+
   const formatRole = (role) => {
     if (!role) return "-";
-
     return role
       .toLowerCase()
       .replace(/_/g, " ")
@@ -75,22 +205,21 @@ const toggleCheckAll = () => {
   };
 
   const generateKodeATK = () => {
-  const atkItems = barangs.filter(
-    (b) => typeof b.kode === "string" && b.kode.startsWith("ATK-")
-  );
+    const atkItems = barangs.filter(
+      (b) => typeof b.kode === "string" && b.kode.startsWith("ATK-")
+    );
 
-  let max = 0;
+    let max = 0;
+    atkItems.forEach((b) => {
+      const num = parseInt(b.kode.replace("ATK-", ""), 10);
+      if (!Number.isNaN(num) && num > max) max = num;
+    });
 
-  atkItems.forEach((b) => {
-    const num = parseInt(b.kode.replace("ATK-", ""), 10);
-    if (!Number.isNaN(num) && num > max) max = num;
-  });
+    const next = String(max + 1).padStart(3, "0");
+    return `ATK-${next}`;
+  };
 
-  const next = String(max + 1).padStart(3, "0");
-  return `ATK-${next}`;
-};
-
-const [errors, setErrors] = useState({});
+  const [errors, setErrors] = useState({});
 
   const sidebarMenus = useMemo(() => {
     return [
@@ -104,7 +233,6 @@ const [errors, setErrors] = useState({});
       { label: "Template Dokumen", to: "/template-dokumen" },
     ];
   }, []);
-
 
   const loadBarang = async () => {
     setLoading(true);
@@ -129,9 +257,6 @@ const [errors, setErrors] = useState({});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ==========================
-  // Validasi frontend
-  // ==========================
   const validate = (payload) => {
     const e = {};
 
@@ -167,18 +292,17 @@ const [errors, setErrors] = useState({});
   };
 
   const openCreate = () => {
-  setMode("create");
-  setSelected(null);
-  setForm({
-    nama: "",
-    kode: generateKodeATK(), // ⬅️ auto
-    satuan: "dus",
-    harga_satuan: "",
-  });
-  setErrors({});
-  setModalOpen(true);
-};
-
+    setMode("create");
+    setSelected(null);
+    setForm({
+      nama: "",
+      kode: generateKodeATK(),
+      satuan: allSatuanList[0] || "Dus",
+      harga_satuan: "",
+    });
+    setErrors({});
+    setModalOpen(true);
+  };
 
   const openEdit = (item) => {
     setMode("edit");
@@ -186,7 +310,7 @@ const [errors, setErrors] = useState({});
     setForm({
       nama: item.nama ?? "",
       kode: item.kode ?? "",
-      satuan: item.satuan ?? "",
+      satuan: toTitleCase(item.satuan ?? "Dus"),
       harga_satuan: String(item.harga_satuan ?? 0),
     });
     setErrors({});
@@ -200,21 +324,21 @@ const [errors, setErrors] = useState({});
   };
 
   const onSubmit = async () => {
-  const e = validate(form);
-  setErrors(e);
-  if (Object.keys(e).length > 0) return;
+    const e = validate(form);
+    setErrors(e);
+    if (Object.keys(e).length > 0) return;
 
-  if (!currentUser?.id) {
-    alert("User login tidak terbaca.");
-    return;
-  }
+    if (!currentUser?.id) {
+      alert("User login tidak terbaca.");
+      return;
+    }
 
-  const formData = new FormData();
-  formData.append("actor_user_id", currentUser.id);
-  formData.append("nama", form.nama.trim());
-  formData.append("kode", form.kode.trim());
-  formData.append("satuan", form.satuan.trim());
-  formData.append("harga_satuan", Number(form.harga_satuan));
+    const formData = new FormData();
+    formData.append("actor_user_id", currentUser.id);
+    formData.append("nama", form.nama.trim());
+    formData.append("kode", form.kode.trim());
+    formData.append("satuan", toTitleCase(form.satuan));
+    formData.append("harga_satuan", Number(form.harga_satuan));
 
   if (gambar) {
     formData.append("gambar", gambar);
@@ -677,24 +801,75 @@ const onDeleteSelected = async () => {
                     <div style={{ color: "#ef4444", marginTop: 6 }}>{errors.kode}</div>
                   )}
 
-                  <label style={{ display: "block", marginTop: 10, marginBottom: 6 }}>
-                    Satuan
+                  <label style={{ display: "block", marginTop: 10, marginBottom: 6, fontWeight: 600 }}>
+                    Satuan Barang
                   </label>
-                  <select
-                  style={{
-                    width: "100%",
-                    padding: 10,
-                    borderRadius: 10,
-                    border: `1px solid ${errors.satuan ? "#ef4444" : "#ddd"}`,
-                    background: "#f9fafb",
-                  }}
-                  value={form.satuan}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, satuan: e.target.value }))
-                  }
-                >
-                  <option value="dus">Dus</option>
-                </select>
+                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                    <select
+                      style={{
+                        flex: 1,
+                        padding: 10,
+                        borderRadius: 10,
+                        border: `1px solid ${errors.satuan ? "#ef4444" : "#ddd"}`,
+                        background: "#ffffff",
+                        fontSize: 14,
+                      }}
+                      value={form.satuan}
+                      onChange={(e) =>
+                        setForm((p) => ({ ...p, satuan: toTitleCase(e.target.value) }))
+                      }
+                    >
+                      {allSatuanList.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </select>
+
+                    <button
+                      type="button"
+                      onClick={handleTambahSatuan}
+                      title="Tambah Satuan Barang Baru"
+                      style={{
+                        padding: "9px 12px",
+                        borderRadius: 10,
+                        border: "1px solid #3b82f6",
+                        background: "#eff6ff",
+                        color: "#1d4ed8",
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        fontSize: 13,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 4,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      ➕ Tambah
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleHapusSatuan}
+                      title={`Hapus satuan "${form.satuan}"`}
+                      style={{
+                        padding: "9px 12px",
+                        borderRadius: 10,
+                        border: "1px solid #fecaca",
+                        background: "#fef2f2",
+                        color: "#dc2626",
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        fontSize: 13,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 4,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      🗑️ Hapus
+                    </button>
+                  </div>
 
                   {errors.satuan && (
                     <div style={{ color: "#ef4444", marginTop: 6 }}>{errors.satuan}</div>

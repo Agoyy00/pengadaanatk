@@ -503,4 +503,100 @@ class PengajuanController extends Controller
     ]);
 }
 
+    /**
+     * PATCH /api/pengajuan/{pengajuan}/user-revisi
+     * User → revisi item pengajuan milik sendiri (selama status masih 'diajukan')
+     * Logic: kebutuhan_total - sisa_stok = jumlah_diajukan
+     * Mendukung update, penambahan barang baru, dan penghapusan barang.
+     */
+    public function userRevisiItems(Request $request, Pengajuan $pengajuan)
+    {
+        $validated = $request->validate([
+            'items'                    => 'required|array|min:1',
+            'items.*.id'               => 'nullable|integer',
+            'items.*.barang_id'        => 'required|integer|exists:barangs,id',
+            'items.*.kebutuhan_total'  => 'required|integer|min:0',
+            'items.*.sisa_stok'        => 'required|integer|min:0',
+        ]);
+
+        // Pastikan status masih diajukan
+        if ($pengajuan->status !== 'diajukan') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Pengajuan tidak bisa direvisi karena status sudah ' . $pengajuan->status,
+            ], 422);
+        }
+
+        // Pastikan user hanya bisa revisi pengajuan miliknya
+        $user = Auth::user();
+        if ($pengajuan->user_id !== $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki akses untuk merevisi pengajuan ini.',
+            ], 403);
+        }
+
+        $processedIds = [];
+        $totalNilai = 0;
+        $totalJumlahDiajukan = 0;
+
+        foreach ($validated['items'] as $rev) {
+            $barang = \App\Models\Barang::find($rev['barang_id']);
+            if (!$barang) continue;
+
+            $hargaSatuan = $barang->harga_satuan ?? 0;
+            $jumlahDiajukan = max(0, $rev['kebutuhan_total'] - $rev['sisa_stok']);
+            $subtotal = $jumlahDiajukan * $hargaSatuan;
+
+            if (!empty($rev['id'])) {
+                // Update item yang sudah ada
+                $item = PengajuanItem::where('pengajuan_id', $pengajuan->id)
+                    ->where('id', $rev['id'])
+                    ->first();
+
+                if ($item) {
+                    $item->update([
+                        'barang_id'       => $rev['barang_id'],
+                        'kebutuhan_total' => $rev['kebutuhan_total'],
+                        'sisa_stok'       => $rev['sisa_stok'],
+                        'jumlah_diajukan' => $jumlahDiajukan,
+                        'harga_satuan'    => $hargaSatuan,
+                        'subtotal'        => $subtotal,
+                    ]);
+                    $processedIds[] = $item->id;
+                }
+            } else {
+                // Tambah item baru yang baru dimasukkan user
+                $newItem = PengajuanItem::create([
+                    'pengajuan_id'    => $pengajuan->id,
+                    'barang_id'       => $rev['barang_id'],
+                    'kebutuhan_total' => $rev['kebutuhan_total'],
+                    'sisa_stok'       => $rev['sisa_stok'],
+                    'jumlah_diajukan' => $jumlahDiajukan,
+                    'harga_satuan'    => $hargaSatuan,
+                    'subtotal'        => $subtotal,
+                ]);
+                $processedIds[] = $newItem->id;
+            }
+
+            $totalJumlahDiajukan += $jumlahDiajukan;
+            $totalNilai += $subtotal;
+        }
+
+        // Hapus item lama yang tidak ada lagi di daftar revisi
+        PengajuanItem::where('pengajuan_id', $pengajuan->id)
+            ->whereNotIn('id', $processedIds)
+            ->delete();
+
+        $pengajuan->update([
+            'total_jumlah_diajukan' => $totalJumlahDiajukan,
+            'total_nilai'           => $totalNilai,
+        ]);
+
+        return response()->json([
+            'success'   => true,
+            'message'   => 'Revisi pengajuan berhasil disimpan',
+            'pengajuan' => $pengajuan->load('items.barang'),
+        ]);
+    }
 }

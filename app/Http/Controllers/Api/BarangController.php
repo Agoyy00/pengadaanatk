@@ -38,7 +38,8 @@ class BarangController extends Controller
     {
         $satuan = trim($satuan);
         $satuan = preg_replace('/\s+/', ' ', $satuan);
-        return $satuan;
+        // Capitalize first letter of each word (Title Case): e.g. "dus" -> "Dus", "rim" -> "Rim"
+        return ucwords(strtolower($satuan));
     }
 
     private function writeLog(?int $barangId, ?int $userId, string $action, $oldData, $newData): void
@@ -58,6 +59,8 @@ class BarangController extends Controller
     $q = $request->q;
 
     $barang = Barang::where('nama', 'like', "%$q%")
+        ->orWhere('kode', 'like', "%$q%")
+        ->orWhere('satuan', 'like', "%$q%")
         ->get()
         ->map(function ($b) {
             return [
@@ -65,10 +68,9 @@ class BarangController extends Controller
                 'nama' => $b->nama,
                 'kode' => $b->kode,
                 'stok' => $b->stok,
-                'satuan' => $b->satuan,
+                'satuan' => $this->normalizeSatuan($b->satuan ?? ''),
                 'harga_satuan' => $b->harga_satuan,
 
-                // 🔴 INI KUNCINYA
                 'foto' => $b->gambar
                 ? '/storage/barang/' . $b->gambar
                 : null,
@@ -80,6 +82,7 @@ class BarangController extends Controller
 
     public function show(Barang $barang)
     {
+        $barang->satuan = $this->normalizeSatuan($barang->satuan ?? '');
         return response()->json($barang);
     }
 
@@ -105,14 +108,14 @@ class BarangController extends Controller
             'actor_user_id' => 'required|exists:users,id',
             'nama'          => 'required|string|max:255',
             'kode'          => 'required|string|max:50',
-            'satuan'        => 'required|in:dus',
+            'satuan'        => 'required|string|max:50',
             'harga_satuan'  => 'nullable|integer|min:0|max:1000000000',
             'gambar'        => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
         $nama   = $this->normalizeNama($validated['nama']);
         $kode   = $this->normalizeKode($validated['kode']);
-        $satuan = 'dus';
+        $satuan = $this->normalizeSatuan($validated['satuan']);
         $harga  = $validated['harga_satuan'] ?? 0;
 
         $existsKode = Barang::whereRaw('LOWER(kode) = ?', [strtolower($kode)])->exists();
@@ -132,23 +135,21 @@ class BarangController extends Controller
             'kode'        => $kode,
             'satuan'      => $satuan,
             'harga_satuan'=> $harga,
-            
         ]);
 
         if ($request->hasFile('gambar')) {
-    $file = $request->file('gambar');
-    $filename = time().'_'.uniqid().'.'.$file->getClientOriginalExtension();
+            $file = $request->file('gambar');
+            $filename = time().'_'.uniqid().'.'.$file->getClientOriginalExtension();
 
-    Storage::disk('public')->putFileAs(
-        'barang',
-        $file,
-        $filename
-    );
+            Storage::disk('public')->putFileAs(
+                'barang',
+                $file,
+                $filename
+            );
 
-    $barang->gambar = $filename;
-    $barang->save();
-}
-
+            $barang->gambar = $filename;
+            $barang->save();
+        }
 
         $this->writeLog($barang->id, (int)$validated['actor_user_id'], 'create', null, $barang->toArray());
 
@@ -166,7 +167,7 @@ class BarangController extends Controller
             'actor_user_id' => 'required|exists:users,id',
             'nama'          => 'required|string|max:255',
             'kode'          => 'required|string|max:50',
-            'satuan'        => 'required|in:dus',
+            'satuan'        => 'required|string|max:50',
             'harga_satuan'  => 'nullable|integer|min:0|max:1000000000',
             'gambar'        => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
@@ -175,7 +176,7 @@ class BarangController extends Controller
 
         $nama   = $this->normalizeNama($validated['nama']);
         $kode   = $this->normalizeKode($validated['kode']);
-        $satuan = 'dus';
+        $satuan = $this->normalizeSatuan($validated['satuan']);
         $harga  = $validated['harga_satuan'] ?? $barang->harga_satuan;
 
         $existsKode = Barang::whereRaw('LOWER(kode) = ?', [strtolower($kode)])
@@ -387,7 +388,7 @@ public function importExcel(Request $request)
                 continue;
             }
 
-            $satuan = trim($data['satuan'] ?? 'dus');
+            $satuan = $this->normalizeSatuan($data['satuan'] ?? 'Dus');
             $harga = (int) ($data['harga'] ?? 0);
 
             $kode = 'ATK-' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
@@ -396,7 +397,7 @@ public function importExcel(Request $request)
             $barang = Barang::create([
                 'kode' => $kode,
                 'nama' => $nama,
-                'satuan' => 'dus',
+                'satuan' => $satuan,
                 'harga_satuan' => $harga
             ]);
 
