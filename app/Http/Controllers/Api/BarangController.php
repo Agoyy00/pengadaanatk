@@ -137,6 +137,17 @@ class BarangController extends Controller
             'harga_satuan'=> $harga,
         ]);
 
+        // LOG ACTIVITY
+        \Illuminate\Support\Facades\DB::table('admin_activity_logs')->insert([
+            'user_id'     => $validated['actor_user_id'] ?? \Illuminate\Support\Facades\Auth::id() ?? 1,
+            'action'      => 'barang_create',
+            'description' => "Admin melakukan aksi [CREATE] pada Barang: {$barang->nama}",
+            'details'     => json_encode(['id' => $barang->id, 'nama' => $barang->nama, 'kode' => $barang->kode]),
+            'ip_address'  => $request->ip(),
+            'created_at'  => now(),
+            'updated_at'  => now(),
+        ]);
+
         if ($request->hasFile('gambar')) {
             $file = $request->file('gambar');
             $filename = time().'_'.uniqid().'.'.$file->getClientOriginalExtension();

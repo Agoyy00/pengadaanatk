@@ -73,6 +73,17 @@ class StockOpnameController extends Controller
             'status' => 'verified'
         ]);
 
+        // LOG ACTIVITY
+        \Illuminate\Support\Facades\DB::table('admin_activity_logs')->insert([
+            'user_id'     => $user->id,
+            'action'      => 'stock_opname_verify',
+            'description' => "Admin memverifikasi Laporan Stock Opname #{$stockOpname->id}",
+            'details'     => json_encode(['status' => 'verified']),
+            'ip_address'  => $request->ip(),
+            'created_at'  => now(),
+            'updated_at'  => now(),
+        ]);
+
         return response()->json([
             'success' => true,
             'message' => 'Laporan stock opname berhasil diverifikasi oleh admin.',
@@ -111,6 +122,17 @@ class StockOpnameController extends Controller
                 'old_data'  => json_encode($oldData),
                 'new_data'  => json_encode($barang->toArray()),
             ]);
+
+            // LOG ACTIVITY
+            \Illuminate\Support\Facades\DB::table('admin_activity_logs')->insert([
+                'user_id'     => $request->user()->id,
+                'action'      => 'stock_opname_verify',
+                'description' => "Admin memverifikasi Laporan Stock Opname #{$stockOpname->id}",
+                'details'     => json_encode(['status' => 'approved']),
+                'ip_address'  => $request->ip(),
+                'created_at'  => now(),
+                'updated_at'  => now(),
+            ]);
         });
 
         return response()->json([
@@ -131,6 +153,17 @@ class StockOpnameController extends Controller
 
         $stockOpname->update([
             'status' => 'rejected'
+        ]);
+
+        // LOG ACTIVITY
+        \Illuminate\Support\Facades\DB::table('admin_activity_logs')->insert([
+            'user_id'     => $user->id,
+            'action'      => 'stock_opname_verify',
+            'description' => "Admin memproses Laporan Stock Opname #{$stockOpname->id}",
+            'details'     => json_encode(['status' => 'rejected']),
+            'ip_address'  => $request->ip(),
+            'created_at'  => now(),
+            'updated_at'  => now(),
         ]);
 
         return response()->json([

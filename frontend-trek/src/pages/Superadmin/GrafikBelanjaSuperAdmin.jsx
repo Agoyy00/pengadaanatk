@@ -46,6 +46,8 @@ const [showAnalisis, setShowAnalisis] = useState(false);
   const sidebarMenus = useMemo(
     () => [
       { label: "Dashboard Super Admin", to: "/dashboardsuperadmin" },
+      { label: "Monitoring Admin", to: "/superadmin/monitoring-admin" },
+      { label: "Monitoring User", to: "/superadmin/monitoring-user" },
       { label: "Approval Pengajuan", to: "/approval" },
       { label: "Tambah & Kelola User", to: "/tambahuser" },
       { label: "Atur Periode", to: "/periode" },

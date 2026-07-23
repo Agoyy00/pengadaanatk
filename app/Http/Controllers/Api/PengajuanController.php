@@ -211,6 +211,17 @@ class PengajuanController extends Controller
             'verified_at'   => now(),
         ]);
 
+        // LOG ACTIVITY
+        \Illuminate\Support\Facades\DB::table('admin_activity_logs')->insert([
+            'user_id'     => Auth::id() ?? $validated['user_id'],
+            'action'      => 'verifikasi_pengajuan',
+            'description' => "Admin memproses Pengajuan #{$pengajuan->id}",
+            'details'     => json_encode(['status' => $nextStatus, 'catatan' => $request->input('catatan_admin')]),
+            'ip_address'  => $request->ip(),
+            'created_at'  => now(),
+            'updated_at'  => now(),
+        ]);
+
         // hapus notif admin
         Notification::where('pengajuan_id', $pengajuan->id)
             ->where('user_id', $user->id)
@@ -267,6 +278,17 @@ class PengajuanController extends Controller
             'status'       => $nextStatus,
             'approved_by'  => Auth::id(),
             'approved_at'  => now(),
+        ]);
+
+        // LOG ACTIVITY
+        \Illuminate\Support\Facades\DB::table('admin_activity_logs')->insert([
+            'user_id'     => Auth::id() ?? $validated['user_id'],
+            'action'      => 'verifikasi_pengajuan',
+            'description' => "Admin memproses Pengajuan #{$pengajuan->id}",
+            'details'     => json_encode(['status' => $nextStatus]),
+            'ip_address'  => $request->ip(),
+            'created_at'  => now(),
+            'updated_at'  => now(),
         ]);
 
         return response()->json([

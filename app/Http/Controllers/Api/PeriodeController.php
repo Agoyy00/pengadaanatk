@@ -42,6 +42,17 @@ class PeriodeController extends Controller
             ]
         );
 
+        // LOG ACTIVITY
+        \Illuminate\Support\Facades\DB::table('admin_activity_logs')->insert([
+            'user_id'     => \Illuminate\Support\Facades\Auth::id() ?? $request->input('user_id') ?? 1, // Default fallback if not auth
+            'action'      => 'atur_periode',
+            'description' => "Admin mengatur Periode Akademik [{$tahunAkademik}]",
+            'details'     => json_encode(['mulai' => $mulai, 'selesai' => $selesai]),
+            'ip_address'  => $request->ip(),
+            'created_at'  => now(),
+            'updated_at'  => now(),
+        ]);
+
         return response()->json([
             'success' => true,
             'message' => $isOpenNow

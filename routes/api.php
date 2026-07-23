@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\LaporanController;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\BarangUsulanController;
+use App\Http\Controllers\Api\MonitoringController;
 use App\Http\Controllers\Api\PengajuanAdminPdfController;
 use App\Http\Controllers\Api\Superadmin\PengajuanPdfSuperadminController;
 use App\Http\Controllers\Api\StockOpnameController;
@@ -134,5 +135,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/options/{type}', [OptionController::class, 'index']);
     Route::post('/options/{type}', [OptionController::class, 'store']);
     Route::delete('/options/{id}', [OptionController::class, 'destroy']);
+
+    /*
+    | Monitoring (Superadmin)
+    */
+    Route::get('/monitoring/admin', [MonitoringController::class, 'adminLogs']);
+    Route::get('/monitoring/user', [MonitoringController::class, 'userRequests']);
 
 });
