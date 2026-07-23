@@ -2,6 +2,7 @@ import { useMemo, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import "../css/layout.css";
 import RoleSwitcher from "../components/RoleSwitcher";
+import PeriodeTimer from "../components/PeriodeTimer";
 
 const normalizeRole = (role) =>
   String(role || "")
@@ -116,6 +117,7 @@ export default function TemplateDokumen() {
           </div>
 
           <div className="topbar-right">
+            <PeriodeTimer />
             <span style={{ marginRight: 8 }}>Pengguna: <b>{currentUser?.name}</b></span>
             <RoleSwitcher />
           </div>

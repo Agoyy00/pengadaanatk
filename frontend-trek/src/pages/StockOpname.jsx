@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import "../css/layout.css";
 import "../css/Barang.css";
 import RoleSwitcher from "../components/RoleSwitcher";
+import PeriodeTimer from "../components/PeriodeTimer";
 
 const API_BASE = import.meta.env.VITE_API_BASE;
 const token = localStorage.getItem("token");
@@ -418,6 +419,7 @@ export default function StockOpname() {
           </div>
 
           <div className="topbar-right">
+            <PeriodeTimer />
             <span style={{ marginRight: 8 }}>Pengguna: <b>{currentUser?.name}</b></span>
             <RoleSwitcher />
           </div>

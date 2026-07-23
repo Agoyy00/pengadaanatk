@@ -241,6 +241,11 @@
    MODAL DIALOG REVISI PENGAJUAN (NO HORIZONTAL SCROLL)
    ============================================================ */
 
+/* Ensure SweetAlert modals are always on top of all modal backdrops */
+.swal2-container {
+  z-index: 20000 !important;
+}
+
 .modal-backdrop {
   position: fixed;
   top: 0;

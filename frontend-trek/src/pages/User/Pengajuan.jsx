@@ -4,6 +4,7 @@ import Swal from "sweetalert2";
 import "../../css/Pengajuan.css";
 import "../../css/layout.css";
 import RoleSwitcher from "../../components/RoleSwitcher";
+import PeriodeTimer from "../../components/PeriodeTimer";
 
 function Pengajuan() {
   const navigate = useNavigate();
@@ -37,6 +38,9 @@ function Pengajuan() {
   nama: "",
 });
 const [loadingSubmit, setLoadingSubmit] = useState(false); // opsional spinner
+const [showVerifyPanel, setShowVerifyPanel] = useState(false);
+const [verifyChecked, setVerifyChecked] = useState(false);
+const [showItemDetail, setShowItemDetail] = useState(false);
 
 
   
@@ -224,6 +228,76 @@ const [loadingSubmit, setLoadingSubmit] = useState(false); // opsional spinner
     setStep2Error("");
   };
   
+  // ====== IMPORT CSV ======
+  const handleImportCSV = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const text = event.target.result;
+      const lines = text.split(/\r?\n/).filter(line => line.trim() !== "");
+      if (lines.length < 2) {
+        Swal.fire("Error", "File CSV kosong atau format salah", "error");
+        return;
+      }
+
+      const delimiter = lines[0].includes(";") ? ";" : ",";
+      
+      try {
+        const res = await fetch(`${API_BASE}/barang`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const masterDataRes = await res.json();
+        const masterData = Array.isArray(masterDataRes) ? masterDataRes : (masterDataRes.data || []);
+        
+        const newItems = [];
+        
+        for (let i = 1; i < lines.length; i++) {
+          const cols = lines[i].split(delimiter).map(c => c.trim().replace(/^"|"$/g, ''));
+          // index: 0(no), 1(nama), 2(satuan), 3(kebutuhan), 4(total), 5(sisa), 6(jumlah diajukan)
+          if (cols.length >= 2) {
+            const namaCSV = cols[1].toLowerCase();
+            const kebutuhan = parseInt(cols[3]) || 0;
+            const sisa = parseInt(cols[5]) || 0;
+            
+            const matchedBarang = masterData.find(b => b.nama.toLowerCase() === namaCSV || b.id.toString() === cols[0]);
+            
+            if (matchedBarang) {
+              const exists = items.some(it => it.id === matchedBarang.id) || newItems.some(it => it.id === matchedBarang.id);
+              if (!exists) {
+                const jumlahDiajukan = Math.max(kebutuhan - sisa, 0);
+                newItems.push({
+                  id: matchedBarang.id,
+                  nama: matchedBarang.nama,
+                  satuan: matchedBarang.satuan,
+                  kebutuhanTotal: kebutuhan,
+                  sisaStok: sisa,
+                  jumlahDiajukan: jumlahDiajukan,
+                  estimasiNilai: matchedBarang.harga_satuan,
+                  foto: matchedBarang.foto || null,
+                });
+              }
+            }
+          }
+        }
+        
+        if (newItems.length > 0) {
+          setItems(prev => [...prev, ...newItems]);
+          Swal.fire("Berhasil", `${newItems.length} barang berhasil diimport dari CSV`, "success");
+        } else {
+          Swal.fire("Info", "Tidak ada barang yang cocok dari CSV atau semua sudah ada di daftar", "info");
+        }
+      } catch (err) {
+        console.error("Gagal import CSV", err);
+        Swal.fire("Error", "Gagal mengambil data barang dari server", "error");
+      }
+      
+      e.target.value = null; 
+    };
+    reader.readAsText(file);
+  };
+  
   useEffect(() => {
   console.log("ITEMS:", items);
 }, [items]);
@@ -381,7 +455,7 @@ const [loadingSubmit, setLoadingSubmit] = useState(false); // opsional spinner
 
   // kirim pengajuan ke backend
   async function handleSubmit(e) {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
 
     if (!userId) {
       Swal.fire({
@@ -392,6 +466,9 @@ const [loadingSubmit, setLoadingSubmit] = useState(false); // opsional spinner
       });
       return;
     }
+
+    setLoadingSubmit(true);
+    setShowVerifyPanel(false);
 
     const payload = {
       tahun_akademik: tahunAkademik,
@@ -453,6 +530,8 @@ const [loadingSubmit, setLoadingSubmit] = useState(false); // opsional spinner
         text: "Terjadi kesalahan saat terhubung ke server.",
         confirmButtonColor: "#ef4444",
       });
+    } finally {
+      setLoadingSubmit(false);
     }
   }
 
@@ -516,6 +595,7 @@ const [loadingSubmit, setLoadingSubmit] = useState(false); // opsional spinner
             </div>
           </div>
           <div className="topbar-right">
+            <PeriodeTimer />
             <span>Role: </span>
             <RoleSwitcher />
           </div>
@@ -717,7 +797,30 @@ const [loadingSubmit, setLoadingSubmit] = useState(false); // opsional spinner
                 {currentStep === 2 && (
                   <div className="step-pane active">
                     <div className="form-group">
-                      <label>Cari Barang</label>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                        <label style={{ margin: 0 }}>Cari Barang</label>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <button
+                            type="button"
+                            className="btn"
+                            style={{ padding: '6px 14px', fontSize: '13px', cursor: 'pointer', borderRadius: '6px', margin: 0, background: '#f1f5f9', color: '#334155', border: '1px solid #cbd5e1' }}
+                            onClick={() => {
+                              Swal.fire("Info", "Template CSV akan segera tersedia.", "info");
+                            }}
+                          >
+                            📄 Download Template
+                          </button>
+                          <label className="btn btn-primary" style={{ padding: '6px 14px', fontSize: '13px', cursor: 'pointer', borderRadius: '6px', margin: 0 }}>
+                            📥 Import CSV
+                            <input 
+                              type="file" 
+                              accept=".csv" 
+                              style={{ display: 'none' }} 
+                              onChange={handleImportCSV} 
+                            />
+                          </label>
+                        </div>
+                      </div>
                       <div className="search-wrapper">
                         <input
                           type="text"
@@ -1031,10 +1134,180 @@ const [loadingSubmit, setLoadingSubmit] = useState(false); // opsional spinner
                         Kembali
                       </button>
 
-                      <button type="submit" className="btn btn-primary">
+                      <button
+                        type="button"
+                        className="btn btn-primary"
+                        onClick={() => {
+                          setVerifyChecked(false);
+                          setShowVerifyPanel(true);
+                        }}
+                      >
                         Kirim Pengajuan
                       </button>
                     </div>
+
+                    {/* ===== PANEL VERIFIKASI PENGAJUAN ===== */}
+                    {showVerifyPanel && (
+                      <div className="verify-overlay" onClick={() => setShowVerifyPanel(false)}>
+                        <div className="verify-panel" onClick={(e) => e.stopPropagation()}>
+                          {/* Header */}
+                          <div className="verify-panel-header">
+                            <div className="verify-icon">
+                              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M9 11l3 3L22 4" />
+                                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                              </svg>
+                            </div>
+                            <h3>Verifikasi Pengajuan</h3>
+                            <p>Pastikan semua data sudah benar sebelum mengirim pengajuan Anda</p>
+                          </div>
+
+                          {/* Ringkasan data */}
+                          <div className="verify-summary-box">
+                            <div className="verify-summary-row">
+                              <span>Pemohon</span>
+                              <strong>{namaPemohon}</strong>
+                            </div>
+                            <div className="verify-summary-row">
+                              <span>Jabatan / Unit</span>
+                              <strong>{jabatan} — {unit}</strong>
+                            </div>
+                            <div className="verify-summary-row">
+                              <span>Tahun Akademik</span>
+                              <strong>{tahunAkademik}</strong>
+                            </div>
+                            <div className="verify-summary-row">
+                              <span>Jumlah Item</span>
+                              <div className="verify-item-count">
+                                <strong>{items.length} barang</strong>
+                                <button
+                                  type="button"
+                                  className={`verify-info-btn ${showItemDetail ? 'active' : ''}`}
+                                  onClick={() => setShowItemDetail(true)}
+                                  title="Lihat detail barang"
+                                >
+                                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <line x1="12" y1="16" x2="12" y2="12" />
+                                    <line x1="12" y1="8" x2="12.01" y2="8" />
+                                  </svg>
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Panel Detail Item (modal terpisah di atas verify panel) */}
+                            {showItemDetail && (
+                              <div className="detail-overlay" onClick={() => setShowItemDetail(false)}>
+                                <div className="detail-panel" onClick={(e) => e.stopPropagation()}>
+                                  <div className="detail-panel-header">
+                                    <div>
+                                      <h3>Detail Barang Pengajuan</h3>
+                                      <p>{items.length} barang yang akan diajukan</p>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      className="detail-close-btn"
+                                      onClick={() => setShowItemDetail(false)}
+                                    >
+                                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                        <line x1="18" y1="6" x2="6" y2="18" />
+                                        <line x1="6" y1="6" x2="18" y2="18" />
+                                      </svg>
+                                    </button>
+                                  </div>
+
+                                  <div className="detail-table-wrapper">
+                                    <table className="detail-table">
+                                      <thead>
+                                        <tr>
+                                          <th>No</th>
+                                          <th>Nama Barang</th>
+                                          <th>Jumlah</th>
+                                          <th>Harga Satuan</th>
+                                          <th>Subtotal</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {items.map((item, idx) => (
+                                          <tr key={item.id}>
+                                            <td className="detail-td-no">{idx + 1}</td>
+                                            <td className="detail-td-nama">{item.nama}</td>
+                                            <td className="detail-td-qty">{item.jumlahDiajukan} {item.satuan}</td>
+                                            <td className="detail-td-harga">Rp {item.estimasiNilai.toLocaleString("id-ID")}</td>
+                                            <td className="detail-td-subtotal">Rp {(item.jumlahDiajukan * item.estimasiNilai).toLocaleString("id-ID")}</td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                      <tfoot>
+                                        <tr>
+                                          <td colSpan="2" className="detail-footer-label">Total</td>
+                                          <td className="detail-footer-qty">{totalJumlahDiajukan}</td>
+                                          <td></td>
+                                          <td className="detail-footer-total">Rp {totalNilai.toLocaleString("id-ID")}</td>
+                                        </tr>
+                                      </tfoot>
+                                    </table>
+                                  </div>
+
+                                  <div className="detail-panel-footer">
+                                    <button
+                                      type="button"
+                                      className="btn btn-primary detail-close-action"
+                                      onClick={() => setShowItemDetail(false)}
+                                    >
+                                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                        <polyline points="20 6 9 17 4 12" />
+                                      </svg>
+                                      Sudah Sesuai, Tutup
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                            <div className="verify-summary-row highlight">
+                              <span>Total Nilai Pengajuan</span>
+                              <strong>Rp {totalNilai.toLocaleString("id-ID")}</strong>
+                            </div>
+                          </div>
+
+                          {/* Checkbox persetujuan */}
+                          <label className="verify-checkbox-label">
+                            <input
+                              type="checkbox"
+                              checked={verifyChecked}
+                              onChange={(e) => setVerifyChecked(e.target.checked)}
+                            />
+                            <span className="verify-checkmark"></span>
+                            <span className="verify-checkbox-text">
+                              Saya menyatakan bahwa data pengajuan di atas sudah benar dan saya bertanggung jawab atas pengajuan ini.
+                            </span>
+                          </label>
+
+                          {/* Tombol aksi */}
+                          <div className="verify-panel-actions">
+                            <button
+                              type="button"
+                              className="btn verify-btn-cancel"
+                              onClick={() => setShowVerifyPanel(false)}
+                            >
+                              Kembali
+                            </button>
+                            <button
+                              type="button"
+                              className={`btn btn-primary verify-btn-submit ${!verifyChecked || loadingSubmit ? 'disabled' : ''}`}
+                              disabled={!verifyChecked || loadingSubmit}
+                              onClick={handleSubmit}
+                            >
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M22 2L11 13" />
+                                <path d="M22 2l-7 20-4-9-9-4 20-7z" />
+                              </svg>
+                              {loadingSubmit ? "Mengirim..." : "Kirim Pengajuan Sekarang"}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

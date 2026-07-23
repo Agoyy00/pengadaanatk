@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import "../../css/DashboardUser.css";
 import "../../css/layout.css";
 import RoleSwitcher from "../../components/RoleSwitcher";
+import PeriodeTimer from "../../components/PeriodeTimer";
 
 const API_BASE = import.meta.env.VITE_API_BASE;
 const token = localStorage.getItem("token");
@@ -177,6 +178,7 @@ export default function DashboardUser() {
             </div>
           </div>
           <div className="topbar-right">
+            <PeriodeTimer />
             <span>Role: </span>
             <RoleSwitcher />
           </div>

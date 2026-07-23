@@ -1,9 +1,11 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import Swal from "sweetalert2";
+import "../../css/Pengajuan.css";
 import "../../css/Riwayat.css";
 import "../../css/layout.css";
 import RoleSwitcher from "../../components/RoleSwitcher";
+import PeriodeTimer from "../../components/PeriodeTimer";
 
 const API_BASE = import.meta.env.VITE_API_BASE;
 
@@ -107,8 +109,38 @@ export default function Riwayat() {
     return <span className="status-badge">{status}</span>;
   };
 
+  const [isPeriodeActive, setIsPeriodeActive] = useState(false);
+
+  useEffect(() => {
+    async function checkPeriodeActive() {
+      try {
+        const res = await fetch(`${API_BASE}/periode/active`);
+        if (res.ok) {
+          const json = await res.json();
+          const isOpen =
+            json.is_open === true ||
+            json.is_open === 1 ||
+            json.is_open === "1" ||
+            json.is_open === "open";
+
+          if (isOpen && json.periode?.selesai) {
+            const end = new Date(json.periode.selesai).getTime();
+            const now = new Date().getTime();
+            setIsPeriodeActive(end > now);
+          } else {
+            setIsPeriodeActive(isOpen);
+          }
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    checkPeriodeActive();
+  }, []);
+
   const canRevisi = (status) => {
-    return !['verifikasi_admin', 'diverifikasi_admin', 'disetujui_admin', 'ditolak_admin', 'disetujui', 'ditolak', 'diverifikasi'].includes(status);
+    const isUnprocessed = !['verifikasi_admin', 'diverifikasi_admin', 'disetujui_admin', 'ditolak_admin', 'disetujui', 'ditolak', 'diverifikasi'].includes(status);
+    return isUnprocessed && isPeriodeActive;
   };
 
   // ========== MODAL REVISI LOGIC ==========
@@ -257,13 +289,22 @@ export default function Riwayat() {
       return;
     }
 
+    // Peringatan Verifikasi Revisi
     const confirmResult = await Swal.fire({
-      title: "Simpan Revisi Pengajuan?",
-      text: `Menyimpan ${revisiItems.length} barang pengajuan.`,
-      icon: "question",
+      title: "Verifikasi Revisi Pengajuan",
+      html: `
+        <div style="text-align: left; font-size: 13.5px; color: #334155; line-height: 1.5;">
+          <p style="margin-bottom: 10px;">Apakah Anda yakin ingin menyimpan perubahan revisi pengajuan ini?</p>
+          <div style="background: #fffbeb; border: 1px solid #fde68a; border-left: 4px solid #d97706; padding: 10px 12px; border-radius: 6px; font-size: 12.5px; color: #92400e;">
+            <strong>⚠️ Peringatan Verifikasi:</strong><br/>
+            Pastikan data barang (<strong>${revisiItems.length} item</strong>, Total <strong>Rp ${totalEstimasi.toLocaleString("id-ID")}</strong>) sudah sesuai sebelum disimpan ke sistem.
+          </div>
+        </div>
+      `,
+      icon: "warning",
       showCancelButton: true,
       confirmButtonText: "Ya, Simpan Revisi",
-      cancelButtonText: "Batal",
+      cancelButtonText: "Batal / Cek Lagi",
       confirmButtonColor: "#d97706",
       cancelButtonColor: "#64748b",
     });
@@ -370,6 +411,7 @@ export default function Riwayat() {
             </div>
           </div>
           <div className="topbar-right">
+            <PeriodeTimer />
             <span>Role: </span>
             <RoleSwitcher />
           </div>
