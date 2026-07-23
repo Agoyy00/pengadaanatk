@@ -71,10 +71,18 @@ class PeriodeController extends Controller
     {
         $now = Carbon::now('Asia/Jakarta');
 
-        // Hanya ambil periode yang BELUM berakhir (selesai >= sekarang)
-        $periode = Periode::where('selesai', '>=', $now)
-            ->orderBy('mulai')   // paling dekat dulu
+        // 1. Prioritaskan mencari periode yang sedang aktif saat ini (mulai <= now dan selesai >= now)
+        $periode = Periode::where('mulai', '<=', $now)
+            ->where('selesai', '>=', $now)
+            ->orderByDesc('mulai') // Ambil yang paling baru mulai jika ada lebih dari satu
             ->first();
+
+        // 2. Jika tidak ada yang sedang aktif, cari yang akan datang (belum mulai)
+        if (!$periode) {
+            $periode = Periode::where('mulai', '>', $now)
+                ->orderBy('mulai') // Yang paling dekat dimulai
+                ->first();
+        }
 
         if (!$periode) {
             // semua periode sudah lewat → tidak ada yang ditampilkan
@@ -102,11 +110,11 @@ class PeriodeController extends Controller
             $message = 'Saat ini tidak ada periode pengajuan aktif.';
         }
 
-        // (opsional) sinkronkan kolom is_open di DB dengan kondisi terkini
-        //$periode->is_open = $isOpen;
-        //$periode->save();
-        $isOpen = $periode->is_open;
-
+        // Sinkronkan kolom is_open di DB agar selalu up-to-date
+        if ($periode->is_open !== $isOpen) {
+            $periode->is_open = $isOpen;
+            $periode->save();
+        }
 
         return response()->json([
             'is_open'  => $isOpen,   // INI yang dipakai Pengajuan.jsx dan DashboardAdmin.jsx

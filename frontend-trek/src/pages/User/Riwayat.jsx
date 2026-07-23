@@ -483,30 +483,72 @@ export default function Riwayat() {
                                         const namaBarang = item.barang?.nama ?? "Barang";
                                         const satuan = item.barang?.satuan ?? "";
                                         const diajukan = item.jumlah_diajukan;
-                                        const disetujui =
-                                          item.jumlah_disetujui ?? item.jumlah_diajukan;
-                                        const direvisi =
-                                          item.jumlah_disetujui != null &&
-                                          item.jumlah_disetujui !== item.jumlah_diajukan;
+                                        const disetujui = item.jumlah_disetujui;
+
+                                        const hasRevisi =
+                                          disetujui != null &&
+                                          (disetujui !== diajukan || 
+                                           item.kebutuhan_total_admin != null || 
+                                           item.sisa_stok_admin != null);
+
+                                        const isProcessed = ["diverifikasi_admin", "disetujui", "ditolak_admin"].includes(p.status);
 
                                         return (
-                                          <li key={item.id}>
-                                            <span className="barang-name">{namaBarang}</span> — diajukan{" "}
-                                            <strong className="qty-tag">
-                                              {diajukan} {satuan}
-                                            </strong>
-                                            {direvisi && (
-                                              <>
-                                                {" , "}disetujui{" "}
-                                                <strong className="qty-tag-disetujui">
-                                                  {disetujui} {satuan}
-                                                </strong>{" "}
-                                                <span className="badge-revisi-tag">(direvisi)</span>
-                                              </>
-                                            )}
-                                            {item.catatan_revisi && (
-                                              <div className="revisi-note">
-                                                Catatan: {item.catatan_revisi}
+                                          <li key={item.id} style={{ marginBottom: "8px" }}>
+                                            <span className="barang-name">{namaBarang}</span>
+
+                                            {/* Jika sudah diproses admin, tampilkan history before/after */}
+                                            {isProcessed && disetujui != null ? (
+                                              <div className="revisi-history-box">
+                                                {/* Grid Perubahan Kebutuhan & Sisa */}
+                                                <div className="revisi-history-meta-grid">
+                                                  <div>
+                                                    <span className="meta-label">Kebutuhan:</span>{" "}
+                                                    <span className={item.kebutuhan_total_admin != null ? "meta-value-changed" : ""}>
+                                                      {item.kebutuhan_total_admin != null ? `${item.kebutuhan_total} ➜ ${item.kebutuhan_total_admin}` : item.kebutuhan_total}
+                                                    </span>
+                                                  </div>
+                                                  <div>
+                                                    <span className="meta-label">Sisa Stok:</span>{" "}
+                                                    <span className={item.sisa_stok_admin != null ? "meta-value-changed" : ""}>
+                                                      {item.sisa_stok_admin != null ? `${item.sisa_stok} ➜ ${item.sisa_stok_admin}` : item.sisa_stok}
+                                                    </span>
+                                                  </div>
+                                                </div>
+
+                                                <div className="revisi-history-row" style={{ marginTop: "6px" }}>
+                                                  <span className="revisi-label">Diajukan Awal:</span>
+                                                  <span className={`revisi-value ${hasRevisi ? "revisi-value-old" : "revisi-value-same"}`}>
+                                                    {diajukan} {satuan}
+                                                  </span>
+                                                </div>
+                                                <div className="revisi-history-row">
+                                                  <span className="revisi-label">Disetujui:</span>
+                                                  <span className={`revisi-value ${hasRevisi ? (disetujui === 0 ? "revisi-value-rejected" : "revisi-value-new") : "revisi-value-same"}`}>
+                                                    {disetujui} {satuan}
+                                                  </span>
+                                                  {hasRevisi && (
+                                                    <span className="revisi-delta">
+                                                      {disetujui > diajukan ? "▲" : "▼"} {Math.abs(disetujui - diajukan)}
+                                                    </span>
+                                                  )}
+                                                </div>
+                                                {hasRevisi && (
+                                                  <div className="revisi-badge-changed">✎ Direvisi Admin</div>
+                                                )}
+                                                {!hasRevisi && (
+                                                  <div className="revisi-badge-unchanged">✓ Sesuai Pengajuan</div>
+                                                )}
+                                                {item.catatan_revisi && (
+                                                  <div className="revisi-note">
+                                                    📝 Catatan Admin: {item.catatan_revisi}
+                                                  </div>
+                                                )}
+                                              </div>
+                                            ) : (
+                                              /* Jika belum diproses, tampilkan biasa */
+                                              <div style={{ paddingLeft: "4px", marginTop: "2px", fontSize: "12px", color: "#64748b" }}>
+                                                Kebutuhan: <strong>{item.kebutuhan_total}</strong> · Sisa: <strong>{item.sisa_stok}</strong> · Diajukan: <strong className="qty-tag">{diajukan} {satuan}</strong>
                                               </div>
                                             )}
                                           </li>

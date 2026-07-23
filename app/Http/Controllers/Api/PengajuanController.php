@@ -417,6 +417,8 @@ class PengajuanController extends Controller
         'items.*.id'                => 'required|integer|exists:pengajuan_items,id',
         'items.*.jumlah_disetujui'  => 'required|integer|min:0',
         'items.*.catatan_revisi'    => 'nullable|string',
+        'items.*.kebutuhan_total'   => 'nullable|integer|min:0', // ini akan kita map ke kebutuhan_total_admin
+        'items.*.sisa_stok'         => 'nullable|integer|min:0', // ini akan kita map ke sisa_stok_admin
         'actor_user_id' => 'required|exists:users,id',
     ]);
 
@@ -428,13 +430,25 @@ class PengajuanController extends Controller
     }
 
     foreach ($validated['items'] as $rev) {
-        PengajuanItem::where('pengajuan_id', $pengajuan->id)
+        $itemModel = PengajuanItem::where('pengajuan_id', $pengajuan->id)
             ->where('id', $rev['id'])
-            ->update([
-                // ⬇️ jumlah_disetujui = FINAL
+            ->first();
+
+        if ($itemModel) {
+            $updateData = [
                 'jumlah_disetujui' => $rev['jumlah_disetujui'],
                 'catatan_revisi'   => $rev['catatan_revisi'] ?? null,
-            ]);
+            ];
+
+            if (isset($rev['kebutuhan_total'])) {
+                $updateData['kebutuhan_total_admin'] = $rev['kebutuhan_total'];
+            }
+            if (isset($rev['sisa_stok'])) {
+                $updateData['sisa_stok_admin'] = $rev['sisa_stok'];
+            }
+
+            $itemModel->update($updateData);
+        }
     }
 
     // 🔁 hitung ulang total berdasarkan jumlah_disetujui

@@ -18,6 +18,8 @@ class PengajuanItem extends Model
         // 🔽 kolom baru revisi
         'jumlah_disetujui',
         'catatan_revisi',
+        'kebutuhan_total_admin',
+        'sisa_stok_admin',
     ];
 
     public function pengajuan()

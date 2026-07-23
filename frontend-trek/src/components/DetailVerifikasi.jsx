@@ -48,6 +48,8 @@ export default function DetailVerifikasi({ pengajuan, onClose, onSuccess }) {
       const items = Object.entries(draftItems).map(([id, v]) => ({
         id: Number(id),
         jumlah_disetujui: v.verified ? Math.max(v.kebutuhan_total - v.sisa_stok, 0) : 0,
+        kebutuhan_total: v.kebutuhan_total,
+        sisa_stok: v.sisa_stok,
         catatan_revisi: v.catatan_revisi || "",
       }));
 

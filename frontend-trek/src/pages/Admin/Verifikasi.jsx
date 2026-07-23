@@ -360,13 +360,15 @@ const downloadPdfAdmin = async (id, status) => {
 
         const allRejected = allItems.every((item) => itemDecisions[item.id]?.status === 'rejected');
 
-        // Build revisi items (use edited values)
+         // Build revisi items (use edited values)
         const items = allItems.map((item) => {
           const decision = itemDecisions[item.id];
           const vals = getItemValues(item);
           return {
             id: item.id,
             jumlah_disetujui: decision.status === 'approved' ? vals.diajukan : 0,
+            kebutuhan_total: vals.kebutuhan,
+            sisa_stok: vals.sisa,
             catatan_revisi: decision.catatan || (decision.status === 'rejected' ? 'Ditolak oleh Admin' : ''),
           };
         });
@@ -383,11 +385,18 @@ const downloadPdfAdmin = async (id, status) => {
 
           // Update status
           const newStatus = allRejected ? 'ditolak_admin' : 'diverifikasi_admin';
-          await fetch(`${API_BASE}/pengajuan/${p.id}/status`, {
+          const statusRes = await fetch(`${API_BASE}/pengajuan/${p.id}/status`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ status: newStatus }),
+            body: JSON.stringify({ status: newStatus, user_id: currentUser.id }),
           });
+
+          if (!statusRes.ok) {
+            const errJson = await statusRes.json().catch(() => ({}));
+            console.error('Gagal update status:', errJson);
+            Swal.fire({ icon: 'error', title: 'Gagal Update Status', text: errJson.message || 'Gagal mengubah status pengajuan.', confirmButtonColor: '#ef4444' });
+            return;
+          }
 
           Swal.fire({
             icon: 'success',
@@ -513,11 +522,17 @@ const submitVerifikasi = async (pengajuanId) => {
     });
 
     // update status
-    await fetch(`${API_BASE}/pengajuan/${pengajuanId}/status`, {
+    const statusRes = await fetch(`${API_BASE}/pengajuan/${pengajuanId}/status`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}`, },
-      body: JSON.stringify({ status: "diverifikasi" }),
+      body: JSON.stringify({ status: "diverifikasi_admin", user_id: currentUser.id }),
     });
+
+    if (!statusRes.ok) {
+      const errJson = await statusRes.json().catch(() => ({}));
+      alert(errJson.message || "Gagal update status verifikasi");
+      return;
+    }
 
     setEditingId(null);
   } catch (err) {
@@ -746,11 +761,26 @@ const [selectedPengajuan, setSelectedPengajuan] = useState(null);
                     const items = (p.items || []).map((item) => {
                       const key = item.barang_id || item.barang?.id || item.id;
                       const decision = itemDecisions["merged_" + key];
-                      const vals = getMergedValues(mergedItems.find((m) => m.key === key) || {});
-                      // Distribute proportionally or just use decision
+                      const mItem = mergedItems.find((m) => m.key === key) || {};
+                      const vals = getMergedValues(mItem);
+
+                      let prop = 1;
+                      if (mItem.totalDiajukan > 0) {
+                        prop = item.jumlah_diajukan / mItem.totalDiajukan;
+                      } else {
+                        const index = (mItem.sourceItems || []).findIndex(si => si.itemId === item.id);
+                        prop = index === 0 ? 1 : 0;
+                      }
+
+                      const qtyDisetujui = decision?.status === 'approved' ? Math.round(vals.diajukan * prop) : 0;
+                      const kebTotal = Math.round(vals.kebutuhan * prop);
+                      const sStok = Math.round(vals.sisa * prop);
+
                       return {
                         id: item.id,
-                        jumlah_disetujui: decision?.status === 'approved' ? item.jumlah_diajukan : 0,
+                        jumlah_disetujui: qtyDisetujui,
+                        kebutuhan_total: kebTotal,
+                        sisa_stok: sStok,
                         catatan_revisi: decision?.catatan || (decision?.status === 'rejected' ? 'Ditolak oleh Admin' : ''),
                       };
                     });
@@ -762,11 +792,18 @@ const [selectedPengajuan, setSelectedPengajuan] = useState(null);
                     });
 
                     const allRejectedForP = items.every((i) => i.jumlah_disetujui === 0);
-                    await fetch(`${API_BASE}/pengajuan/${p.id}/status`, {
+                    const statusRes = await fetch(`${API_BASE}/pengajuan/${p.id}/status`, {
                       method: 'PATCH',
                       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': `Bearer ${token}` },
-                      body: JSON.stringify({ status: allRejectedForP ? 'ditolak_admin' : 'diverifikasi_admin' }),
+                      body: JSON.stringify({ status: allRejectedForP ? 'ditolak_admin' : 'diverifikasi_admin', user_id: currentUser.id }),
                     });
+
+                    if (!statusRes.ok) {
+                      const errJson = await statusRes.json().catch(() => ({}));
+                      console.error('Gagal update status:', errJson);
+                      Swal.fire({ icon: 'error', title: 'Gagal Update Status', text: errJson.message || 'Gagal mengubah status pengajuan.', confirmButtonColor: '#ef4444' });
+                      return;
+                    }
                   }
 
                   Swal.fire({ icon: 'success', title: 'Verifikasi Berhasil!', text: 'Semua pengajuan unit ini telah diverifikasi.', confirmButtonColor: '#10b981' })
