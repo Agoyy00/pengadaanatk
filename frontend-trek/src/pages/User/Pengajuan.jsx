@@ -25,7 +25,7 @@ function Pengajuan() {
 
   // Error step 1
   const [errorsStep1, setErrorsStep1] = useState({});
-  const [limitError, setLimitError] =useState("CHECKING"); // ❗ pesan "hanya 1x per periode"
+  const [limitError, setLimitError] = useState("CHECKING"); // ❗ pesan "hanya 1x per periode"
 
   // STEP 2 – pencarian & item
   const [query, setQuery] = useState("");
@@ -35,15 +35,15 @@ function Pengajuan() {
   const [step2Error, setStep2Error] = useState("");
   const [openUsulan, setOpenUsulan] = useState(false);
   const [usulan, setUsulan] = useState({
-  nama: "",
-});
-const [loadingSubmit, setLoadingSubmit] = useState(false); // opsional spinner
-const [showVerifyPanel, setShowVerifyPanel] = useState(false);
-const [verifyChecked, setVerifyChecked] = useState(false);
-const [showItemDetail, setShowItemDetail] = useState(false);
+    nama: "",
+  });
+  const [loadingSubmit, setLoadingSubmit] = useState(false); // opsional spinner
+  const [showVerifyPanel, setShowVerifyPanel] = useState(false);
+  const [verifyChecked, setVerifyChecked] = useState(false);
+  const [showItemDetail, setShowItemDetail] = useState(false);
 
 
-  
+
 
   // preview foto besar
   const [previewImage, setPreviewImage] = useState(null);
@@ -74,140 +74,140 @@ const [showItemDetail, setShowItemDetail] = useState(false);
 
   // ====== CEK PERIODE PENGAJUAN ======
   useEffect(() => {
-  async function fetchPeriode() {
-    try {
-      setPeriodeLoading(true);
+    async function fetchPeriode() {
+      try {
+        setPeriodeLoading(true);
 
-      const res = await fetch(`${API_BASE}/periode/active`);
+        const res = await fetch(`${API_BASE}/periode/active`);
 
-      if (!res.ok) {
-        setPeriodeOpen(isOpen === true);
+        if (!res.ok) {
+          setPeriodeOpen(isOpen === true);
+          setPeriodeMessage("");
+          return;
+        }
+
+        const data = await res.json();
+
+        const isOpen =
+          data.is_open === true ||
+          data.is_open === 1 ||
+          data.is_open === "1" ||
+          data.is_open === "open";
+
+        setPeriodeOpen(isOpen);
+        setPeriodeMessage(data.message || "");
+
+        // 🔥 AUTO-SET TAHUN AKADEMIK DARI PERIODE AKTIF
+        if (data.periode?.tahun_akademik) {
+          setTahunAkademik(data.periode.tahun_akademik);
+        }
+
+      } catch (err) {
+        console.error("Gagal cek periode:", err);
+        setPeriodeOpen(true);
         setPeriodeMessage("");
-        return;
+      } finally {
+        setPeriodeLoading(false);
       }
-
-      const data = await res.json();
-
-      const isOpen =
-        data.is_open === true ||
-        data.is_open === 1 ||
-        data.is_open === "1" ||
-        data.is_open === "open";
-
-      setPeriodeOpen(isOpen);
-      setPeriodeMessage(data.message || "");
-
-      // 🔥 AUTO-SET TAHUN AKADEMIK DARI PERIODE AKTIF
-      if (data.periode?.tahun_akademik) {
-        setTahunAkademik(data.periode.tahun_akademik);
-      }
-
-    } catch (err) {
-      console.error("Gagal cek periode:", err);
-      setPeriodeOpen(true);
-      setPeriodeMessage("");
-    } finally {
-      setPeriodeLoading(false);
     }
-  }
 
-  fetchPeriode();
-}, []);
+    fetchPeriode();
+  }, []);
 
 
   // ====== CEK: user sudah pernah mengajukan di tahun akademik ini? ======
   useEffect(() => {
-  if (!tahunAkademik || !userId) {
-    setLimitError(null);
-    setLimitChecked(true);
-    return;
-  }
-
-  async function checkLimit() {
-    try {
-      const res = await fetch(
-        `${API_BASE}/pengajuan/check/${userId}?tahun=${encodeURIComponent(tahunAkademik)}`,
-        {
-          headers: {
-            Accept: "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (!res.ok) return;
-
-      const data = await res.json();
-
-      if (data.already) {
-        setLimitError(
-          "Anda sudah pernah mengajukan ATK pada periode ini. Pengajuan hanya boleh 1 kali."
-        );
-      } else {
-        setLimitError(null);
-      }
-    } catch (err) {
-      console.error(err);
-      setLimitError("null");
-    } finally {
-      setLimitChecked(true); // 🔥 PENTING
+    if (!tahunAkademik || !userId) {
+      setLimitError(null);
+      setLimitChecked(true);
+      return;
     }
-  }
 
-  checkLimit();
-}, [tahunAkademik, userId]);
+    async function checkLimit() {
+      try {
+        const res = await fetch(
+          `${API_BASE}/pengajuan/check/${userId}?tahun=${encodeURIComponent(tahunAkademik)}`,
+          {
+            headers: {
+              Accept: "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (!res.ok) return;
+
+        const data = await res.json();
+
+        if (data.already) {
+          setLimitError(
+            "Anda sudah pernah mengajukan ATK pada periode ini. Pengajuan hanya boleh 1 kali."
+          );
+        } else {
+          setLimitError(null);
+        }
+      } catch (err) {
+        console.error(err);
+        setLimitError("null");
+      } finally {
+        setLimitChecked(true); // 🔥 PENTING
+      }
+    }
+
+    checkLimit();
+  }, [tahunAkademik, userId]);
 
 
   // ====== AUTO-SUGGEST BARANG ======
   useEffect(() => {
-  if (!query.trim()) {
-    setSearchResults([]);
-    return;
-  }
+    if (!query.trim()) {
+      setSearchResults([]);
+      return;
+    }
 
-  const timeoutId = setTimeout(async () => {
-    try {
-      setLoadingSearch(true);
+    const timeoutId = setTimeout(async () => {
+      try {
+        setLoadingSearch(true);
 
-      const res = await fetch(
-    `${API_BASE}/barang?q=${encodeURIComponent(query)}`,
-      {
-        headers: {
-          "Accept": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
+        const res = await fetch(
+          `${API_BASE}/barang?q=${encodeURIComponent(query)}`,
+          {
+            headers: {
+              "Accept": "application/json",
+              "Authorization": `Bearer ${token}`,
+            },
+          }
+        );
+
+        const data = await res.json(); // ✅ data DIDEFINISIKAN DI SINI
+
+        const keyword = query.trim().toLowerCase();
+
+        const filtered = data.filter((item) =>
+          item.nama?.toLowerCase().startsWith(keyword)
+        );
+
+        setSearchResults(filtered);
+
+        // 🔥 TRIGGER FITUR USULAN
+        if (filtered.length === 0 && query.trim().length >= 3) {
+          setUsulan((prev) => ({ ...prev, nama: query }));
+        }
+      } catch (err) {
+        console.error("Gagal mencari barang", err);
+      } finally {
+        setLoadingSearch(false);
       }
-    );
+    }, 300);
 
-      const data = await res.json(); // ✅ data DIDEFINISIKAN DI SINI
-
-      const keyword = query.trim().toLowerCase();
-
-      const filtered = data.filter((item) =>
-        item.nama?.toLowerCase().startsWith(keyword)
-      );
-
-      setSearchResults(filtered);
-
-// 🔥 TRIGGER FITUR USULAN
-    if (filtered.length === 0 && query.trim().length >= 3) {
-      setUsulan((prev) => ({ ...prev, nama: query }));
-    }
-    } catch (err) {
-      console.error("Gagal mencari barang", err);
-    } finally {
-      setLoadingSearch(false);
-    }
-  }, 300);
-
-  return () => clearTimeout(timeoutId);
-}, [query]);
+    return () => clearTimeout(timeoutId);
+  }, [query]);
 
 
   // tambah barang ke daftar item
   const handleAddItem = (barang) => {
-  const exists = items.some((i) => i.id === barang.id);
-  if (exists) return;   
+    const exists = items.some((i) => i.id === barang.id);
+    if (exists) return;
 
     setItems((prev) => [
       ...prev,
@@ -227,7 +227,7 @@ const [showItemDetail, setShowItemDetail] = useState(false);
     setSearchResults([]);
     setStep2Error("");
   };
-  
+
   // ====== IMPORT CSV ======
   const handleImportCSV = async (e) => {
     const file = e.target.files[0];
@@ -243,16 +243,16 @@ const [showItemDetail, setShowItemDetail] = useState(false);
       }
 
       const delimiter = lines[0].includes(";") ? ";" : ",";
-      
+
       try {
         const res = await fetch(`${API_BASE}/barang`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const masterDataRes = await res.json();
         const masterData = Array.isArray(masterDataRes) ? masterDataRes : (masterDataRes.data || []);
-        
+
         const newItems = [];
-        
+
         for (let i = 1; i < lines.length; i++) {
           const cols = lines[i].split(delimiter).map(c => c.trim().replace(/^"|"$/g, ''));
           // index: 0(no), 1(nama), 2(satuan), 3(kebutuhan), 4(total), 5(sisa), 6(jumlah diajukan)
@@ -260,9 +260,9 @@ const [showItemDetail, setShowItemDetail] = useState(false);
             const namaCSV = cols[1].toLowerCase();
             const kebutuhan = parseInt(cols[3]) || 0;
             const sisa = parseInt(cols[5]) || 0;
-            
+
             const matchedBarang = masterData.find(b => b.nama.toLowerCase() === namaCSV || b.id.toString() === cols[0]);
-            
+
             if (matchedBarang) {
               const exists = items.some(it => it.id === matchedBarang.id) || newItems.some(it => it.id === matchedBarang.id);
               if (!exists) {
@@ -281,7 +281,7 @@ const [showItemDetail, setShowItemDetail] = useState(false);
             }
           }
         }
-        
+
         if (newItems.length > 0) {
           setItems(prev => [...prev, ...newItems]);
           Swal.fire("Berhasil", `${newItems.length} barang berhasil diimport dari CSV`, "success");
@@ -292,15 +292,15 @@ const [showItemDetail, setShowItemDetail] = useState(false);
         console.error("Gagal import CSV", err);
         Swal.fire("Error", "Gagal mengambil data barang dari server", "error");
       }
-      
-      e.target.value = null; 
+
+      e.target.value = null;
     };
     reader.readAsText(file);
   };
-  
+
   useEffect(() => {
-  console.log("ITEMS:", items);
-}, [items]);
+    console.log("ITEMS:", items);
+  }, [items]);
 
 
   // hanya boleh angka (0–9) di keyboard
@@ -326,40 +326,40 @@ const [showItemDetail, setShowItemDetail] = useState(false);
 
   const [usulanStatus, setUsulanStatus] = useState(null); // { type: "success"|"error", message: "" }
   const submitUsulan = async () => {
-  if (!usulan.nama.trim()) {
-    setUsulanStatus({ type: "error", message: "Nama barang tidak boleh kosong" });
-    return;
-  }
+    if (!usulan.nama.trim()) {
+      setUsulanStatus({ type: "error", message: "Nama barang tidak boleh kosong" });
+      return;
+    }
 
-  if (usulan.nama.trim().length < 3) {
-    setUsulanStatus({ type: "error", message: "Nama barang minimal 3 karakter" });
-    return;
-  }
+    if (usulan.nama.trim().length < 3) {
+      setUsulanStatus({ type: "error", message: "Nama barang minimal 3 karakter" });
+      return;
+    }
 
-  try {
-    setLoadingSubmit(true);
-    setUsulanStatus(null);
+    try {
+      setLoadingSubmit(true);
+      setUsulanStatus(null);
 
-    const res = await fetch(`${API_BASE}/barang-usulan`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}`, },
-      body: JSON.stringify({ nama_barang: usulan.nama, user_id: userId }),
-    });
+      const res = await fetch(`${API_BASE}/barang-usulan`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}`, },
+        body: JSON.stringify({ nama_barang: usulan.nama, user_id: userId }),
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (!res.ok || !data.success) throw new Error(data.message || "Gagal mengirim usulan");
+      if (!res.ok || !data.success) throw new Error(data.message || "Gagal mengirim usulan");
 
-    setOpenUsulan(false);          // tutup modal
-    setUsulan({ nama: "" });       // reset input
-    setUsulanStatus({ type: "success", message: "Usulan barang berhasil dikirim!" });
+      setOpenUsulan(false);          // tutup modal
+      setUsulan({ nama: "" });       // reset input
+      setUsulanStatus({ type: "success", message: "Usulan barang berhasil dikirim!" });
 
-  } catch (err) {
-    setUsulanStatus({ type: "error", message: err.message || "Gagal mengirim usulan" });
-  } finally {
-    setLoadingSubmit(false);
-  }
-};
+    } catch (err) {
+      setUsulanStatus({ type: "error", message: err.message || "Gagal mengirim usulan" });
+    } finally {
+      setLoadingSubmit(false);
+    }
+  };
 
 
   // sisa stok berubah → jumlah diajukan = kebutuhan - sisa
@@ -536,10 +536,10 @@ const [showItemDetail, setShowItemDetail] = useState(false);
   }
 
   useEffect(() => {
-  if (currentUser?.name) {
-    setNamaPemohon(currentUser.name);
-  }
-}, [currentUser]);
+    if (currentUser?.name) {
+      setNamaPemohon(currentUser.name);
+    }
+  }, [currentUser]);
 
 
   const sidebarMenus = useMemo(() => {
@@ -655,9 +655,8 @@ const [showItemDetail, setShowItemDetail] = useState(false);
                 <div className="stepper">
                   <div className="step">
                     <div
-                      className={`step-circle ${
-                        currentStep === 1 ? "active" : ""
-                      }`}
+                      className={`step-circle ${currentStep === 1 ? "active" : ""
+                        }`}
                     >
                       1
                     </div>
@@ -665,9 +664,8 @@ const [showItemDetail, setShowItemDetail] = useState(false);
                   <div className="step-line"></div>
                   <div className="step">
                     <div
-                      className={`step-circle ${
-                        currentStep === 2 ? "active" : ""
-                      }`}
+                      className={`step-circle ${currentStep === 2 ? "active" : ""
+                        }`}
                     >
                       2
                     </div>
@@ -675,9 +673,8 @@ const [showItemDetail, setShowItemDetail] = useState(false);
                   <div className="step-line"></div>
                   <div className="step">
                     <div
-                      className={`step-circle ${
-                        currentStep === 3 ? "active" : ""
-                      }`}
+                      className={`step-circle ${currentStep === 3 ? "active" : ""
+                        }`}
                     >
                       3
                     </div>
@@ -812,11 +809,11 @@ const [showItemDetail, setShowItemDetail] = useState(false);
                           </button>
                           <label className="btn btn-primary" style={{ padding: '6px 14px', fontSize: '13px', cursor: 'pointer', borderRadius: '6px', margin: 0 }}>
                             📥 Import CSV
-                            <input 
-                              type="file" 
-                              accept=".csv" 
-                              style={{ display: 'none' }} 
-                              onChange={handleImportCSV} 
+                            <input
+                              type="file"
+                              accept=".csv"
+                              style={{ display: 'none' }}
+                              onChange={handleImportCSV}
                             />
                           </label>
                         </div>
@@ -830,21 +827,21 @@ const [showItemDetail, setShowItemDetail] = useState(false);
                           onChange={(e) => setQuery(e.target.value)}
                         />
                         {!loadingSearch &&
-                        query.trim().length >= 3 &&
-                        searchResults.length === 0 && (
-                          <div className="usulan-box">
-                            <p>
-                              Barang <strong>"{query}"</strong> tidak ditemukan
-                            </p>
-                            <button
-                              type="button"
-                              className="btn-usulan"
-                              onClick={() => setOpenUsulan(true)}
-                            >
-                              + Ajukan Barang Baru
-                            </button>
-                          </div>
-                        )}
+                          query.trim().length >= 3 &&
+                          searchResults.length === 0 && (
+                            <div className="usulan-box">
+                              <p>
+                                Barang <strong>"{query}"</strong> tidak ditemukan
+                              </p>
+                              <button
+                                type="button"
+                                className="btn-usulan"
+                                onClick={() => setOpenUsulan(true)}
+                              >
+                                + Ajukan Barang Baru
+                              </button>
+                            </div>
+                          )}
                         {searchResults.length > 0 && (
                           <ul className="search-dropdown">
                             {searchResults.map((b) => (
@@ -915,8 +912,9 @@ const [showItemDetail, setShowItemDetail] = useState(false);
                             <th>Sisa stok saat ini</th>
                             <th>Jumlah Diajukan</th>
                             <th>Harga Total</th>
-                            <th style={{borderBottom: "1px solid #eee", textAlign: "center",
-  }}>Aksi</th>
+                            <th style={{
+                              borderBottom: "1px solid #eee", textAlign: "center",
+                            }}>Aksi</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -927,114 +925,114 @@ const [showItemDetail, setShowItemDetail] = useState(false);
                           )}
 
                           {items.map((item) => (
-                          <tr key={item.id}>
-                            {/* BARANG + FOTO */}
-                            <td>
-                              <div className="barang-cell">
-                              {console.log("FOTO:", item.foto)}
-                        {item.foto ? (
-                          <img
-                            src={`${BACKEND_BASE}${item.foto}`}
-                            alt={item.nama}
-                            className="barang-thumb barang-thumb-clickable"
-                            onClick={() => setPreviewImage(`${BACKEND_BASE}${item.foto}`)}
-                          />
-                        ) : (
-                          <div className="barang-thumb placeholder" />)}
-                            <span>{item.nama}</span>
-                            </div>
-                            </td>
-                            <td>{item.satuan}</td>
-                            <td>
-                              Rp {item.estimasiNilai.toLocaleString("id-ID")}
-                            </td>
+                            <tr key={item.id}>
+                              {/* BARANG + FOTO */}
+                              <td>
+                                <div className="barang-cell">
+                                  {console.log("FOTO:", item.foto)}
+                                  {item.foto ? (
+                                    <img
+                                      src={`${BACKEND_BASE}${item.foto}`}
+                                      alt={item.nama}
+                                      className="barang-thumb barang-thumb-clickable"
+                                      onClick={() => setPreviewImage(`${BACKEND_BASE}${item.foto}`)}
+                                    />
+                                  ) : (
+                                    <div className="barang-thumb placeholder" />)}
+                                  <span>{item.nama}</span>
+                                </div>
+                              </td>
+                              <td>{item.satuan}</td>
+                              <td>
+                                Rp {item.estimasiNilai.toLocaleString("id-ID")}
+                              </td>
 
-                            <td>
-                              <input
-                                type="number"
-                                min="0"
-                                inputMode="numeric"
-                                onKeyDown={handleNumericKeyDown}
-                                className="input-number"
-                                value={item.kebutuhanTotal}
-                                onChange={(e) =>
-                                  handleChangeKebutuhan(item.id, e.target.value)
-                                }
-                              />
-                            </td>
+                              <td>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  inputMode="numeric"
+                                  onKeyDown={handleNumericKeyDown}
+                                  className="input-number"
+                                  value={item.kebutuhanTotal}
+                                  onChange={(e) =>
+                                    handleChangeKebutuhan(item.id, e.target.value)
+                                  }
+                                />
+                              </td>
 
-                            <td>
-                              <input
-                                type="number"
-                                min="0"
-                                inputMode="numeric"
-                                onKeyDown={handleNumericKeyDown}
-                                className="input-number"
-                                value={item.sisaStok}
-                                onChange={(e) =>
-                                  handleChangeSisaStok(item.id, e.target.value)
-                                }
-                              />
-                            </td>
+                              <td>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  inputMode="numeric"
+                                  onKeyDown={handleNumericKeyDown}
+                                  className="input-number"
+                                  value={item.sisaStok}
+                                  onChange={(e) =>
+                                    handleChangeSisaStok(item.id, e.target.value)
+                                  }
+                                />
+                              </td>
 
-                            <td>{item.jumlahDiajukan}</td>
+                              <td>{item.jumlahDiajukan}</td>
 
-                            <td>
-                              Rp{" "}
-                              {(item.jumlahDiajukan * item.estimasiNilai).toLocaleString("id-ID")}
-                            </td>
+                              <td>
+                                Rp{" "}
+                                {(item.jumlahDiajukan * item.estimasiNilai).toLocaleString("id-ID")}
+                              </td>
 
-                            <td>
-                          {confirmId === item.id ? (
-                            <div style={{ display: "flex", gap: 8 }}>
-                              <button
-                                className="aksi-hapus"
-                                onClick={() => handleRemoveItem(item.id)}
-                              >
-                                Ya, hapus
-                              </button>
+                              <td>
+                                {confirmId === item.id ? (
+                                  <div style={{ display: "flex", gap: 8 }}>
+                                    <button
+                                      className="aksi-hapus"
+                                      onClick={() => handleRemoveItem(item.id)}
+                                    >
+                                      Ya, hapus
+                                    </button>
 
-                              <button
-                                onClick={() => setConfirmId(null)}
-                                style={{
-                                  padding: "6px 12px",
-                                  borderRadius: 999,
-                                  border: "1px solid #ddd",
-                                  cursor: "pointer",
-                                  fontWeight: 600,
-                                }}
-                              >
-                                Batal
-                              </button>
-                            </div>
-                          ) : (
-                            <span
-                              className="aksi-hapus"
-                              onClick={() => setConfirmId(item.id)}
-                            >
-                              <svg
-                                width="14"
-                                height="14"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              >
-                                <polyline points="3 6 5 6 21 6" />
-                                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                                <path d="M10 11v6" />
-                                <path d="M14 11v6" />
-                                <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-                              </svg>
-                              Hapus
-                            </span>
-                          )}
-                        </td>
+                                    <button
+                                      onClick={() => setConfirmId(null)}
+                                      style={{
+                                        padding: "6px 12px",
+                                        borderRadius: 999,
+                                        border: "1px solid #ddd",
+                                        cursor: "pointer",
+                                        fontWeight: 600,
+                                      }}
+                                    >
+                                      Batal
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <span
+                                    className="aksi-hapus"
+                                    onClick={() => setConfirmId(item.id)}
+                                  >
+                                    <svg
+                                      width="14"
+                                      height="14"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      strokeWidth="2"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                    >
+                                      <polyline points="3 6 5 6 21 6" />
+                                      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                                      <path d="M10 11v6" />
+                                      <path d="M14 11v6" />
+                                      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                                    </svg>
+                                    Hapus
+                                  </span>
+                                )}
+                              </td>
 
-                          </tr>
-                        ))}
+                            </tr>
+                          ))}
 
                         </tbody>
                       </table>
@@ -1074,243 +1072,243 @@ const [showItemDetail, setShowItemDetail] = useState(false);
                 )}
 
                 {currentStep === 3 && (
-                <div className="step-pane active confirm-pane">
-                  <div className="confirm-card">
-                    <h3 className="confirm-title">Konfirmasi Pengajuan</h3>
-                    <p className="confirm-subtitle">
-                      Mohon periksa kembali data sebelum pengajuan dikirim
-                    </p>
+                  <div className="step-pane active confirm-pane">
+                    <div className="confirm-card">
+                      <h3 className="confirm-title">Konfirmasi Pengajuan</h3>
+                      <p className="confirm-subtitle">
+                        Mohon periksa kembali data sebelum pengajuan dikirim
+                      </p>
 
-                    {/* DATA PEMOHON */}
-                    <div className="confirm-section">
-                      <h4>Data Pemohon</h4>
-                      <div className="confirm-grid">
-                        <div><span>Tahun Akademik</span><strong>{tahunAkademik}</strong></div>
-                        <div><span>Nama Pemohon</span><strong>{namaPemohon}</strong></div>
-                        <div><span>Jabatan</span><strong>{jabatan}</strong></div>
-                        <div><span>Unit</span><strong>{unit}</strong></div>
-                      </div>
-                    </div>
-
-                    {/* ITEM */}
-                    <div className="confirm-section">
-                      <h4>Item yang Diajukan</h4>
-
-                      {items.length === 0 ? (
-                        <p className="empty-text">Tidak ada item.</p>
-                      ) : (
-                        <ul className="confirm-item-list">
-                          {items.map((i) => (
-                            <li key={i.id}>
-                              <span className="item-name">{i.nama}</span>
-                              <span className="item-meta">
-                                Diajukan <strong>{i.jumlahDiajukan}</strong> {i.satuan}
-                              </span>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-
-                    {/* RINGKASAN */}
-                    <div className="confirm-summary">
-                      <div>
-                        <span>Total Jumlah</span>
-                        <strong>{totalJumlahDiajukan}</strong>
-                      </div>
-                      <div>
-                        <span>Total Nilai</span>
-                        <strong>Rp {totalNilai.toLocaleString("id-ID")}</strong>
-                      </div>
-                    </div>
-
-                    {/* ACTION */}
-                    <div className="actions confirm-actions">
-                      <button
-                        type="button"
-                        className="btn"
-                        onClick={() => setCurrentStep(2)}
-                      >
-                        Kembali
-                      </button>
-
-                      <button
-                        type="button"
-                        className="btn btn-primary"
-                        onClick={() => {
-                          setVerifyChecked(false);
-                          setShowVerifyPanel(true);
-                        }}
-                      >
-                        Kirim Pengajuan
-                      </button>
-                    </div>
-
-                    {/* ===== PANEL VERIFIKASI PENGAJUAN ===== */}
-                    {showVerifyPanel && (
-                      <div className="verify-overlay" onClick={() => setShowVerifyPanel(false)}>
-                        <div className="verify-panel" onClick={(e) => e.stopPropagation()}>
-                          {/* Header */}
-                          <div className="verify-panel-header">
-                            <div className="verify-icon">
-                              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M9 11l3 3L22 4" />
-                                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
-                              </svg>
-                            </div>
-                            <h3>Verifikasi Pengajuan</h3>
-                            <p>Pastikan semua data sudah benar sebelum mengirim pengajuan Anda</p>
-                          </div>
-
-                          {/* Ringkasan data */}
-                          <div className="verify-summary-box">
-                            <div className="verify-summary-row">
-                              <span>Pemohon</span>
-                              <strong>{namaPemohon}</strong>
-                            </div>
-                            <div className="verify-summary-row">
-                              <span>Jabatan / Unit</span>
-                              <strong>{jabatan} — {unit}</strong>
-                            </div>
-                            <div className="verify-summary-row">
-                              <span>Tahun Akademik</span>
-                              <strong>{tahunAkademik}</strong>
-                            </div>
-                            <div className="verify-summary-row">
-                              <span>Jumlah Item</span>
-                              <div className="verify-item-count">
-                                <strong>{items.length} barang</strong>
-                                <button
-                                  type="button"
-                                  className={`verify-info-btn ${showItemDetail ? 'active' : ''}`}
-                                  onClick={() => setShowItemDetail(true)}
-                                  title="Lihat detail barang"
-                                >
-                                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                    <circle cx="12" cy="12" r="10" />
-                                    <line x1="12" y1="16" x2="12" y2="12" />
-                                    <line x1="12" y1="8" x2="12.01" y2="8" />
-                                  </svg>
-                                </button>
-                              </div>
-                            </div>
-
-                            {/* Panel Detail Item (modal terpisah di atas verify panel) */}
-                            {showItemDetail && (
-                              <div className="detail-overlay" onClick={() => setShowItemDetail(false)}>
-                                <div className="detail-panel" onClick={(e) => e.stopPropagation()}>
-                                  <div className="detail-panel-header">
-                                    <div>
-                                      <h3>Detail Barang Pengajuan</h3>
-                                      <p>{items.length} barang yang akan diajukan</p>
-                                    </div>
-                                    <button
-                                      type="button"
-                                      className="detail-close-btn"
-                                      onClick={() => setShowItemDetail(false)}
-                                    >
-                                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                        <line x1="18" y1="6" x2="6" y2="18" />
-                                        <line x1="6" y1="6" x2="18" y2="18" />
-                                      </svg>
-                                    </button>
-                                  </div>
-
-                                  <div className="detail-table-wrapper">
-                                    <table className="detail-table">
-                                      <thead>
-                                        <tr>
-                                          <th>No</th>
-                                          <th>Nama Barang</th>
-                                          <th>Jumlah</th>
-                                          <th>Harga Satuan</th>
-                                          <th>Subtotal</th>
-                                        </tr>
-                                      </thead>
-                                      <tbody>
-                                        {items.map((item, idx) => (
-                                          <tr key={item.id}>
-                                            <td className="detail-td-no">{idx + 1}</td>
-                                            <td className="detail-td-nama">{item.nama}</td>
-                                            <td className="detail-td-qty">{item.jumlahDiajukan} {item.satuan}</td>
-                                            <td className="detail-td-harga">Rp {item.estimasiNilai.toLocaleString("id-ID")}</td>
-                                            <td className="detail-td-subtotal">Rp {(item.jumlahDiajukan * item.estimasiNilai).toLocaleString("id-ID")}</td>
-                                          </tr>
-                                        ))}
-                                      </tbody>
-                                      <tfoot>
-                                        <tr>
-                                          <td colSpan="2" className="detail-footer-label">Total</td>
-                                          <td className="detail-footer-qty">{totalJumlahDiajukan}</td>
-                                          <td></td>
-                                          <td className="detail-footer-total">Rp {totalNilai.toLocaleString("id-ID")}</td>
-                                        </tr>
-                                      </tfoot>
-                                    </table>
-                                  </div>
-
-                                  <div className="detail-panel-footer">
-                                    <button
-                                      type="button"
-                                      className="btn btn-primary detail-close-action"
-                                      onClick={() => setShowItemDetail(false)}
-                                    >
-                                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                        <polyline points="20 6 9 17 4 12" />
-                                      </svg>
-                                      Sudah Sesuai, Tutup
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-                            <div className="verify-summary-row highlight">
-                              <span>Total Nilai Pengajuan</span>
-                              <strong>Rp {totalNilai.toLocaleString("id-ID")}</strong>
-                            </div>
-                          </div>
-
-                          {/* Checkbox persetujuan */}
-                          <label className="verify-checkbox-label">
-                            <input
-                              type="checkbox"
-                              checked={verifyChecked}
-                              onChange={(e) => setVerifyChecked(e.target.checked)}
-                            />
-                            <span className="verify-checkmark"></span>
-                            <span className="verify-checkbox-text">
-                              Saya menyatakan bahwa data pengajuan di atas sudah benar dan saya bertanggung jawab atas pengajuan ini.
-                            </span>
-                          </label>
-
-                          {/* Tombol aksi */}
-                          <div className="verify-panel-actions">
-                            <button
-                              type="button"
-                              className="btn verify-btn-cancel"
-                              onClick={() => setShowVerifyPanel(false)}
-                            >
-                              Kembali
-                            </button>
-                            <button
-                              type="button"
-                              className={`btn btn-primary verify-btn-submit ${!verifyChecked || loadingSubmit ? 'disabled' : ''}`}
-                              disabled={!verifyChecked || loadingSubmit}
-                              onClick={handleSubmit}
-                            >
-                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M22 2L11 13" />
-                                <path d="M22 2l-7 20-4-9-9-4 20-7z" />
-                              </svg>
-                              {loadingSubmit ? "Mengirim..." : "Kirim Pengajuan Sekarang"}
-                            </button>
-                          </div>
+                      {/* DATA PEMOHON */}
+                      <div className="confirm-section">
+                        <h4>Data Pemohon</h4>
+                        <div className="confirm-grid">
+                          <div><span>Tahun Akademik</span><strong>{tahunAkademik}</strong></div>
+                          <div><span>Nama Pemohon</span><strong>{namaPemohon}</strong></div>
+                          <div><span>Jabatan</span><strong>{jabatan}</strong></div>
+                          <div><span>Unit</span><strong>{unit}</strong></div>
                         </div>
                       </div>
-                    )}
+
+                      {/* ITEM */}
+                      <div className="confirm-section">
+                        <h4>Item yang Diajukan</h4>
+
+                        {items.length === 0 ? (
+                          <p className="empty-text">Tidak ada item.</p>
+                        ) : (
+                          <ul className="confirm-item-list">
+                            {items.map((i) => (
+                              <li key={i.id}>
+                                <span className="item-name">{i.nama}</span>
+                                <span className="item-meta">
+                                  Diajukan <strong>{i.jumlahDiajukan}</strong> {i.satuan}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+
+                      {/* RINGKASAN */}
+                      <div className="confirm-summary">
+                        <div>
+                          <span>Total Jumlah</span>
+                          <strong>{totalJumlahDiajukan}</strong>
+                        </div>
+                        <div>
+                          <span>Total Nilai</span>
+                          <strong>Rp {totalNilai.toLocaleString("id-ID")}</strong>
+                        </div>
+                      </div>
+
+                      {/* ACTION */}
+                      <div className="actions confirm-actions">
+                        <button
+                          type="button"
+                          className="btn"
+                          onClick={() => setCurrentStep(2)}
+                        >
+                          Kembali
+                        </button>
+
+                        <button
+                          type="button"
+                          className="btn btn-primary"
+                          onClick={() => {
+                            setVerifyChecked(false);
+                            setShowVerifyPanel(true);
+                          }}
+                        >
+                          Kirim Pengajuan
+                        </button>
+                      </div>
+
+                      {/* ===== PANEL VERIFIKASI PENGAJUAN ===== */}
+                      {showVerifyPanel && (
+                        <div className="verify-overlay" onClick={() => setShowVerifyPanel(false)}>
+                          <div className="verify-panel" onClick={(e) => e.stopPropagation()}>
+                            {/* Header */}
+                            <div className="verify-panel-header">
+                              <div className="verify-icon">
+                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M9 11l3 3L22 4" />
+                                  <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                                </svg>
+                              </div>
+                              <h3>Verifikasi Pengajuan</h3>
+                              <p>Pastikan semua data sudah benar sebelum mengirim pengajuan Anda</p>
+                            </div>
+
+                            {/* Ringkasan data */}
+                            <div className="verify-summary-box">
+                              <div className="verify-summary-row">
+                                <span>Pemohon</span>
+                                <strong>{namaPemohon}</strong>
+                              </div>
+                              <div className="verify-summary-row">
+                                <span>Jabatan / Unit</span>
+                                <strong>{jabatan} — {unit}</strong>
+                              </div>
+                              <div className="verify-summary-row">
+                                <span>Tahun Akademik</span>
+                                <strong>{tahunAkademik}</strong>
+                              </div>
+                              <div className="verify-summary-row">
+                                <span>Jumlah Item</span>
+                                <div className="verify-item-count">
+                                  <strong>{items.length} barang</strong>
+                                  <button
+                                    type="button"
+                                    className={`verify-info-btn ${showItemDetail ? 'active' : ''}`}
+                                    onClick={() => setShowItemDetail(true)}
+                                    title="Lihat detail barang"
+                                  >
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                      <circle cx="12" cy="12" r="10" />
+                                      <line x1="12" y1="16" x2="12" y2="12" />
+                                      <line x1="12" y1="8" x2="12.01" y2="8" />
+                                    </svg>
+                                  </button>
+                                </div>
+                              </div>
+
+                              {/* Panel Detail Item (modal terpisah di atas verify panel) */}
+                              {showItemDetail && (
+                                <div className="detail-overlay" onClick={() => setShowItemDetail(false)}>
+                                  <div className="detail-panel" onClick={(e) => e.stopPropagation()}>
+                                    <div className="detail-panel-header">
+                                      <div>
+                                        <h3>Detail Barang Pengajuan</h3>
+                                        <p>{items.length} barang yang akan diajukan</p>
+                                      </div>
+                                      <button
+                                        type="button"
+                                        className="detail-close-btn"
+                                        onClick={() => setShowItemDetail(false)}
+                                      >
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                          <line x1="18" y1="6" x2="6" y2="18" />
+                                          <line x1="6" y1="6" x2="18" y2="18" />
+                                        </svg>
+                                      </button>
+                                    </div>
+
+                                    <div className="detail-table-wrapper">
+                                      <table className="detail-table">
+                                        <thead>
+                                          <tr>
+                                            <th>No</th>
+                                            <th>Nama Barang</th>
+                                            <th>Jumlah</th>
+                                            <th>Harga Satuan</th>
+                                            <th>Subtotal</th>
+                                          </tr>
+                                        </thead>
+                                        <tbody>
+                                          {items.map((item, idx) => (
+                                            <tr key={item.id}>
+                                              <td className="detail-td-no">{idx + 1}</td>
+                                              <td className="detail-td-nama">{item.nama}</td>
+                                              <td className="detail-td-qty">{item.jumlahDiajukan} {item.satuan}</td>
+                                              <td className="detail-td-harga">Rp {item.estimasiNilai.toLocaleString("id-ID")}</td>
+                                              <td className="detail-td-subtotal">Rp {(item.jumlahDiajukan * item.estimasiNilai).toLocaleString("id-ID")}</td>
+                                            </tr>
+                                          ))}
+                                        </tbody>
+                                        <tfoot>
+                                          <tr>
+                                            <td colSpan="2" className="detail-footer-label">Total</td>
+                                            <td className="detail-footer-qty">{totalJumlahDiajukan}</td>
+                                            <td></td>
+                                            <td className="detail-footer-total">Rp {totalNilai.toLocaleString("id-ID")}</td>
+                                          </tr>
+                                        </tfoot>
+                                      </table>
+                                    </div>
+
+                                    <div className="detail-panel-footer">
+                                      <button
+                                        type="button"
+                                        className="btn btn-primary detail-close-action"
+                                        onClick={() => setShowItemDetail(false)}
+                                      >
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                          <polyline points="20 6 9 17 4 12" />
+                                        </svg>
+                                        Sudah Sesuai, Tutup
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                              <div className="verify-summary-row highlight">
+                                <span>Total Nilai Pengajuan</span>
+                                <strong>Rp {totalNilai.toLocaleString("id-ID")}</strong>
+                              </div>
+                            </div>
+
+                            {/* Checkbox persetujuan */}
+                            <label className="verify-checkbox-label">
+                              <input
+                                type="checkbox"
+                                checked={verifyChecked}
+                                onChange={(e) => setVerifyChecked(e.target.checked)}
+                              />
+                              <span className="verify-checkmark"></span>
+                              <span className="verify-checkbox-text">
+                                Dengan ini saya menyatakan bahwa item yang saya ajukan telah diketahui dan disetujui oleh pimpinan di unit saya.
+                              </span>
+                            </label>
+
+                            {/* Tombol aksi */}
+                            <div className="verify-panel-actions">
+                              <button
+                                type="button"
+                                className="btn verify-btn-cancel"
+                                onClick={() => setShowVerifyPanel(false)}
+                              >
+                                Kembali
+                              </button>
+                              <button
+                                type="button"
+                                className={`btn btn-primary verify-btn-submit ${!verifyChecked || loadingSubmit ? 'disabled' : ''}`}
+                                disabled={!verifyChecked || loadingSubmit}
+                                onClick={handleSubmit}
+                              >
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M22 2L11 13" />
+                                  <path d="M22 2l-7 20-4-9-9-4 20-7z" />
+                                </svg>
+                                {loadingSubmit ? "Mengirim..." : "Kirim Pengajuan Sekarang"}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
               </form>
             </>
