@@ -22,6 +22,119 @@ function Pengajuan() {
   const [unit, setUnit] = useState("Direktorat");
   const [limitChecked, setLimitChecked] = useState(false);
 
+  // Dynamic Options (Jabatan & Unit)
+  const [jabatanOptions, setJabatanOptions] = useState([]);
+  const [unitOptions, setUnitOptions] = useState([]);
+
+  const loadJabatanOptions = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/options/jabatan`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data)) {
+        setJabatanOptions(json.data);
+      }
+    } catch (err) {
+      console.error("Gagal load opsi jabatan:", err);
+    }
+  };
+
+  const loadUnitOptions = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/options/unit`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data)) {
+        setUnitOptions(json.data);
+      }
+    } catch (err) {
+      console.error("Gagal load opsi unit:", err);
+    }
+  };
+
+  useEffect(() => {
+    loadJabatanOptions();
+    loadUnitOptions();
+  }, []);
+
+  const handleManageOptions = async (type, titleName, optionsList, refreshFn, setFn) => {
+    const optionsHtml = optionsList.map(opt => `
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; padding:6px 12px; background:#f8fafc; border-radius:6px; border:1px solid #e2e8f0;">
+        <span style="font-weight:600; color:#334155;">${opt.value}</span>
+        <button type="button" class="swal-del-opt-btn" data-id="${opt.id}" data-val="${opt.value}" style="padding:4px 10px; font-size:12px; border-radius:4px; background:#ef4444; color:#fff; border:none; cursor:pointer;">Hapus</button>
+      </div>
+    `).join('');
+
+    const res = await Swal.fire({
+      title: `Kelola Opsi ${titleName}`,
+      html: `
+        <div style="text-align:left; max-height:220px; overflow-y:auto; margin-bottom:12px; padding-right:4px;">
+          ${optionsHtml || '<p style="color:#64748b; text-align:center;">Belum ada opsi.</p>'}
+        </div>
+        <input id="swal-new-option" class="swal2-input" placeholder="Tambah ${titleName} baru..." style="margin: 0 auto; width: 90%;">
+      `,
+      showCancelButton: true,
+      confirmButtonText: "+ Tambah Baru",
+      cancelButtonText: "Selesai / Tutup",
+      confirmButtonColor: "#2563eb",
+      didOpen: () => {
+        const popup = Swal.getPopup();
+        popup.querySelectorAll('.swal-del-opt-btn').forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            const id = e.target.getAttribute('data-id');
+            const val = e.target.getAttribute('data-val');
+            try {
+              const delRes = await fetch(`${API_BASE}/options/${id}`, {
+                method: "DELETE",
+                headers: { Authorization: `Bearer ${token}` }
+              });
+              const delJson = await delRes.json();
+              if (delJson.success) {
+                Swal.close();
+                await refreshFn();
+                Swal.fire({ icon: "success", title: "Dihapus", text: `Opsi "${val}" telah dihapus`, timer: 1200, showConfirmButton: false });
+              }
+            } catch (err) {
+              console.error(err);
+            }
+          });
+        });
+      },
+      preConfirm: () => {
+        const newVal = document.getElementById('swal-new-option').value;
+        if (!newVal || !newVal.trim()) {
+          Swal.showValidationMessage('Nama opsi tidak boleh kosong');
+          return false;
+        }
+        return newVal.trim();
+      }
+    });
+
+    if (res.isConfirmed && res.value) {
+      try {
+        const addRes = await fetch(`${API_BASE}/options/${type}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({ value: res.value })
+        });
+        const addJson = await addRes.json();
+        if (addJson.success) {
+          await refreshFn();
+          setFn(res.value);
+          Swal.fire({ icon: "success", title: "Berhasil", text: `Opsi "${res.value}" berhasil ditambahkan`, timer: 1200, showConfirmButton: false });
+        }
+      } catch (err) {
+        console.error(err);
+        Swal.fire("Error", "Gagal menambah opsi", "error");
+      }
+    }
+  };
+
 
   // Error step 1
   const [errorsStep1, setErrorsStep1] = useState({});
@@ -60,6 +173,15 @@ function Pengajuan() {
   const storedUser = localStorage.getItem("user");
   const currentUser = storedUser ? JSON.parse(storedUser) : null;
   const userId = currentUser?.id;
+  const normalizeRole = (r) => String(r || "").toLowerCase().replace(/[\s_]+/g, "");
+  const activeRole = normalizeRole(currentUser?.role);
+  const baseRole = normalizeRole(currentUser?.baseRole);
+  const userEmail = (currentUser?.email || "").toLowerCase();
+  const isSuperAdmin =
+    baseRole === "superadmin" ||
+    activeRole === "superadmin" ||
+    currentUser?.role_id === 1 ||
+    userEmail.startsWith("superadmin");
   const [confirmId, setConfirmId] = useState(null);
   const formatRole = (role) => {
     if (!role) return "-";
@@ -738,39 +860,57 @@ function Pengajuan() {
 
                         {/* Jabatan */}
                         <div className="form-group-pro">
-                          <label>
-                            Jabatan <span className="required">*</span>
+                          <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <span>Jabatan <span className="required">*</span></span>
+                            {isSuperAdmin && (
+                              <button
+                                type="button"
+                                onClick={() => handleManageOptions('jabatan', 'Jabatan', jabatanOptions, loadJabatanOptions, setJabatan)}
+                                title="Kelola Opsi Jabatan"
+                                style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '13px', padding: '0 4px', color: '#2563eb', fontWeight: 600 }}
+                              >
+                                ✏️ Kelola
+                              </button>
+                            )}
                           </label>
                           <select
                             className="input-pro"
                             value={jabatan}
                             onChange={(e) => setJabatan(e.target.value)}
                           >
-                            <option>Staf</option>
-                            <option>Dosen</option>
+                            {jabatanOptions.map((opt) => (
+                              <option key={opt.id || opt.value} value={opt.value}>
+                                {opt.value}
+                              </option>
+                            ))}
                           </select>
                         </div>
 
                         {/* Unit */}
                         <div className="form-group-pro">
-                          <label>
-                            Unit / Bagian <span className="required">*</span>
+                          <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <span>Unit / Bagian <span className="required">*</span></span>
+                            {isSuperAdmin && (
+                              <button
+                                type="button"
+                                onClick={() => handleManageOptions('unit', 'Unit / Bagian', unitOptions, loadUnitOptions, setUnit)}
+                                title="Kelola Opsi Unit / Bagian"
+                                style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '13px', padding: '0 4px', color: '#2563eb', fontWeight: 600 }}
+                              >
+                                ✏️ Kelola
+                              </button>
+                            )}
                           </label>
                           <select
                             className="input-pro"
                             value={unit}
                             onChange={(e) => setUnit(e.target.value)}
                           >
-                            <option>Direktorat</option>
-                            <option>DPJJ</option>
-                            <option>PDJAMA</option>
-                            <option>Pascasarjana</option>
-                            <option>Fakultas Kedokteran</option>
-                            <option>Fakultas Kedokteran Gigi</option>
-                            <option>Fakultas Teknologi Informasi</option>
-                            <option>Fakultas Hukum</option>
-                            <option>Fakultas Psikologi</option>
-                            <option>Fakultas Ekonomi</option>
+                            {unitOptions.map((opt) => (
+                              <option key={opt.id || opt.value} value={opt.value}>
+                                {opt.value}
+                              </option>
+                            ))}
                           </select>
                         </div>
                       </div>

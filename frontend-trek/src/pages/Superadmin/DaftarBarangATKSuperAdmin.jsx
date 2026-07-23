@@ -83,9 +83,8 @@ export default function DaftarBarangATKSuperAdmin() {
   const [excelFile, setExcelFile] = useState(null);
   const [importOpen, setImportOpen] = useState(false);
 
-  // Custom Satuan State & Deleted Satuan State
-  const [customSatuanList, setCustomSatuanList] = useState([]);
-  const [deletedSatuanList, setDeletedSatuanList] = useState([]);
+  // Satuan Options State (Backend Persisted)
+  const [satuanList, setSatuanList] = useState([]);
 
   const [form, setForm] = useState({
     nama: "",
@@ -94,17 +93,23 @@ export default function DaftarBarangATKSuperAdmin() {
     harga_satuan: "",
   });
 
-  // Unique list of all available satuan units
-  const allSatuanList = useMemo(() => {
-    const fromBarangs = barangs.map((b) => toTitleCase(b.satuan)).filter(Boolean);
-    const combined = Array.from(
-      new Set([...DEFAULT_SATUAN_LIST, ...customSatuanList, ...fromBarangs])
-    );
-    const deletedLower = deletedSatuanList.map(toTitleCase);
-    return combined
-      .filter((s) => !deletedLower.includes(toTitleCase(s)))
-      .sort();
-  }, [barangs, customSatuanList, deletedSatuanList]);
+  const loadSatuanOptions = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/options/satuan`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data)) {
+        setSatuanList(json.data);
+      }
+    } catch (err) {
+      console.error("Gagal load satuan options:", err);
+    }
+  };
+
+  useEffect(() => {
+    loadSatuanOptions();
+  }, []);
 
   const handleTambahSatuan = async () => {
     const { value: inputSatuan } = await Swal.fire({
@@ -139,21 +144,31 @@ export default function DaftarBarangATKSuperAdmin() {
       });
 
       if (confirmResult.isConfirmed) {
-        // Remove from deleted list if previously deleted
-        setDeletedSatuanList((prev) =>
-          prev.filter((s) => toTitleCase(s) !== formatted)
-        );
-        if (!customSatuanList.includes(formatted)) {
-          setCustomSatuanList((prev) => [...prev, formatted]);
+        try {
+          const res = await fetch(`${API_BASE}/options/satuan`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ value: formatted }),
+          });
+          const json = await res.json();
+          if (json.success) {
+            await loadSatuanOptions();
+            setForm((prev) => ({ ...prev, satuan: formatted }));
+            Swal.fire({
+              icon: "success",
+              title: "Satuan Ditambahkan",
+              text: `Satuan "${formatted}" berhasil disimpan ke database.`,
+              timer: 1500,
+              showConfirmButton: false,
+            });
+          }
+        } catch (err) {
+          console.error(err);
+          Swal.fire("Error", "Gagal menyimpan satuan", "error");
         }
-        setForm((prev) => ({ ...prev, satuan: formatted }));
-        Swal.fire({
-          icon: "success",
-          title: "Satuan Ditambahkan",
-          text: `Satuan "${formatted}" berhasil ditambahkan dan dipilih.`,
-          timer: 1500,
-          showConfirmButton: false,
-        });
       }
     }
   };
@@ -162,11 +177,18 @@ export default function DaftarBarangATKSuperAdmin() {
     const currentSatuan = form.satuan;
     if (!currentSatuan) return;
 
-    const formatted = toTitleCase(currentSatuan);
+    const targetOpt = satuanList.find(
+      (s) => toTitleCase(s.value) === toTitleCase(currentSatuan)
+    );
+
+    if (!targetOpt) {
+      Swal.fire("Info", "Satuan tidak ditemukan di database", "info");
+      return;
+    }
 
     const confirmResult = await Swal.fire({
       title: "Hapus Satuan?",
-      html: `Apakah Anda yakin ingin menghapus satuan <strong>"${formatted}"</strong> dari daftar opsi pilihan?`,
+      html: `Apakah Anda yakin ingin menghapus satuan <strong>"${targetOpt.value}"</strong> dari database?`,
       icon: "warning",
       showCancelButton: true,
       confirmButtonText: "Ya, Hapus Satuan",
@@ -176,23 +198,29 @@ export default function DaftarBarangATKSuperAdmin() {
     });
 
     if (confirmResult.isConfirmed) {
-      setDeletedSatuanList((prev) => [...prev, formatted]);
-      setCustomSatuanList((prev) =>
-        prev.filter((s) => toTitleCase(s) !== formatted)
-      );
+      try {
+        const res = await fetch(`${API_BASE}/options/${targetOpt.id}`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const json = await res.json();
+        if (json.success) {
+          const updated = satuanList.filter((s) => s.id !== targetOpt.id);
+          setSatuanList(updated);
+          setForm((prev) => ({ ...prev, satuan: updated[0]?.value || "" }));
 
-      const remaining = allSatuanList.filter(
-        (s) => toTitleCase(s) !== formatted
-      );
-      setForm((prev) => ({ ...prev, satuan: remaining[0] || "" }));
-
-      Swal.fire({
-        icon: "success",
-        title: "Satuan Dihapus",
-        text: `Satuan "${formatted}" berhasil dihapus dari daftar opsi.`,
-        timer: 1500,
-        showConfirmButton: false,
-      });
+          Swal.fire({
+            icon: "success",
+            title: "Satuan Dihapus",
+            text: `Satuan "${targetOpt.value}" berhasil dihapus dari database.`,
+            timer: 1500,
+            showConfirmButton: false,
+          });
+        }
+      } catch (err) {
+        console.error(err);
+        Swal.fire("Error", "Gagal menghapus satuan", "error");
+      }
     }
   };
 
@@ -297,7 +325,7 @@ export default function DaftarBarangATKSuperAdmin() {
     setForm({
       nama: "",
       kode: generateKodeATK(),
-      satuan: allSatuanList[0] || "Dus",
+      satuan: satuanList[0]?.value || "Dus",
       harga_satuan: "",
     });
     setErrors({});
@@ -819,9 +847,9 @@ const onDeleteSelected = async () => {
                         setForm((p) => ({ ...p, satuan: toTitleCase(e.target.value) }))
                       }
                     >
-                      {allSatuanList.map((s) => (
-                        <option key={s} value={s}>
-                          {s}
+                      {satuanList.map((s) => (
+                        <option key={s.id || s.value} value={s.value}>
+                          {s.value}
                         </option>
                       ))}
                     </select>

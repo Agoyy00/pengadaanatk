@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\BarangUsulanController;
 use App\Http\Controllers\Api\PengajuanAdminPdfController;
 use App\Http\Controllers\Api\Superadmin\PengajuanPdfSuperadminController;
 use App\Http\Controllers\Api\StockOpnameController;
+use App\Http\Controllers\Api\OptionController;
 /*
 |--------------------------------------------------------------------------
 | Auth
@@ -126,5 +127,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/stock-opname/{id}/approve', [StockOpnameController::class, 'approve']);
     Route::patch('/stock-opname/{id}/reject', [StockOpnameController::class, 'reject']);
     Route::delete('/stock-opname/{id}', [StockOpnameController::class, 'destroy']);
+
+    /*
+    | Options (Satuan, Jabatan, Unit)
+    */
+    Route::get('/options/{type}', [OptionController::class, 'index']);
+    Route::post('/options/{type}', [OptionController::class, 'store']);
+    Route::delete('/options/{id}', [OptionController::class, 'destroy']);
 
 });
