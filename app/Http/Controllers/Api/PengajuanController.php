@@ -197,16 +197,11 @@ class PengajuanController extends Controller
             ], 422);
         }
 
-        if ($nextStatus === 'ditolak_admin' && empty($request->input('catatan_admin'))) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Catatan penolakan wajib diisi saat menolak pengajuan.',
-            ], 422);
-        }
+        $catatanAdmin = $request->input('catatan_admin') ?: ($nextStatus === 'ditolak_admin' ? 'Pengajuan ditolak oleh Admin' : null);
 
         $pengajuan->update([
             'status'        => $nextStatus,
-            'catatan_admin' => $request->input('catatan_admin'),
+            'catatan_admin' => $catatanAdmin,
             'verified_by'   => Auth::id(),
             'verified_at'   => now(),
         ]);

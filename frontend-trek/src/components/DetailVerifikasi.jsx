@@ -70,7 +70,10 @@ export default function DetailVerifikasi({ pengajuan, onClose, onSuccess }) {
         return;
       }
 
-      // 2. Set status diverifikasi_admin
+      const allRejected = items.every((item) => item.jumlah_disetujui === 0);
+      const targetStatus = allRejected ? "ditolak_admin" : "diverifikasi_admin";
+
+      // 2. Set status
       const resStatus = await fetch(`${API_BASE}/pengajuan/${pengajuan.id}/status`, {
         method: "PATCH",
         headers: {
@@ -79,9 +82,9 @@ export default function DetailVerifikasi({ pengajuan, onClose, onSuccess }) {
           "Authorization": `Bearer ${token}`,
         },
         body: JSON.stringify({
-          status: "diverifikasi_admin",
+          status: targetStatus,
           user_id: user.id,
-          catatan_admin: catatanAdmin,
+          catatan_admin: catatanAdmin || (allRejected ? "Semua barang ditolak oleh Admin" : undefined),
         }),
       });
 

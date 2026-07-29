@@ -42,14 +42,6 @@ th { background:#f0f0f0 }
     <td>Unit</td>
     <td>{{ $pengajuan->unit }}</td>
 </tr>
-<tr>
-    <td>Status</td>
-    <td colspan="3">
-        <strong>
-            {{ strtoupper(str_replace('_', ' ', $pengajuan->status)) }}
-        </strong>
-    </td>
-</tr>
 </table>
 
 <div class="section">Rincian Barang</div>
@@ -60,6 +52,7 @@ th { background:#f0f0f0 }
     <th>Nama Barang</th>
     <th>Diajukan</th>
     <th>Disetujui</th>
+    <th>Ditolak</th>
     <th>Harga</th>
     <th>Subtotal</th>
 </tr>
@@ -68,24 +61,38 @@ th { background:#f0f0f0 }
 @php $total = 0; @endphp
 @foreach($pengajuan->items as $i => $item)
 @php
-    $qty = $item->jumlah_disetujui ?? 0;
+    $isDitolak = ($pengajuan->status === 'ditolak_admin') || (isset($item->jumlah_disetujui) && (int)$item->jumlah_disetujui === 0);
+    $disetujuiVal = $isDitolak ? '-' : ($item->jumlah_disetujui ?? $item->jumlah_diajukan);
+    $ditolakVal = $isDitolak ? $item->jumlah_diajukan : '-';
+
+    $qty = $isDitolak ? 0 : ($item->jumlah_disetujui ?? $item->jumlah_diajukan);
     $harga = $item->harga_satuan ?? 0;
     $sub = $qty * $harga;
     $total += $sub;
 @endphp
 <tr>
-    <td>{{ $i + 1 }}</td>
-    <td>{{ $item->barang->nama ?? '-' }}</td>
-    <td>{{ $item->jumlah_diajukan }}</td>
-    <td>{{ $qty }}</td>
+    <td style="text-align: center;">{{ $i + 1 }}</td>
+    <td>
+        {{ $item->barang->nama ?? '-' }}
+        @if(!empty($item->catatan_revisi))
+            <br><small style="color: #dc2626; font-style: italic;">Catatan: {{ $item->catatan_revisi }}</small>
+        @endif
+    </td>
+    <td style="text-align: center;">{{ $item->jumlah_diajukan }}</td>
+    <td style="text-align: center;">{{ $disetujuiVal }}</td>
+    <td style="text-align: center;">{{ $ditolakVal }}</td>
     <td>Rp {{ number_format($harga,0,',','.') }}</td>
-    <td>Rp {{ number_format($sub,0,',','.') }}</td>
+    @if($isDitolak)
+        <td style="text-align: center;">-</td>
+    @else
+        <td>Rp {{ number_format($sub,0,',','.') }}</td>
+    @endif
 </tr>
 @endforeach
 </tbody>
 <tfoot>
 <tr>
-    <th colspan="5">Total</th>
+    <th colspan="6" style="text-align: right;">Total</th>
     <th>Rp {{ number_format($total,0,',','.') }}</th>
 </tr>
 </tfoot>
@@ -103,12 +110,15 @@ th { background:#f0f0f0 }
 
 <br><br>
 
-<strong>Keputusan Superadmin:</strong><br>
+<strong>Keputusan Persetujuan:</strong><br>
 @if($pengajuan->status === 'disetujui')
-    {{ $pengajuan->approvedBy?->name ?? '-' }}<br>
-    {{ $pengajuan->approved_at?->format('d F Y H:i') ?? '-' }}
+    DISETUJUI<br>
+    Oleh: {{ $pengajuan->approvedBy?->name ?? '-' }} ({{ $pengajuan->approved_at?->format('d F Y H:i') ?? '-' }})
 @elseif($pengajuan->status === 'ditolak_admin')
     DITOLAK
+    @if(!empty($pengajuan->catatan_admin))
+        <br><strong>Alasan Penolakan:</strong> {{ $pengajuan->catatan_admin }}
+    @endif
 @else
     Menunggu persetujuan
 @endif

@@ -746,6 +746,29 @@ const [selectedPengajuan, setSelectedPengajuan] = useState(null);
               const mergedDecidedCount = mergedItems.filter((m) => itemDecisions["merged_" + m.key]?.status).length;
               const allMergedDecided = mergedDecidedCount === mergedItems.length && mergedItems.length > 0;
 
+              const handleApproveAllMerged = () => {
+                const newDecisions = { ...itemDecisions };
+                mergedItems.forEach((m) => {
+                  newDecisions["merged_" + m.key] = {
+                    ...newDecisions["merged_" + m.key],
+                    status: 'approved',
+                  };
+                });
+                setItemDecisions(newDecisions);
+              };
+
+              const handleRejectAllMerged = () => {
+                const newDecisions = { ...itemDecisions };
+                mergedItems.forEach((m) => {
+                  newDecisions["merged_" + m.key] = {
+                    ...newDecisions["merged_" + m.key],
+                    status: 'rejected',
+                    catatan: newDecisions["merged_" + m.key]?.catatan || 'Ditolak oleh Admin',
+                  };
+                });
+                setItemDecisions(newDecisions);
+              };
+
               // SUBMIT ALL MERGED
               const handleSubmitMerged = async () => {
                 const undecided = mergedItems.filter((m) => !itemDecisions["merged_" + m.key]?.status);
@@ -795,7 +818,11 @@ const [selectedPengajuan, setSelectedPengajuan] = useState(null);
                     const statusRes = await fetch(`${API_BASE}/pengajuan/${p.id}/status`, {
                       method: 'PATCH',
                       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': `Bearer ${token}` },
-                      body: JSON.stringify({ status: allRejectedForP ? 'ditolak_admin' : 'diverifikasi_admin', user_id: currentUser.id }),
+                      body: JSON.stringify({
+                        status: allRejectedForP ? 'ditolak_admin' : 'diverifikasi_admin',
+                        user_id: currentUser.id,
+                        catatan_admin: allRejectedForP ? 'Semua barang ditolak oleh Admin' : undefined
+                      }),
                     });
 
                     if (!statusRes.ok) {
@@ -905,13 +932,53 @@ const [selectedPengajuan, setSelectedPengajuan] = useState(null);
                   {/* ===== SUB-VIEW B: VERIFIKASI (merged items, no user names) ===== */}
                   {isVerifMode && (
                     <>
-                      <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px", flexWrap: "wrap" }}>
                         {btnBack(() => setActiveUnitView(unitName), "← Kembali ke Detail")}
                         <div>
                           <div style={{ fontSize: "18px", fontWeight: 700, color: "#0f172a" }}>Verifikasi — {unitName}</div>
                           <div style={{ fontSize: "12px", color: "#64748b" }}>
                             Barang yang sama dari semua user sudah dijumlahkan. Edit, setujui (✓) atau tolak (✗) tiap barang.
                           </div>
+                        </div>
+                        <div style={{ marginLeft: "auto", display: "flex", gap: "8px" }}>
+                          <button
+                            type="button"
+                            onClick={handleApproveAllMerged}
+                            style={{
+                              background: "#dcfce7",
+                              color: "#166534",
+                              border: "1px solid #86efac",
+                              padding: "8px 14px",
+                              borderRadius: "8px",
+                              fontWeight: 700,
+                              fontSize: "12px",
+                              cursor: "pointer",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "4px"
+                            }}
+                          >
+                            ✓ Setujui Semua
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleRejectAllMerged}
+                            style={{
+                              background: "#fee2e2",
+                              color: "#991b1b",
+                              border: "1px solid #fca5a5",
+                              padding: "8px 14px",
+                              borderRadius: "8px",
+                              fontWeight: 700,
+                              fontSize: "12px",
+                              cursor: "pointer",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "4px"
+                            }}
+                          >
+                            ✗ Tolak Semua
+                          </button>
                         </div>
                       </div>
 
