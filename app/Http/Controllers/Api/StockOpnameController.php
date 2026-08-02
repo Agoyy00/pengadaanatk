@@ -60,6 +60,48 @@ class StockOpnameController extends Controller
         ], 201);
     }
 
+    /**
+     * Bulk import stock opname dari CSV
+     */
+    public function bulkStore(Request $request)
+    {
+        $validated = $request->validate([
+            'items'              => 'required|array|min:1',
+            'items.*.barang_id'  => 'required|exists:barangs,id',
+            'items.*.stok_fisik' => 'required|integer|min:0',
+            'items.*.keterangan' => 'nullable|string',
+        ]);
+
+        $created = [];
+
+        DB::transaction(function () use ($validated, $request, &$created) {
+            foreach ($validated['items'] as $item) {
+                $barang = Barang::findOrFail($item['barang_id']);
+                $stok_sistem = $barang->stok;
+                $stok_fisik = (int) $item['stok_fisik'];
+                $selisih = $stok_fisik - $stok_sistem;
+
+                $stockOpname = StockOpname::create([
+                    'barang_id'  => $item['barang_id'],
+                    'user_id'    => $request->user()->id,
+                    'stok_sistem' => $stok_sistem,
+                    'stok_fisik'  => $stok_fisik,
+                    'selisih'     => $selisih,
+                    'keterangan'  => $item['keterangan'] ?? null,
+                    'status'      => 'pending',
+                ]);
+
+                $created[] = $stockOpname;
+            }
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => count($created) . ' laporan stock opname berhasil diimport.',
+            'count'   => count($created),
+        ], 201);
+    }
+
     public function verify(Request $request, $id)
     {
         $stockOpname = StockOpname::findOrFail($id);

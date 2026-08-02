@@ -160,6 +160,7 @@ export default function TemplateDokumen() {
                   <p style={{ margin: "0 0 16px 0", color: "#4b5563", fontSize: 13, lineHeight: 1.5 }}>
                     Template CSV untuk mencatat perhitungan fisik barang (Stock Opname) di gudang/unit.
                     Berisi kolom kode barang, nama barang, stok terdaftar, stok fisik, dan keterangan selisih.
+                    <br /><em style={{ color: "#6b7280" }}>💡 Untuk template lengkap dengan data barang terkini, gunakan tombol "Download Template" di halaman Stock Opname.</em>
                   </p>
                 </div>
                 <a
@@ -178,7 +179,7 @@ export default function TemplateDokumen() {
                     boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
                   }}
                 >
-                  📥 Unduh Template CSV
+                  📥 Unduh Template Contoh
                 </a>
               </div>
 
@@ -201,7 +202,8 @@ export default function TemplateDokumen() {
                   <h4 style={{ margin: "0 0 8px 0", fontSize: 16 }}>Template Pengajuan ATK</h4>
                   <p style={{ margin: "0 0 16px 0", color: "#4b5563", fontSize: 13, lineHeight: 1.5 }}>
                     Template CSV untuk mempermudah perincian kebutuhan pengajuan ATK baru oleh setiap unit/fakultas.
-                    Membantu menyusun daftar nama barang, satuan, harga satuan, dan jumlah kebutuhan.
+                    Isi kolom <strong>kebutuhan total</strong> dan <strong>sisa stock saat ini</strong>, lalu import di halaman Pengajuan.
+                    <br /><em style={{ color: "#6b7280" }}>💡 Untuk template lengkap dengan semua barang terkini, gunakan tombol "Download Template" di halaman Buat Pengajuan (Step 2).</em>
                   </p>
                 </div>
                 <a

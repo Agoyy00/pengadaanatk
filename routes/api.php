@@ -124,6 +124,7 @@ Route::middleware('auth:sanctum')->group(function () {
     */
     Route::get('/stock-opname', [StockOpnameController::class, 'index']);
     Route::post('/stock-opname', [StockOpnameController::class, 'store']);
+    Route::post('/stock-opname/bulk', [StockOpnameController::class, 'bulkStore']);
     Route::patch('/stock-opname/{id}/verify', [StockOpnameController::class, 'verify']);
     Route::patch('/stock-opname/{id}/approve', [StockOpnameController::class, 'approve']);
     Route::patch('/stock-opname/{id}/reject', [StockOpnameController::class, 'reject']);

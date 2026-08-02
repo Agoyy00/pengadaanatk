@@ -155,6 +155,11 @@ function Pengajuan() {
   const [verifyChecked, setVerifyChecked] = useState(false);
   const [showItemDetail, setShowItemDetail] = useState(false);
 
+  // CSV Import Preview Modal
+  const [showImportPreview, setShowImportPreview] = useState(false);
+  const [importPreviewData, setImportPreviewData] = useState([]);
+  const [importLoading, setImportLoading] = useState(false);
+
 
 
 
@@ -350,7 +355,52 @@ function Pengajuan() {
     setStep2Error("");
   };
 
-  // ====== IMPORT CSV ======
+  // ====== DOWNLOAD TEMPLATE CSV DINAMIS ======
+  const handleDownloadTemplate = async () => {
+    try {
+      setImportLoading(true);
+      const res = await fetch(`${API_BASE}/barang`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const masterDataRes = await res.json();
+      const masterData = Array.isArray(masterDataRes) ? masterDataRes : (masterDataRes.data || []);
+
+      if (masterData.length === 0) {
+        Swal.fire("Info", "Belum ada data barang di sistem.", "info");
+        return;
+      }
+
+      // Generate CSV header + rows (format sesuai template)
+      const header = "nama_barang;satuan;harga;kebutuhan total;sisa stock saat ini";
+      const rows = masterData.map((b) => 
+        `${b.nama};${b.satuan};${b.harga_satuan};;`
+      );
+      const csvContent = [header, ...rows].join("\n");
+
+      // Download file
+      const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "Template_Pengajuan_ATK.csv";
+      link.click();
+      URL.revokeObjectURL(url);
+
+      Swal.fire({
+        icon: "success",
+        title: "Template Diunduh",
+        text: `Template berisi ${masterData.length} barang. Isi kolom Kebutuhan Total dan Sisa Stok Saat Ini, lalu import kembali.`,
+        confirmButtonColor: "#2563eb",
+      });
+    } catch (err) {
+      console.error("Gagal download template:", err);
+      Swal.fire("Error", "Gagal mengambil data barang dari server", "error");
+    } finally {
+      setImportLoading(false);
+    }
+  };
+
+  // ====== IMPORT CSV (DENGAN PREVIEW) ======
   const handleImportCSV = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -367,29 +417,36 @@ function Pengajuan() {
       const delimiter = lines[0].includes(";") ? ";" : ",";
 
       try {
+        setImportLoading(true);
         const res = await fetch(`${API_BASE}/barang`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const masterDataRes = await res.json();
         const masterData = Array.isArray(masterDataRes) ? masterDataRes : (masterDataRes.data || []);
 
-        const newItems = [];
+        const previewItems = [];
 
         for (let i = 1; i < lines.length; i++) {
           const cols = lines[i].split(delimiter).map(c => c.trim().replace(/^"|"$/g, ''));
-          // index: 0(no), 1(nama), 2(satuan), 3(kebutuhan), 4(total), 5(sisa), 6(jumlah diajukan)
-          if (cols.length >= 2) {
-            const namaCSV = cols[1].toLowerCase();
+          // Format: nama_barang;satuan;harga;kebutuhan total;sisa stock saat ini
+          if (cols.length >= 1) {
+            const namaCSV = cols[0]?.toLowerCase() || "";
             const kebutuhan = parseInt(cols[3]) || 0;
-            const sisa = parseInt(cols[5]) || 0;
+            const sisa = parseInt(cols[4]) || 0;
 
-            const matchedBarang = masterData.find(b => b.nama.toLowerCase() === namaCSV || b.id.toString() === cols[0]);
+            // Skip baris yang tidak diisi (kebutuhan dan sisa kosong)
+            if (kebutuhan === 0 && sisa === 0) continue;
+
+            const matchedBarang = masterData.find(b => 
+              b.nama.toLowerCase() === namaCSV
+            );
 
             if (matchedBarang) {
-              const exists = items.some(it => it.id === matchedBarang.id) || newItems.some(it => it.id === matchedBarang.id);
+              const exists = items.some(it => it.id === matchedBarang.id) || 
+                             previewItems.some(it => it.id === matchedBarang.id);
               if (!exists) {
                 const jumlahDiajukan = Math.max(kebutuhan - sisa, 0);
-                newItems.push({
+                previewItems.push({
                   id: matchedBarang.id,
                   nama: matchedBarang.nama,
                   satuan: matchedBarang.satuan,
@@ -404,20 +461,35 @@ function Pengajuan() {
           }
         }
 
-        if (newItems.length > 0) {
-          setItems(prev => [...prev, ...newItems]);
-          Swal.fire("Berhasil", `${newItems.length} barang berhasil diimport dari CSV`, "success");
+        if (previewItems.length > 0) {
+          setImportPreviewData(previewItems);
+          setShowImportPreview(true);
         } else {
-          Swal.fire("Info", "Tidak ada barang yang cocok dari CSV atau semua sudah ada di daftar", "info");
+          Swal.fire("Info", "Tidak ada barang yang cocok dari CSV, atau kolom Kebutuhan Total & Sisa Stok belum diisi.", "info");
         }
       } catch (err) {
         console.error("Gagal import CSV", err);
         Swal.fire("Error", "Gagal mengambil data barang dari server", "error");
+      } finally {
+        setImportLoading(false);
       }
 
       e.target.value = null;
     };
     reader.readAsText(file);
+  };
+
+  // Confirm import dari preview
+  const handleConfirmImport = () => {
+    setItems(prev => [...prev, ...importPreviewData]);
+    setShowImportPreview(false);
+    setImportPreviewData([]);
+    Swal.fire({
+      icon: "success",
+      title: "Import Berhasil",
+      text: `${importPreviewData.length} barang berhasil ditambahkan ke daftar pengajuan.`,
+      confirmButtonColor: "#10b981",
+    });
   };
 
   useEffect(() => {
@@ -941,19 +1013,19 @@ function Pengajuan() {
                             type="button"
                             className="btn"
                             style={{ padding: '6px 14px', fontSize: '13px', cursor: 'pointer', borderRadius: '6px', margin: 0, background: '#f1f5f9', color: '#334155', border: '1px solid #cbd5e1' }}
-                            onClick={() => {
-                              Swal.fire("Info", "Template CSV akan segera tersedia.", "info");
-                            }}
+                            onClick={handleDownloadTemplate}
+                            disabled={importLoading}
                           >
-                            📄 Download Template
+                            {importLoading ? "⏳ Memuat..." : "📄 Download Template"}
                           </button>
-                          <label className="btn btn-primary" style={{ padding: '6px 14px', fontSize: '13px', cursor: 'pointer', borderRadius: '6px', margin: 0 }}>
+                          <label className="btn btn-primary" style={{ padding: '6px 14px', fontSize: '13px', cursor: importLoading ? 'not-allowed' : 'pointer', borderRadius: '6px', margin: 0, opacity: importLoading ? 0.6 : 1 }}>
                             📥 Import CSV
                             <input
                               type="file"
                               accept=".csv"
                               style={{ display: 'none' }}
                               onChange={handleImportCSV}
+                              disabled={importLoading}
                             />
                           </label>
                         </div>
@@ -1455,6 +1527,96 @@ function Pengajuan() {
           )}
         </section>
       </main>
+
+      {/* MODAL PREVIEW IMPORT CSV */}
+      {showImportPreview && (
+        <div className="verify-overlay" onClick={() => setShowImportPreview(false)}>
+          <div className="detail-panel" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 800 }}>
+            <div className="detail-panel-header">
+              <div>
+                <h3>📋 Verifikasi Data Import CSV</h3>
+                <p>{importPreviewData.length} barang ditemukan dari file CSV. Periksa data sebelum menambahkan ke daftar pengajuan.</p>
+              </div>
+              <button
+                type="button"
+                className="detail-close-btn"
+                onClick={() => setShowImportPreview(false)}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="detail-table-wrapper">
+              <table className="detail-table">
+                <thead>
+                  <tr>
+                    <th>No</th>
+                    <th>Nama Barang</th>
+                    <th>Satuan</th>
+                    <th>Kebutuhan Total</th>
+                    <th>Sisa Stok</th>
+                    <th>Jumlah Diajukan</th>
+                    <th>Harga Satuan</th>
+                    <th>Subtotal</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {importPreviewData.map((item, idx) => (
+                    <tr key={item.id}>
+                      <td className="detail-td-no">{idx + 1}</td>
+                      <td className="detail-td-nama">{item.nama}</td>
+                      <td>{item.satuan}</td>
+                      <td style={{ textAlign: "center" }}>{item.kebutuhanTotal}</td>
+                      <td style={{ textAlign: "center" }}>{item.sisaStok}</td>
+                      <td style={{ textAlign: "center", fontWeight: 700, color: item.jumlahDiajukan > 0 ? "#16a34a" : "#6b7280" }}>
+                        {item.jumlahDiajukan}
+                      </td>
+                      <td className="detail-td-harga">Rp {Number(item.estimasiNilai).toLocaleString("id-ID")}</td>
+                      <td className="detail-td-subtotal">Rp {(item.jumlahDiajukan * item.estimasiNilai).toLocaleString("id-ID")}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td colSpan="5" className="detail-footer-label">Total</td>
+                    <td className="detail-footer-qty" style={{ textAlign: "center", fontWeight: 700 }}>
+                      {importPreviewData.reduce((sum, i) => sum + i.jumlahDiajukan, 0)}
+                    </td>
+                    <td></td>
+                    <td className="detail-footer-total">
+                      Rp {importPreviewData.reduce((sum, i) => sum + (i.jumlahDiajukan * i.estimasiNilai), 0).toLocaleString("id-ID")}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+
+            <div className="detail-panel-footer" style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+              <button
+                type="button"
+                className="btn"
+                onClick={() => setShowImportPreview(false)}
+                style={{ padding: "10px 16px", borderRadius: 8 }}
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary detail-close-action"
+                onClick={handleConfirmImport}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+                Konfirmasi Import ({importPreviewData.length} barang)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* MODAL PREVIEW FOTO */}
       {previewImage && (

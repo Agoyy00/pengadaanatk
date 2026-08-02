@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import Swal from "sweetalert2";
 import "../css/layout.css";
 import "../css/Barang.css";
 import RoleSwitcher from "../components/RoleSwitcher";
@@ -45,6 +46,11 @@ export default function StockOpname() {
   const [queryBarang, setQueryBarang] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [formError, setFormError] = useState("");
+
+  // CSV Import states
+  const [showImportPreview, setShowImportPreview] = useState(false);
+  const [importPreviewData, setImportPreviewData] = useState([]);
+  const [importLoading, setImportLoading] = useState(false);
 
   const formatRole = (role) => {
     if (!role) return "-";
@@ -150,6 +156,173 @@ export default function StockOpname() {
     setSearchResults([]);
     setFormError("");
     setModalOpen(true);
+  };
+
+  // ====== DOWNLOAD TEMPLATE CSV STOCK OPNAME (DINAMIS) ======
+  const handleDownloadTemplateCSV = async () => {
+    try {
+      setImportLoading(true);
+      const res = await fetch(`${API_BASE}/barang`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const masterDataRes = await res.json();
+      const masterData = Array.isArray(masterDataRes) ? masterDataRes : (masterDataRes.data || []);
+
+      if (masterData.length === 0) {
+        Swal.fire("Info", "Belum ada data barang di sistem.", "info");
+        return;
+      }
+
+      const header = "kode_barang;nama_barang;stok_sistem;stok_fisik;keterangan";
+      const rows = masterData.map((b) =>
+        `${b.kode};${b.nama};${b.stok};;`
+      );
+      const csvContent = [header, ...rows].join("\n");
+
+      const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "Template_Stock_Opname.csv";
+      link.click();
+      URL.revokeObjectURL(url);
+
+      Swal.fire({
+        icon: "success",
+        title: "Template Diunduh",
+        text: `Template berisi ${masterData.length} barang. Isi kolom Stok Fisik dan Keterangan, lalu import kembali.`,
+        confirmButtonColor: "#2563eb",
+      });
+    } catch (err) {
+      console.error("Gagal download template:", err);
+      Swal.fire("Error", "Gagal mengambil data barang dari server", "error");
+    } finally {
+      setImportLoading(false);
+    }
+  };
+
+  // ====== IMPORT CSV STOCK OPNAME (DENGAN PREVIEW) ======
+  const handleImportCSV = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const text = event.target.result;
+      const lines = text.split(/\r?\n/).filter(line => line.trim() !== "");
+      if (lines.length < 2) {
+        Swal.fire("Error", "File CSV kosong atau format salah", "error");
+        return;
+      }
+
+      const delimiter = lines[0].includes(";") ? ";" : ",";
+
+      try {
+        setImportLoading(true);
+        const res = await fetch(`${API_BASE}/barang`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const masterDataRes = await res.json();
+        const masterData = Array.isArray(masterDataRes) ? masterDataRes : (masterDataRes.data || []);
+
+        const previewItems = [];
+
+        for (let i = 1; i < lines.length; i++) {
+          const cols = lines[i].split(delimiter).map(c => c.trim().replace(/^"|"$/g, ''));
+          // Format: Kode Barang;Nama Barang;Stok Sistem;Stok Fisik;Keterangan
+          if (cols.length >= 4) {
+            const kodeCSV = cols[0]?.toLowerCase() || "";
+            const namaCSV = cols[1]?.toLowerCase() || "";
+            const stokFisikVal = parseInt(cols[3]);
+            const keteranganVal = cols[4] || "";
+
+            // Skip baris yang stok fisik tidak diisi
+            if (isNaN(stokFisikVal)) continue;
+
+            const matchedBarang = masterData.find(b =>
+              b.kode?.toLowerCase() === kodeCSV || b.nama?.toLowerCase() === namaCSV
+            );
+
+            if (matchedBarang) {
+              const exists = previewItems.some(it => it.barang_id === matchedBarang.id);
+              if (!exists) {
+                const selisih = stokFisikVal - (matchedBarang.stok || 0);
+                previewItems.push({
+                  barang_id: matchedBarang.id,
+                  kode: matchedBarang.kode,
+                  nama: matchedBarang.nama,
+                  satuan: matchedBarang.satuan,
+                  stok_sistem: matchedBarang.stok || 0,
+                  stok_fisik: stokFisikVal,
+                  selisih: selisih,
+                  keterangan: keteranganVal,
+                });
+              }
+            }
+          }
+        }
+
+        if (previewItems.length > 0) {
+          setImportPreviewData(previewItems);
+          setShowImportPreview(true);
+        } else {
+          Swal.fire("Info", "Tidak ada barang yang cocok dari CSV, atau kolom Stok Fisik belum diisi.", "info");
+        }
+      } catch (err) {
+        console.error("Gagal import CSV", err);
+        Swal.fire("Error", "Gagal mengambil data barang dari server", "error");
+      } finally {
+        setImportLoading(false);
+      }
+
+      e.target.value = null;
+    };
+    reader.readAsText(file);
+  };
+
+  // ====== BULK SUBMIT STOCK OPNAME ======
+  const handleBulkSubmit = async () => {
+    try {
+      setImportLoading(true);
+      const payload = {
+        items: importPreviewData.map(item => ({
+          barang_id: item.barang_id,
+          stok_fisik: item.stok_fisik,
+          keterangan: item.keterangan || null,
+        })),
+      };
+
+      const res = await fetch(`${API_BASE}/stock-opname/bulk`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+          "Accept": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        setShowImportPreview(false);
+        setImportPreviewData([]);
+        loadOpnames();
+        Swal.fire({
+          icon: "success",
+          title: "Import Berhasil",
+          text: data.message || `${importPreviewData.length} laporan stock opname berhasil dikirim.`,
+          confirmButtonColor: "#10b981",
+        });
+      } else {
+        Swal.fire("Error", data.message || "Gagal mengirim laporan bulk.", "error");
+      }
+    } catch (err) {
+      console.error("Gagal bulk submit:", err);
+      Swal.fire("Error", "Terjadi kesalahan saat mengirim data ke server.", "error");
+    } finally {
+      setImportLoading(false);
+    }
   };
 
   const closeModal = () => {
@@ -447,23 +620,68 @@ export default function StockOpname() {
                 </p>
               </div>
 
-              {/* Action Button for User/Admin/Superadmin */}
+              {/* Action Buttons */}
               {(role === "user" || role === "admin" || role === "superadmin") && (
-                <button
-                  onClick={openCreate}
-                  style={{
-                    padding: "10px 16px",
-                    borderRadius: 10,
-                    border: "none",
-                    background: "#16a34a",
-                    color: "white",
-                    fontWeight: 700,
-                    cursor: "pointer",
-                    boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-                  }}
-                >
-                  ➕ Buat Laporan Stock Opname
-                </button>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                  <button
+                    onClick={handleDownloadTemplateCSV}
+                    disabled={importLoading}
+                    style={{
+                      padding: "10px 16px",
+                      borderRadius: 10,
+                      border: "1px solid #cbd5e1",
+                      background: "#f8fafc",
+                      color: "#334155",
+                      fontWeight: 600,
+                      cursor: importLoading ? "not-allowed" : "pointer",
+                      fontSize: 13,
+                      opacity: importLoading ? 0.6 : 1,
+                    }}
+                  >
+                    {importLoading ? "⏳ Memuat..." : "📄 Download Template"}
+                  </button>
+                  <label
+                    style={{
+                      padding: "10px 16px",
+                      borderRadius: 10,
+                      border: "none",
+                      background: "#2563eb",
+                      color: "white",
+                      fontWeight: 600,
+                      cursor: importLoading ? "not-allowed" : "pointer",
+                      fontSize: 13,
+                      opacity: importLoading ? 0.6 : 1,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 4,
+                    }}
+                  >
+                    📥 Import CSV
+                    <input
+                      type="file"
+                      accept=".csv"
+                      style={{ display: "none" }}
+                      onChange={handleImportCSV}
+                      disabled={importLoading}
+                    />
+                  </label>
+                  <button
+                    onClick={openCreate}
+                    style={{
+                      padding: "10px 16px",
+                      borderRadius: 10,
+                      border: "none",
+                      background: "#16a34a",
+                      color: "white",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                      fontSize: 13,
+                    }}
+                  >
+                    ➕ Buat Laporan Manual
+                  </button>
+                </div>
               )}
             </div>
 
@@ -866,6 +1084,133 @@ export default function StockOpname() {
                   }}
                 >
                   Kirim Laporan
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL PREVIEW IMPORT CSV STOCK OPNAME */}
+      {showImportPreview && (
+        <div className="modal-overlay" onClick={() => setShowImportPreview(false)}>
+          <div
+            className="modal-box-small"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "90%",
+              maxWidth: 900,
+              maxHeight: "85vh",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            <button className="close-btn-small" onClick={() => setShowImportPreview(false)}>
+              ✖
+            </button>
+
+            <div style={{ padding: 20 }}>
+              <h2 style={{ marginTop: 0, marginBottom: 4 }}>📋 Verifikasi Import CSV Stock Opname</h2>
+              <p style={{ color: "#6b7280", margin: "0 0 16px 0", fontSize: 14 }}>
+                {importPreviewData.length} barang ditemukan dari file CSV. Periksa data sebelum mengirim laporan.
+              </p>
+
+              <div style={{ overflowX: "auto", maxHeight: "50vh", overflowY: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: 14 }}>
+                  <thead>
+                    <tr style={{ borderBottom: "2px solid #e5e7eb", background: "#f9fafb", position: "sticky", top: 0 }}>
+                      <th style={{ padding: "10px 12px" }}>No</th>
+                      <th style={{ padding: "10px 12px" }}>Kode</th>
+                      <th style={{ padding: "10px 12px" }}>Nama Barang</th>
+                      <th style={{ padding: "10px 12px", textAlign: "center" }}>Stok Sistem</th>
+                      <th style={{ padding: "10px 12px", textAlign: "center" }}>Stok Fisik</th>
+                      <th style={{ padding: "10px 12px", textAlign: "center" }}>Selisih</th>
+                      <th style={{ padding: "10px 12px" }}>Keterangan</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {importPreviewData.map((item, idx) => {
+                      const selisihColor = item.selisih === 0 ? "#374151" : item.selisih > 0 ? "#16a34a" : "#dc2626";
+                      const selisihLabel = item.selisih > 0 ? `+${item.selisih}` : item.selisih;
+                      return (
+                        <tr key={item.barang_id} style={{ borderBottom: "1px solid #f3f4f6" }}>
+                          <td style={{ padding: "10px 12px", color: "#9ca3af" }}>{idx + 1}</td>
+                          <td style={{ padding: "10px 12px", fontFamily: "monospace", fontSize: 13 }}>{item.kode}</td>
+                          <td style={{ padding: "10px 12px", fontWeight: 600 }}>{item.nama}</td>
+                          <td style={{ padding: "10px 12px", textAlign: "center" }}>{item.stok_sistem}</td>
+                          <td style={{ padding: "10px 12px", textAlign: "center", fontWeight: 600 }}>{item.stok_fisik}</td>
+                          <td style={{ padding: "10px 12px", textAlign: "center", fontWeight: 700, color: selisihColor }}>
+                            {selisihLabel}
+                          </td>
+                          <td style={{ padding: "10px 12px", color: "#4b5563", maxWidth: 150 }}>
+                            {item.keterangan || "-"}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Summary */}
+              <div
+                style={{
+                  marginTop: 16,
+                  padding: "12px 16px",
+                  background: "#f0fdf4",
+                  borderRadius: 10,
+                  border: "1px solid #bbf7d0",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                  gap: 8,
+                }}
+              >
+                <div style={{ fontSize: 14, color: "#166534" }}>
+                  <strong>{importPreviewData.length}</strong> laporan siap dikirim
+                </div>
+                <div style={{ fontSize: 13, color: "#4b5563" }}>
+                  Selisih positif: <strong style={{ color: "#16a34a" }}>{importPreviewData.filter(i => i.selisih > 0).length}</strong> ·
+                  Cocok: <strong>{importPreviewData.filter(i => i.selisih === 0).length}</strong> ·
+                  Selisih negatif: <strong style={{ color: "#dc2626" }}>{importPreviewData.filter(i => i.selisih < 0).length}</strong>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 20 }}>
+                <button
+                  onClick={() => setShowImportPreview(false)}
+                  style={{
+                    padding: "10px 16px",
+                    borderRadius: 10,
+                    border: "1px solid #ddd",
+                    background: "white",
+                    cursor: "pointer",
+                    fontWeight: 600,
+                    fontSize: 14,
+                  }}
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={handleBulkSubmit}
+                  disabled={importLoading}
+                  style={{
+                    padding: "10px 20px",
+                    borderRadius: 10,
+                    border: "none",
+                    cursor: importLoading ? "not-allowed" : "pointer",
+                    background: importLoading ? "#9ca3af" : "#16a34a",
+                    color: "white",
+                    fontWeight: 700,
+                    fontSize: 14,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                  }}
+                >
+                  {importLoading ? "⏳ Mengirim..." : `✅ Kirim ${importPreviewData.length} Laporan`}
                 </button>
               </div>
             </div>
