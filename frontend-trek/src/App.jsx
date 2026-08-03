@@ -28,6 +28,7 @@ import DaftarBarangATKSuperAdmin from "./pages/Superadmin/DaftarBarangATKSuperAd
 import GrafikBelanjaSuperAdmin from "./pages/Superadmin/GrafikBelanjaSuperAdmin";
 import MonitoringAdmin from "./pages/Superadmin/MonitoringAdmin";
 import MonitoringUser from "./pages/Superadmin/MonitoringUser";
+import GrafikBarangSuperAdmin from "./pages/Superadmin/GrafikBarangSuperAdmin";
 import StockOpname from "./pages/StockOpname";
 import TemplateDokumen from "./pages/TemplateDokumen";
 
@@ -297,14 +298,7 @@ function App() {
             </RequireAuth>
           }
         />
-        <Route
-          path="/superadmin/grafik-belanja"
-          element={
-           <RequireAuth allowRoles={["superadmin"]}>
-              <GrafikBelanjaSuperAdmin />
-           </RequireAuth>
-          }
-        />
+
         <Route
           path="/superadmin/monitoring-admin"
           element={
@@ -322,12 +316,28 @@ function App() {
           }
         />
         <Route
+          path="/superadmin/grafik-barang"
+          element={
+            <RequireAuth allowRoles={["superadmin"]}>
+              <GrafikBarangSuperAdmin />
+            </RequireAuth>
+          }
+        />
+        <Route
           path="/superadmin/daftar-barang"
           element={
-          <RequireAuth allowRoles={["superadmin"]}>
-           <DaftarBarangATKSuperAdmin />
-          </RequireAuth>
-         }
+            <RequireAuth allowRoles={["superadmin"]}>
+              <DaftarBarangATKSuperAdmin />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/superadmin/grafik-belanja"
+          element={
+            <RequireAuth allowRoles={["superadmin"]}>
+              <GrafikBelanjaSuperAdmin />
+            </RequireAuth>
+          }
         />
 
         {/* ✅ ROUTE BARU: Kelola Barang ATK */}

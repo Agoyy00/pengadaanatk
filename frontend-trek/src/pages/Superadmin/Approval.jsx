@@ -23,11 +23,12 @@ export default function Approval() {
         { label: "Dashboard Super Admin", to: "/dashboardsuperadmin" },
         { label: "Monitoring Admin", to: "/superadmin/monitoring-admin" },
         { label: "Monitoring User", to: "/superadmin/monitoring-user" },
+        { label: "Grafik Barang", to: "/superadmin/grafik-barang" },
+        { label: "Grafik Belanja", to: "/superadmin/grafik-belanja" },
         { label: "Approval Pengajuan", to: "/approval", active: true },
         { label: "Tambah & Kelola User", to: "/tambahuser" },
         { label: "Atur Periode", to: "/periode" },
         { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang" },
-        { label: "Grafik Belanja", to: "/superadmin/grafik-belanja" },
         { label: "Stock Opname Barang", to: "/stock-opname" },
         { label: "Template Dokumen", to: "/template-dokumen" },
       ];
@@ -40,9 +41,10 @@ export default function Approval() {
   const fetchPengajuan = async () => {
     try {
       setLoading(true);
+      const freshToken = localStorage.getItem("token");
       const res = await fetch(`${API_BASE}/pengajuan` , {
         headers: {
-          "Authorization": `Bearer ${token}`,
+          "Authorization": `Bearer ${freshToken}`,
         },
       });
       const json = await res.json();
@@ -73,11 +75,13 @@ export default function Approval() {
     try {
       setProcessingId(id);
 
+      const freshToken = localStorage.getItem("token");
       const res = await fetch(`${API_BASE}/pengajuan/${id}/status`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          "Accept": "application/json", "Authorization": `Bearer ${token}`,
+          "Accept": "application/json",
+          "Authorization": `Bearer ${freshToken}`,
         },
         body: JSON.stringify({
           status: newStatus,

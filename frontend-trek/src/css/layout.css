@@ -117,22 +117,34 @@
 .logout {
     font-family: 'Plus Jakarta Sans', sans-serif;
     margin-top: auto;
-    padding-top: 24px;
-    font-size: 14px;
+    margin-top: 24px;
+    padding: 7px 16px;
+    font-size: 12.5px;
     font-weight: 600;
     cursor: pointer;
-    color: #fda4af;
-    display: flex;
+    color: #fca5a5;
+    background: rgba(225, 29, 72, 0.12);
+    border: 1px solid rgba(244, 63, 94, 0.25);
+    border-radius: 8px;
+    display: inline-flex;
     align-items: center;
-    gap: 10px;
+    justify-content: center;
+    gap: 8px;
     transition: all 0.2s ease;
     text-decoration: none !important;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    width: fit-content;
 }
 
 .logout:hover {
-    color: #f43f5e;
+    color: #ffffff;
+    background: #e11d48;
+    border-color: #f43f5e;
     transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(225, 29, 72, 0.3);
+}
+
+.logout:active {
+    transform: translateY(0);
 }
 
 /* ===== TOPBAR (FIXED GLASSMORPHISM) ===== */

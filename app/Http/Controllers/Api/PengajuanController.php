@@ -207,10 +207,13 @@ class PengajuanController extends Controller
         ]);
 
         // LOG ACTIVITY
+        $actionName = ($nextStatus === 'ditolak_admin') ? 'tolak_pengajuan' : 'verifikasi_pengajuan';
+        $descText   = ($nextStatus === 'ditolak_admin') ? "Admin menolak Pengajuan #{$pengajuan->id}" : "Admin memverifikasi Pengajuan #{$pengajuan->id}";
+
         \Illuminate\Support\Facades\DB::table('admin_activity_logs')->insert([
             'user_id'     => Auth::id() ?? $validated['user_id'],
-            'action'      => 'verifikasi_pengajuan',
-            'description' => "Admin memproses Pengajuan #{$pengajuan->id}",
+            'action'      => $actionName,
+            'description' => $descText,
             'details'     => json_encode(['status' => $nextStatus, 'catatan' => $request->input('catatan_admin')]),
             'ip_address'  => $request->ip(),
             'created_at'  => now(),

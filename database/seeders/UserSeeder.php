@@ -63,5 +63,37 @@ class UserSeeder extends Seeder
                 'role_id'  => 3,
             ]
         );
+        User::updateOrCreate(
+            ['email' => 'user2@atk.test'],
+            [
+                'name'     => 'User Pengajuan 2',
+                'password' => Hash::make('password123'),
+                'role_id'  => 3,
+            ]
+        );
+        User::updateOrCreate(
+            ['email' => 'dosen@yarsi.ac.id'],
+            [
+                'name'     => 'Dr. Ahmad Hidayat',
+                'password' => Hash::make('password123'),
+                'role_id'  => 3,
+            ]
+        );
+        User::updateOrCreate(
+            ['email' => 'staff@yarsi.ac.id'],
+            [
+                'name'     => 'Siti Rahmah',
+                'password' => Hash::make('password123'),
+                'role_id'  => 3,
+            ]
+        );
+        User::updateOrCreate(
+            ['email' => 'admin2@atk.test'],
+            [
+                'name'     => 'Admin Pengadaan 2',
+                'password' => Hash::make('password123'),
+                'role_id'  => 2,
+            ]
+        );
     }
 }

@@ -56,6 +56,7 @@ export default function Periode() {
   // Load periode aktif dan daftar semua periode
   const loadData = async () => {
     setLoading(true);
+    const freshToken = localStorage.getItem("token");
     try {
       // 1. Ambil periode aktif
       const resActive = await fetch(`${API_BASE}/periode/active`);
@@ -71,7 +72,7 @@ export default function Periode() {
 
       // 2. Ambil daftar semua periode untuk Super Admin
       const resAll = await fetch(`${API_BASE}/periode`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${freshToken}` },
       });
       const dataAll = await resAll.json();
       if (Array.isArray(dataAll.data)) {
@@ -94,6 +95,7 @@ export default function Periode() {
     e.preventDefault();
     setMessage("");
     setErrorMsg("");
+    const freshToken = localStorage.getItem("token");
 
     if (!mulai || !selesai) {
       setErrorMsg("Tanggal mulai dan selesai wajib diisi.");
@@ -111,7 +113,7 @@ export default function Periode() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${freshToken}`,
         },
         body: JSON.stringify(payload),
       });
@@ -120,7 +122,7 @@ export default function Periode() {
 
       if (!res.ok || !data.success) {
         console.error("Gagal simpan periode:", data);
-        setErrorMsg("Terjadi kesalahan saat menyimpan periode.");
+        setErrorMsg(data.message || "Terjadi kesalahan saat menyimpan periode.");
         return;
       }
 
@@ -141,10 +143,11 @@ export default function Periode() {
 
     setMessage("");
     setErrorMsg("");
+    const freshToken = localStorage.getItem("token");
 
     try {
       const res = await fetch(`${API_BASE}/periode/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${freshToken}` },
         method: "DELETE",
       });
 
@@ -174,11 +177,12 @@ export default function Periode() {
       { label: "Dashboard Super Admin", to: "/dashboardsuperadmin" },
       { label: "Monitoring Admin", to: "/superadmin/monitoring-admin" },
       { label: "Monitoring User", to: "/superadmin/monitoring-user" },
+      { label: "Grafik Barang", to: "/superadmin/grafik-barang" },
+      { label: "Grafik Belanja", to: "/superadmin/grafik-belanja" },
       { label: "Approval Pengajuan", to: "/approval" },
       { label: "Tambah & Kelola User", to: "/tambahuser" },
       { label: "Atur Periode", to: "/periode", active: true },
       { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang" },
-      { label: "Grafik Belanja", to: "/superadmin/grafik-belanja" },
       { label: "Stock Opname Barang", to: "/stock-opname" },
       { label: "Template Dokumen", to: "/template-dokumen" },
     ];

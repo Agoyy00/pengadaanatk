@@ -15,7 +15,7 @@ export default function DashboardSuperAdmin() {
   // =========================
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const userId = user?.id;
-  const userRole = (user?.role || "").toLowerCase();
+  const userRole = String(user?.role || "").toLowerCase().replace(/[\s_]+/g, "");
   
   const storedUser = localStorage.getItem("user");
   const currentUser = storedUser ? JSON.parse(storedUser) : null;
@@ -103,9 +103,10 @@ export default function DashboardSuperAdmin() {
     setErrorNotif("");
 
     try {
+      const freshToken = localStorage.getItem("token");
       const res = await fetch(`${API_BASE}/notifications?user_id=${userId}` , {
         headers: {
-          "Authorization": `Bearer ${token}`,
+          "Authorization": `Bearer ${freshToken}`,
         },
       });
       const data = await res.json();
@@ -129,11 +130,12 @@ export default function DashboardSuperAdmin() {
       { label: "Dashboard Super Admin", to: "/dashboardsuperadmin", active: true },
       { label: "Monitoring Admin", to: "/superadmin/monitoring-admin" },
       { label: "Monitoring User", to: "/superadmin/monitoring-user" },
+      { label: "Grafik Barang", to: "/superadmin/grafik-barang" },
+      { label: "Grafik Belanja", to: "/superadmin/grafik-belanja" },
       { label: "Approval Pengajuan", to: "/approval" },
       { label: "Tambah & Kelola User", to: "/tambahuser" },
       { label: "Atur Periode", to: "/periode" },
       { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang" },
-      { label: "Grafik Belanja", to: "/superadmin/grafik-belanja" },
       { label: "Stock Opname Barang", to: "/stock-opname" },
       { label: "Template Dokumen", to: "/template-dokumen" },
     ];

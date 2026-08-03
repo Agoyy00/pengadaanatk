@@ -13,10 +13,13 @@ export default function MonitoringAdmin() {
   
   // Data states
   const [admins, setAdmins] = useState([]);
-  const [pendingRequests, setPendingRequests] = useState([]);
-  const [pendingStockOpnames, setPendingStockOpnames] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("all"); // "all", "done", "pending"
+  
+  // Extra data for detail modal lookup
+  const [allRequests, setAllRequests] = useState([]);
+  const [allStockOpnames, setAllStockOpnames] = useState([]);
+  const [selectedLogGroup, setSelectedLogGroup] = useState(null);
 
   const storedUser = localStorage.getItem("user");
   const currentUser = storedUser ? JSON.parse(storedUser) : null;
@@ -26,11 +29,12 @@ export default function MonitoringAdmin() {
       { label: "Dashboard Super Admin", to: "/dashboardsuperadmin" },
       { label: "Monitoring Admin", to: "/superadmin/monitoring-admin", active: true },
       { label: "Monitoring User", to: "/superadmin/monitoring-user" },
+      { label: "Grafik Barang", to: "/superadmin/grafik-barang" },
+      { label: "Grafik Belanja", to: "/superadmin/grafik-belanja" },
       { label: "Approval Pengajuan", to: "/approval" },
       { label: "Tambah & Kelola User", to: "/tambahuser" },
       { label: "Atur Periode", to: "/periode" },
       { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang" },
-      { label: "Grafik Belanja", to: "/superadmin/grafik-belanja" },
       { label: "Stock Opname Barang", to: "/stock-opname" },
       { label: "Template Dokumen", to: "/template-dokumen" },
     ];
@@ -47,30 +51,49 @@ export default function MonitoringAdmin() {
     return isNaN(date.getTime()) ? new Date() : date;
   };
 
-  // Helper function to translate system descriptions to human-friendly language
-  const formatHumanDescription = (desc, adminName) => {
-    let formatted = desc;
-    const name = adminName || "Admin";
-    
-    if (formatted.includes("Admin memproses Pengajuan")) {
-      const match = formatted.match(/Pengajuan #(\d+)/);
-      const id = match ? match[1] : "";
-      formatted = `Telah memeriksa dan memverifikasi Pengajuan ATK #${id}`;
-    } else if (formatted.includes("Admin melakukan aksi [CREATE] pada Barang")) {
-      const barangName = formatted.split("Barang:")[1] || "";
-      formatted = `Telah menambahkan barang baru "${barangName.trim()}" ke dalam sistem`;
-    } else if (formatted.includes("Admin mengatur Periode Akademik")) {
-      const match = formatted.match(/\[(.*?)\]/);
-      const period = match ? match[1] : "";
-      formatted = `Telah membuat dan membuka periode pengajuan baru (${period})`;
-    } else if (formatted.includes("Admin memverifikasi Laporan Stock Opname")) {
-      const match = formatted.match(/Stock Opname #(\d+)/);
-      const id = match ? match[1] : "";
-      formatted = `Telah memverifikasi laporan stock opname barang #${id}`;
-    }
-    
-    return formatted;
+  // Helper function to format full date & time (e.g. "Senin, 03 Aug 2026 • 10:57 WIB")
+  const formatDateTimeIndo = (dateObj) => {
+    if (!dateObj) return "";
+    const hari = dateObj.toLocaleDateString("id-ID", { weekday: "long" });
+    const tgl = dateObj.toLocaleDateString("id-ID", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric"
+    });
+    const jam = dateObj.toLocaleTimeString("id-ID", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false
+    }).replace(".", ":");
+    return `${hari}, ${tgl} • ${jam} WIB`;
   };
+
+  const formatRupiah = (number) => {
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      maximumFractionDigits: 0
+    }).format(number);
+  };
+
+  const CORE_ADMIN_TASKS = [
+    {
+      key: "verifikasi_pengajuan",
+      name: "Verifikasi Pengajuan",
+    },
+    {
+      key: "barang_create",
+      name: "Tambah Barang Baru",
+    },
+    {
+      key: "atur_periode",
+      name: "Atur Periode Pengajuan",
+    },
+    {
+      key: "stock_opname_verify",
+      name: "Verifikasi Stock Opname",
+    }
+  ];
 
   useEffect(() => {
     fetchData();
@@ -93,7 +116,7 @@ export default function MonitoringAdmin() {
         ? dataUsers.filter((u) => u.role_id === 2 || (u.role && u.role.name === "admin"))
         : [];
 
-      // 2. Fetch Logs (Tugas Sudah Dilakukan)
+      // 2. Fetch Logs (Tugas Admin)
       const resLogs = await fetch(`${API_BASE}/monitoring/admin`, {
         headers: {
           "Authorization": `Bearer ${freshToken}`,
@@ -103,27 +126,7 @@ export default function MonitoringAdmin() {
       const dataLogs = await resLogs.json();
       const logsList = dataLogs.success ? dataLogs.logs || [] : [];
 
-      // Map logs to each admin user
-      const adminsWithLogs = adminUsers.map((admin) => {
-        const adminLogs = logsList
-          .filter((log) => log.user_id === admin.id)
-          .map((log) => ({
-            id: log.id,
-            waktu: parseSafeDate(log.created_at),
-            tugas: log.action,
-            deskripsi: formatHumanDescription(log.description, admin.name),
-          }))
-          .sort((a, b) => b.waktu - a.waktu);
-
-        return {
-          ...admin,
-          completedTasks: adminLogs,
-        };
-      });
-
-      setAdmins(adminsWithLogs);
-
-      // 3. Fetch User Requests to filter 'diajukan' (Tugas Belum Dilakukan)
+      // 3. Fetch User Requests for detail lookup
       const resUserReqs = await fetch(`${API_BASE}/monitoring/user`, {
         headers: {
           "Authorization": `Bearer ${freshToken}`,
@@ -131,19 +134,10 @@ export default function MonitoringAdmin() {
         },
       });
       const dataUserReqs = await resUserReqs.json();
-      const mappedRequests = dataUserReqs.success
-        ? (dataUserReqs.requests || [])
-            .filter((r) => r.status === "diajukan")
-            .map((req) => ({
-              id: `req-${req.id}`,
-              waktu: parseSafeDate(req.created_at),
-              tugas: "verifikasi_pengajuan",
-              admin: "-",
-              deskripsi: `Pengajuan ATK Baru #${req.id} dari pemohon "${req.nama_pemohon}" (${req.unit})`,
-            }))
-        : [];
+      const reqList = dataUserReqs.success ? dataUserReqs.requests || [] : [];
+      setAllRequests(reqList);
 
-      // 4. Fetch Stock Opnames to filter 'pending' (Tugas Belum Dilakukan)
+      // 4. Fetch Stock Opnames for detail lookup
       const resSO = await fetch(`${API_BASE}/stock-opname`, {
         headers: {
           "Authorization": `Bearer ${freshToken}`,
@@ -151,20 +145,96 @@ export default function MonitoringAdmin() {
         },
       });
       const dataSO = await resSO.json();
-      const mappedSOs = dataSO.success
-        ? (dataSO.data || [])
-            .filter((so) => so.status === "pending")
-            .map((so) => ({
-              id: `so-${so.id}`,
-              waktu: parseSafeDate(so.created_at),
-              tugas: "stock_opname_verify",
-              admin: so.user?.name || "Staff",
-              deskripsi: `Laporan Stock Opname #${so.id} barang "${so.barang?.nama || "Barang"}"`,
-            }))
-        : [];
+      const soList = dataSO.success ? dataSO.data || [] : [];
+      setAllStockOpnames(soList);
 
-      setPendingRequests(mappedRequests);
-      setPendingStockOpnames(mappedSOs);
+      // 5. Map logs & pending core tasks to each admin user
+      const adminsWithLogs = adminUsers.map((admin) => {
+        const parsedLogs = logsList
+          .filter((log) => log.user_id === admin.id)
+          .map((log) => {
+            const logDate = parseSafeDate(log.created_at);
+
+            // Check if log details or description indicate a rejection
+            let detailsObj = {};
+            if (typeof log.details === "string") {
+              try {
+                detailsObj = JSON.parse(log.details);
+              } catch (e) {}
+            } else if (typeof log.details === "object" && log.details !== null) {
+              detailsObj = log.details;
+            }
+
+            const isRejected =
+              detailsObj.status === "ditolak_admin" ||
+              log.action === "tolak_pengajuan" ||
+              (log.description || "").toLowerCase().includes("ditolak") ||
+              (log.description || "").toLowerCase().includes("menolak");
+
+            const actualTask = isRejected ? "tolak_pengajuan" : log.action;
+
+            // Extract target ID from description
+            const matchReq = (log.description || "").match(/Pengajuan #(\d+)/i);
+            const reqId = matchReq ? parseInt(matchReq[1]) : (detailsObj.pengajuan_id || null);
+
+            const matchSO = (log.description || "").match(/Stock Opname #(\d+)/i);
+            const soId = matchSO ? parseInt(matchSO[1]) : (detailsObj.stock_opname_id || null);
+
+            return {
+              logId: log.id,
+              adminName: admin.name,
+              adminEmail: admin.email,
+              waktu: logDate,
+              tugas: actualTask,
+              isRejected: isRejected,
+              rawAction: log.action,
+              rawDescription: log.description,
+              detailsObj: detailsObj,
+              reqId: reqId,
+              soId: soId,
+              dateTimeStr: formatDateTimeIndo(logDate),
+            };
+          })
+          .sort((a, b) => b.waktu - a.waktu);
+
+        // Group logs by task type (e.g. verifikasi_pengajuan, tolak_pengajuan)
+        const groupedMap = {};
+        parsedLogs.forEach((logItem) => {
+          if (!groupedMap[logItem.tugas]) {
+            groupedMap[logItem.tugas] = {
+              id: `group-${logItem.tugas}-${admin.id}`,
+              adminName: admin.name,
+              adminEmail: admin.email,
+              tugas: logItem.tugas,
+              isRejected: logItem.isRejected,
+              latestWaktu: logItem.waktu,
+              dateTimeStr: logItem.dateTimeStr,
+              count: 0,
+              logs: [],
+            };
+          }
+          groupedMap[logItem.tugas].count += 1;
+          groupedMap[logItem.tugas].logs.push(logItem);
+        });
+
+        const adminCompletedGrouped = Object.values(groupedMap);
+
+        // Find core tasks not performed by this admin
+        const unperformedTasks = CORE_ADMIN_TASKS.filter((taskDef) => {
+          return !adminCompletedGrouped.some((grp) => grp.tugas === taskDef.key);
+        }).map((taskDef) => ({
+          id: `pending-${taskDef.key}-${admin.id}`,
+          tugas: taskDef.key,
+        }));
+
+        return {
+          ...admin,
+          completedTasks: adminCompletedGrouped,
+          pendingTasks: unperformedTasks,
+        };
+      });
+
+      setAdmins(adminsWithLogs);
     } catch (err) {
       console.error("Gagal memuat data monitoring admin:", err);
     } finally {
@@ -177,6 +247,8 @@ export default function MonitoringAdmin() {
     switch (tugas) {
       case "verifikasi_pengajuan":
         return "Verifikasi Pengajuan";
+      case "tolak_pengajuan":
+        return "Penolakan Pengajuan";
       case "barang_create":
         return "Tambah Barang Baru";
       case "atur_periode":
@@ -188,10 +260,9 @@ export default function MonitoringAdmin() {
     }
   };
 
-  // Filter admins list based on search term (always hide admins who have not done any tasks yet)
-  const filteredAdmins = useMemo(() => {
+  // Filter admins list for completed tasks based on search term
+  const filteredAdminsCompleted = useMemo(() => {
     return admins.filter((admin) => {
-      // Always hide admins with 0 completed tasks
       if (!admin.completedTasks || admin.completedTasks.length === 0) {
         return false;
       }
@@ -199,31 +270,31 @@ export default function MonitoringAdmin() {
       const matchName = (admin.name || "").toLowerCase().includes(searchTerm.toLowerCase());
       const matchEmail = (admin.email || "").toLowerCase().includes(searchTerm.toLowerCase());
       
-      const matchTasks = admin.completedTasks?.some(
-        (t) =>
-          (formatTugasName(t.tugas) || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (t.deskripsi || "").toLowerCase().includes(searchTerm.toLowerCase())
+      const matchTasks = admin.completedTasks.some(
+        (t) => (formatTugasName(t.tugas) || "").toLowerCase().includes(searchTerm.toLowerCase())
       );
 
       return matchName || matchEmail || matchTasks;
     });
   }, [admins, searchTerm]);
 
-  // Combined list of all pending tasks in the system
-  const allPendingTasks = useMemo(() => {
-    return [...pendingRequests, ...pendingStockOpnames].sort((a, b) => b.waktu - a.waktu);
-  }, [pendingRequests, pendingStockOpnames]);
+  // Filter admins list for pending tasks based on search term
+  const filteredAdminsPending = useMemo(() => {
+    return admins.filter((admin) => {
+      if (!admin.pendingTasks || admin.pendingTasks.length === 0) {
+        return false;
+      }
 
-  // Filter pending tasks based on search term
-  const filteredPendingTasks = useMemo(() => {
-    return allPendingTasks.filter((item) => {
-      return (
-        (item.deskripsi || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (item.admin || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (formatTugasName(item.tugas) || "").toLowerCase().includes(searchTerm.toLowerCase())
+      const matchName = (admin.name || "").toLowerCase().includes(searchTerm.toLowerCase());
+      const matchEmail = (admin.email || "").toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchTasks = admin.pendingTasks.some(
+        (t) => (formatTugasName(t.tugas) || "").toLowerCase().includes(searchTerm.toLowerCase())
       );
+
+      return matchName || matchEmail || matchTasks;
     });
-  }, [allPendingTasks, searchTerm]);
+  }, [admins, searchTerm]);
 
   return (
     <div className="layout">
@@ -283,7 +354,7 @@ export default function MonitoringAdmin() {
           <div className="card">
             <div className="card-title">Tabel Pemantauan Kinerja Admin</div>
             <p className="card-subtitle">
-              Menampilkan daftar tugas yang diselesaikan oleh setiap admin dan antrean tugas sistem yang perlu diproses.
+              Menampilkan tugas yang sudah dilakukan oleh setiap admin beserta tugas admin yang belum dilakukan.
             </p>
 
             {/* Filter controls */}
@@ -304,7 +375,7 @@ export default function MonitoringAdmin() {
                   outline: "none"
                 }}
               />
-              
+
               <select
                 value={filterType}
                 onChange={(e) => setFilterType(e.target.value)}
@@ -319,9 +390,9 @@ export default function MonitoringAdmin() {
                   cursor: "pointer"
                 }}
               >
-                <option value="all">Semua Tugas</option>
-                <option value="done">Tugas Sudah Dilakukan</option>
-                <option value="pending">Tugas Belum Dilakukan</option>
+                <option value="all">Semua Aktivitas Admin</option>
+                <option value="done">Aktivitas Sudah Dilakukan</option>
+                <option value="pending">Aktivitas Belum Dilakukan</option>
               </select>
             </div>
 
@@ -330,30 +401,29 @@ export default function MonitoringAdmin() {
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
                 
-                {/* 1. TABEL TUGAS SUDAH DILAKUKAN (PER ADMIN) */}
+                {/* 1. TABEL AKTIVITAS ADMIN (SUDAH DILAKUKAN) */}
                 {(filterType === "all" || filterType === "done") && (
                   <div>
                     <h3 style={{ margin: "0 0 12px 0", color: "#0f172a", fontSize: "16px", fontWeight: "700", borderLeft: "4px solid #16a34a", paddingLeft: "8px" }}>
-                      Kinerja Admin (Tugas Sudah Dilakukan)
+                      Aktivitas Admin (Sudah Dilakukan)
                     </h3>
                     
-                    {filteredAdmins.length === 0 ? (
+                    {filteredAdminsCompleted.length === 0 ? (
                       <p style={{ color: "#64748b", fontStyle: "italic", fontSize: "13.5px", marginLeft: "12px" }}>
-                        Tidak ada data admin dengan tugas selesai.
+                        Tidak ada aktivitas admin selesai yang ditemukan.
                       </p>
                     ) : (
                       <div className="table-wrapper" style={{ overflowX: "auto", border: "1px solid #cbd5e1", borderRadius: "12px" }}>
-                        <table style={{ minWidth: "1050px", borderCollapse: "separate", borderSpacing: "0" }}>
+                        <table style={{ minWidth: "750px", borderCollapse: "separate", borderSpacing: "0" }}>
                           <thead>
                             <tr>
                               <th style={{ width: "60px", padding: "16px", textAlign: "center", borderBottom: "2px solid #cbd5e1" }}>NO</th>
                               <th style={{ width: "280px", padding: "16px", borderBottom: "2px solid #cbd5e1" }}>ADMIN</th>
-                              <th style={{ width: "300px", padding: "16px", borderBottom: "2px solid #cbd5e1" }}>TUGAS YANG SUDAH DILAKUKAN</th>
-                              <th style={{ padding: "16px", borderBottom: "2px solid #cbd5e1" }}>DESKRIPSI TUGAS</th>
+                              <th style={{ padding: "16px", borderBottom: "2px solid #cbd5e1" }}>TUGAS SUDAH DILAKUKAN</th>
                             </tr>
                           </thead>
                           <tbody>
-                            {filteredAdmins.map((admin, index) => {
+                            {filteredAdminsCompleted.map((admin, index) => {
                               return (
                                 <tr key={admin.id} style={{ verticalAlign: "middle", background: index % 2 === 0 ? "#ffffff" : "#f8fafc" }}>
                                   <td style={{ 
@@ -361,13 +431,13 @@ export default function MonitoringAdmin() {
                                     textAlign: "center", 
                                     fontWeight: "700", 
                                     color: "#64748b",
-                                    borderBottom: index === filteredAdmins.length - 1 ? "none" : "1px solid #cbd5e1" 
+                                    borderBottom: index === filteredAdminsCompleted.length - 1 ? "none" : "1px solid #cbd5e1" 
                                   }}>
                                     {index + 1}
                                   </td>
                                   <td style={{ 
                                     padding: "16px",
-                                    borderBottom: index === filteredAdmins.length - 1 ? "none" : "1px solid #cbd5e1"
+                                    borderBottom: index === filteredAdminsCompleted.length - 1 ? "none" : "1px solid #cbd5e1"
                                   }}>
                                     <div>
                                       <div style={{ fontWeight: "700", color: "#0f172a", fontSize: "14px" }}>{admin.name}</div>
@@ -375,28 +445,33 @@ export default function MonitoringAdmin() {
                                     </div>
                                   </td>
                                   
-                                  {/* Spanned column containing clean horizontal divider lines between the completed task rows */}
-                                  <td colSpan={2} style={{ 
-                                    padding: "0 16px",
-                                    borderBottom: index === filteredAdmins.length - 1 ? "none" : "1px solid #cbd5e1"
+                                  <td style={{ 
+                                    padding: "12px 16px",
+                                    borderBottom: index === filteredAdminsCompleted.length - 1 ? "none" : "1px solid #cbd5e1"
                                   }}>
-                                    <div style={{ display: "flex", flexDirection: "column" }}>
+                                    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                                       {admin.completedTasks.map((t, idx) => (
-                                        <div key={idx} style={{ 
-                                          display: "grid", 
-                                          gridTemplateColumns: "300px 1fr", 
-                                          alignItems: "center", 
-                                          padding: "12px 0",
-                                          borderBottom: idx === admin.completedTasks.length - 1 ? "none" : "1.5px solid #cbd5e1" 
-                                        }}>
-                                          <div>
-                                            <span className="badge badge-green-premium">
-                                              {formatTugasName(t.tugas)}
-                                            </span>
-                                          </div>
-                                          <div style={{ fontSize: "13px", color: "#334155", paddingLeft: "16px" }}>
-                                            {t.deskripsi}
-                                          </div>
+                                        <div key={idx} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px", flexWrap: "wrap" }}>
+                                          <span className={`badge ${t.isRejected ? "badge-red-premium" : "badge-green-premium"}`}>
+                                            {formatTugasName(t.tugas)} {t.count > 1 ? `(${t.count})` : ""}
+                                          </span>
+                                          
+                                          <button
+                                            onClick={() => setSelectedLogGroup(t)}
+                                            style={{
+                                              padding: "5px 12px",
+                                              backgroundColor: "#0284c7",
+                                              color: "#ffffff",
+                                              border: "none",
+                                              borderRadius: "6px",
+                                              fontSize: "12px",
+                                              fontWeight: "600",
+                                              cursor: "pointer",
+                                              boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
+                                            }}
+                                          >
+                                            Lihat Detail ({t.count})
+                                          </button>
                                         </div>
                                       ))}
                                     </div>
@@ -411,16 +486,16 @@ export default function MonitoringAdmin() {
                   </div>
                 )}
 
-                {/* 2. TABEL ANTREAN TUGAS BELUM DILAKUKAN (SISTEM) */}
+                {/* 2. TABEL AKTIVITAS ADMIN (BELUM DILAKUKAN) */}
                 {(filterType === "all" || filterType === "pending") && (
                   <div style={{ marginTop: filterType === "all" ? "16px" : "0" }}>
                     <h3 style={{ margin: "0 0 12px 0", color: "#0f172a", fontSize: "16px", fontWeight: "700", borderLeft: "4px solid #ea580c", paddingLeft: "8px" }}>
-                      Antrean Tugas Sistem (Tugas Belum Dilakukan)
+                      Aktivitas Admin (Belum Dilakukan)
                     </h3>
                     
-                    {filteredPendingTasks.length === 0 ? (
+                    {filteredAdminsPending.length === 0 ? (
                       <p style={{ color: "#16a34a", fontWeight: "600", fontSize: "13.5px", marginLeft: "12px" }}>
-                        Semua selesai! Tidak ada antrean tugas tertunda.
+                        Luar biasa! Seluruh tugas admin telah dilaksanakan.
                       </p>
                     ) : (
                       <div className="table-wrapper" style={{ overflowX: "auto", border: "1px solid #cbd5e1", borderRadius: "12px" }}>
@@ -428,54 +503,50 @@ export default function MonitoringAdmin() {
                           <thead>
                             <tr>
                               <th style={{ width: "60px", padding: "16px", textAlign: "center", borderBottom: "2px solid #cbd5e1" }}>NO</th>
-                              <th style={{ width: "240px", padding: "16px", borderBottom: "2px solid #cbd5e1" }}>ADMIN</th>
-                              <th style={{ width: "280px", padding: "16px", borderBottom: "2px solid #cbd5e1" }}>TUGAS YANG BELUM DILAKUKAN</th>
-                              <th style={{ padding: "16px", borderBottom: "2px solid #cbd5e1" }}>DESKRIPSI TUGAS</th>
+                              <th style={{ width: "280px", padding: "16px", borderBottom: "2px solid #cbd5e1" }}>ADMIN</th>
+                              <th style={{ padding: "16px", borderBottom: "2px solid #cbd5e1" }}>TUGAS BELUM DILAKUKAN</th>
                             </tr>
                           </thead>
                           <tbody>
-                            {filteredPendingTasks.map((task, index) => (
-                              <tr key={task.id || index} style={{ verticalAlign: "middle", background: index % 2 === 0 ? "#ffffff" : "#f8fafc" }}>
-                                <td style={{ 
-                                  padding: "16px", 
-                                  textAlign: "center", 
-                                  fontWeight: "700", 
-                                  color: "#64748b",
-                                  borderBottom: "1.5px solid #cbd5e1" 
-                                }}>
-                                  {index + 1}
-                                </td>
-                                <td style={{ 
-                                  padding: "16px",
-                                  borderBottom: "1.5px solid #cbd5e1",
-                                  fontSize: "13.5px",
-                                  fontWeight: "700",
-                                  color: "#0f172a"
-                                }}>
-                                  {task.admin !== "-" ? (
-                                    <span>{task.admin}</span>
-                                  ) : (
-                                    <span style={{ color: "#94a3b8", fontWeight: "normal", fontStyle: "italic" }}>Belum ditentukan</span>
-                                  )}
-                                </td>
-                                <td style={{ 
-                                  padding: "16px",
-                                  borderBottom: "1.5px solid #cbd5e1"
-                                }}>
-                                  <span className="badge badge-orange-premium">
-                                    {formatTugasName(task.tugas)}
-                                  </span>
-                                </td>
-                                <td style={{ 
-                                  padding: "16px",
-                                  borderBottom: "1.5px solid #cbd5e1",
-                                  fontSize: "13px",
-                                  color: "#475569"
-                                }}>
-                                  {task.deskripsi}
-                                </td>
-                              </tr>
-                            ))}
+                            {filteredAdminsPending.map((admin, index) => {
+                              return (
+                                <tr key={admin.id} style={{ verticalAlign: "middle", background: index % 2 === 0 ? "#ffffff" : "#f8fafc" }}>
+                                  <td style={{ 
+                                    padding: "16px", 
+                                    textAlign: "center", 
+                                    fontWeight: "700", 
+                                    color: "#64748b",
+                                    borderBottom: index === filteredAdminsPending.length - 1 ? "none" : "1px solid #cbd5e1" 
+                                  }}>
+                                    {index + 1}
+                                  </td>
+                                  <td style={{ 
+                                    padding: "16px",
+                                    borderBottom: index === filteredAdminsPending.length - 1 ? "none" : "1px solid #cbd5e1"
+                                  }}>
+                                    <div>
+                                      <div style={{ fontWeight: "700", color: "#0f172a", fontSize: "14px" }}>{admin.name}</div>
+                                      <div style={{ fontSize: "11.5px", color: "#64748b", marginTop: "1px" }}>{admin.email}</div>
+                                    </div>
+                                  </td>
+                                  
+                                  <td style={{ 
+                                    padding: "12px 16px",
+                                    borderBottom: index === filteredAdminsPending.length - 1 ? "none" : "1px solid #cbd5e1"
+                                  }}>
+                                    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                                      {admin.pendingTasks.map((t, idx) => (
+                                        <div key={idx}>
+                                          <span className="badge badge-orange-premium">
+                                            {formatTugasName(t.tugas)}
+                                          </span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
                           </tbody>
                         </table>
                       </div>
@@ -488,6 +559,253 @@ export default function MonitoringAdmin() {
           </div>
         </section>
       </main>
+
+      {/* ===================== DETAIL MODAL ===================== */}
+      {selectedLogGroup && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(15, 23, 42, 0.5)",
+            backdropFilter: "blur(4px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 9999,
+            padding: "16px"
+          }}
+        >
+          <div
+            style={{
+              background: "#ffffff",
+              borderRadius: "16px",
+              width: "100%",
+              maxWidth: "800px",
+              maxHeight: "90vh",
+              overflowY: "auto",
+              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+              border: "1px solid #e2e8f0"
+            }}
+          >
+            {/* Modal Header */}
+            <div style={{
+              padding: "20px 24px",
+              borderBottom: "1px solid #e2e8f0",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              background: "#f8fafc",
+              borderTopLeftRadius: "16px",
+              borderTopRightRadius: "16px"
+            }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: "17px", color: "#0f172a", fontWeight: "700" }}>
+                  Rincian Detail {formatTugasName(selectedLogGroup.tugas)} ({selectedLogGroup.count} Aktivitas)
+                </h3>
+                <div style={{ fontSize: "12px", color: "#64748b", marginTop: "2px" }}>
+                  Admin Pelaksana: <strong>{selectedLogGroup.adminName}</strong> ({selectedLogGroup.adminEmail})
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedLogGroup(null)}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  fontSize: "20px",
+                  cursor: "pointer",
+                  color: "#64748b",
+                  fontWeight: "700"
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal Content - List of Cards */}
+            <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "24px" }}>
+              {selectedLogGroup.logs.map((logItem, logIdx) => {
+                const currentRelatedRequest = logItem.reqId ? allRequests.find((r) => r.id === logItem.reqId) : null;
+                const currentRelatedSO = logItem.soId ? allStockOpnames.find((s) => s.id === logItem.soId) : null;
+
+                return (
+                  <div key={logItem.logId} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                    
+                    {/* Header item index if > 1 */}
+                    {selectedLogGroup.count > 1 && (
+                      <div style={{ fontSize: "13px", fontWeight: "700", color: "#0284c7" }}>
+                        Aktivitas ke-{selectedLogGroup.count - logIdx} • Waktu: {logItem.dateTimeStr}
+                      </div>
+                    )}
+
+                    {/* SECTION: VERIFIKASI / PENOLAKAN PENGAJUAN */}
+                    {(selectedLogGroup.tugas === "verifikasi_pengajuan" || selectedLogGroup.tugas === "tolak_pengajuan") && (
+                      <div>
+                        {currentRelatedRequest ? (
+                          <div style={{
+                            background: "#ffffff",
+                            border: "1px solid #e2e8f0",
+                            borderLeft: `4px solid ${logItem.isRejected ? "#dc2626" : "#0284c7"}`,
+                            borderRadius: "12px",
+                            padding: "20px 24px",
+                            boxShadow: "0 2px 8px rgba(0,0,0,0.04)"
+                          }}>
+                            {/* Card Header */}
+                            <div style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                              marginBottom: "14px",
+                              paddingBottom: "10px",
+                              borderBottom: "1px solid #f1f5f9",
+                              flexWrap: "wrap",
+                              gap: "10px"
+                            }}>
+                              <div>
+                                <div style={{ fontSize: "15px", fontWeight: 700, color: "#0f172a" }}>
+                                  👤 {currentRelatedRequest.nama_pemohon}
+                                </div>
+                                <div style={{ fontSize: "12px", color: "#64748b", marginTop: "2px" }}>
+                                  Jabatan: <b>{currentRelatedRequest.jabatan || "-"}</b> • Fakultas: <b>{currentRelatedRequest.unit || "-"}</b> • Tanggal: <b>{logItem.dateTimeStr}</b>
+                                </div>
+                              </div>
+
+                              {/* Status Badge Pill */}
+                              <span style={{
+                                padding: "4px 14px",
+                                borderRadius: "9999px",
+                                fontSize: "12px",
+                                fontWeight: "700",
+                                backgroundColor: logItem.isRejected ? "#ef4444" : "#3b82f6",
+                                color: "#ffffff",
+                                boxShadow: "0 1px 2px rgba(0,0,0,0.1)"
+                              }}>
+                                {currentRelatedRequest.status.replace(/_/g, " ").toUpperCase()}
+                              </span>
+                            </div>
+
+                            {/* Dark Blue Header Table */}
+                            <div style={{ overflowX: "auto", borderRadius: "8px", border: "1px solid #cbd5e1" }}>
+                              <table style={{ width: "100%", fontSize: "13px", borderCollapse: "collapse" }}>
+                                <thead>
+                                  <tr style={{ background: "linear-gradient(135deg, #0f3854, #1e3a5f)", color: "#ffffff" }}>
+                                    <th style={{ padding: "10px 14px", textAlign: "left", fontSize: "12px", fontWeight: 700 }}>BARANG</th>
+                                    <th style={{ padding: "10px 14px", textAlign: "left", fontSize: "12px", fontWeight: 700 }}>SATUAN</th>
+                                    <th style={{ padding: "10px 14px", textAlign: "center", fontSize: "12px", fontWeight: 700 }}>KEBUTUHAN</th>
+                                    <th style={{ padding: "10px 14px", textAlign: "center", fontSize: "12px", fontWeight: 700 }}>SISA STOK</th>
+                                    <th style={{ padding: "10px 14px", textAlign: "center", fontSize: "12px", fontWeight: 700 }}>DIAJUKAN</th>
+                                    <th style={{ padding: "10px 14px", textAlign: "center", fontSize: "12px", fontWeight: 700 }}>DISETUJUI</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {(currentRelatedRequest.items || []).map((item, idx) => (
+                                    <tr key={item.id} style={{ borderBottom: "1px solid #f1f5f9", background: idx % 2 === 0 ? "#ffffff" : "#f8fafc" }}>
+                                      <td style={{ padding: "10px 14px", fontWeight: 600, color: "#0f172a" }}>{item.barang?.nama || "Barang"}</td>
+                                      <td style={{ padding: "10px 14px", color: "#64748b" }}>{item.barang?.satuan || "pcs"}</td>
+                                      <td style={{ padding: "10px 14px", textAlign: "center" }}>{item.kebutuhan_total}</td>
+                                      <td style={{ padding: "10px 14px", textAlign: "center" }}>{item.sisa_stok}</td>
+                                      <td style={{ padding: "10px 14px", textAlign: "center", fontWeight: 700, color: "#2563eb" }}>{item.jumlah_diajukan}</td>
+                                      <td style={{ padding: "10px 14px", textAlign: "center", fontWeight: 700, color: item.jumlah_disetujui === 0 ? "#ef4444" : "#10b981" }}>
+                                        {item.jumlah_disetujui ?? item.jumlah_diajukan}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+
+                            {/* Catatan Verifikasi Admin jika ada */}
+                            {currentRelatedRequest.catatan_admin && (
+                              <div style={{ marginTop: "14px", padding: "12px", background: logItem.isRejected ? "#fef2f2" : "#f0fdf4", border: logItem.isRejected ? "1px solid #fecaca" : "1px solid #bbf7d0", borderRadius: "8px", fontSize: "13px" }}>
+                                <strong style={{ color: logItem.isRejected ? "#dc2626" : "#15803d" }}>Catatan Verifikasi Admin:</strong>
+                                <p style={{ margin: "4px 0 0 0", color: "#334155" }}>{currentRelatedRequest.catatan_admin}</p>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div style={{ padding: "16px", background: "#f8fafc", borderRadius: "10px", border: "1px solid #e2e8f0", fontSize: "13px", color: "#64748b" }}>
+                            Log Aksi #{logItem.logId}: "{logItem.rawDescription}" • Waktu: {logItem.dateTimeStr}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* SECTION: VERIFIKASI STOCK OPNAME */}
+                    {selectedLogGroup.tugas === "stock_opname_verify" && (
+                      <div style={{ padding: "16px", background: "#f8fafc", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
+                        {currentRelatedSO ? (
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", fontSize: "13px" }}>
+                            <div><strong>Pelapor / User:</strong> {currentRelatedSO.user?.name} ({currentRelatedSO.user?.email})</div>
+                            <div><strong>Barang:</strong> {currentRelatedSO.barang?.nama}</div>
+                            <div><strong>Stok Fisik:</strong> {currentRelatedSO.stok_fisik}</div>
+                            <div><strong>Stok Sistem:</strong> {currentRelatedSO.stok_sistem}</div>
+                            <div>
+                              <strong>Selisih Stok:</strong>{" "}
+                              <span style={{ color: currentRelatedSO.selisih < 0 ? "#dc2626" : "#16a34a", fontWeight: "700" }}>
+                                {currentRelatedSO.selisih}
+                              </span>
+                            </div>
+                            <div><strong>Status Verifikasi:</strong> <span style={{ fontWeight: "700", color: "#16a34a" }}>{currentRelatedSO.status.toUpperCase()}</span></div>
+                            <div><strong>Waktu:</strong> {logItem.dateTimeStr}</div>
+                          </div>
+                        ) : (
+                          <div style={{ fontSize: "13px", color: "#64748b" }}>
+                            Log Aksi #{logItem.logId}: "{logItem.rawDescription}" • Waktu: {logItem.dateTimeStr}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* SECTION: TAMBAH BARANG BARU */}
+                    {selectedLogGroup.tugas === "barang_create" && (
+                      <div style={{ padding: "16px", background: "#f8fafc", borderRadius: "10px", border: "1px solid #e2e8f0", fontSize: "13.5px" }}>
+                        <strong>Aksi Tambah Barang:</strong> {logItem.rawDescription}
+                        <div style={{ fontSize: "12px", color: "#64748b", marginTop: "4px" }}>Waktu: {logItem.dateTimeStr}</div>
+                      </div>
+                    )}
+
+                    {/* SECTION: ATUR PERIODE */}
+                    {selectedLogGroup.tugas === "atur_periode" && (
+                      <div style={{ padding: "16px", background: "#f8fafc", borderRadius: "10px", border: "1px solid #e2e8f0", fontSize: "13.5px" }}>
+                        <strong>Aksi Atur Periode:</strong> {logItem.rawDescription}
+                        <div style={{ fontSize: "12px", color: "#64748b", marginTop: "4px" }}>Waktu: {logItem.dateTimeStr}</div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Modal Footer */}
+            <div style={{
+              padding: "16px 24px",
+              borderTop: "1px solid #e2e8f0",
+              textAlign: "right",
+              background: "#f8fafc",
+              borderBottomLeftRadius: "16px",
+              borderBottomRightRadius: "16px"
+            }}>
+              <button
+                onClick={() => setSelectedLogGroup(null)}
+                style={{
+                  padding: "8px 18px",
+                  background: "#64748b",
+                  color: "#ffffff",
+                  border: "none",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  fontSize: "13px",
+                  fontWeight: "600"
+                }}
+              >
+                Tutup Modal
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style>{`
         .badge {
@@ -503,6 +821,11 @@ export default function MonitoringAdmin() {
           background-color: #f0fdf4;
           color: #16a34a;
           border: 1px solid #bbf7d0;
+        }
+        .badge-red-premium {
+          background-color: #fef2f2;
+          color: #dc2626;
+          border: 1px solid #fecaca;
         }
         .badge-orange-premium {
           background-color: #fff7ed;

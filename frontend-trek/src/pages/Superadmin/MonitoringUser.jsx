@@ -24,15 +24,18 @@ export default function MonitoringUser() {
       { label: "Dashboard Super Admin", to: "/dashboardsuperadmin" },
       { label: "Monitoring Admin", to: "/superadmin/monitoring-admin" },
       { label: "Monitoring User", to: "/superadmin/monitoring-user", active: true },
+      { label: "Grafik Barang", to: "/superadmin/grafik-barang" },
+      { label: "Grafik Belanja", to: "/superadmin/grafik-belanja" },
       { label: "Approval Pengajuan", to: "/approval" },
       { label: "Tambah & Kelola User", to: "/tambahuser" },
       { label: "Atur Periode", to: "/periode" },
       { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang" },
-      { label: "Grafik Belanja", to: "/superadmin/grafik-belanja" },
       { label: "Stock Opname Barang", to: "/stock-opname" },
       { label: "Template Dokumen", to: "/template-dokumen" },
     ];
   }, []);
+
+  const [stockOpnames, setStockOpnames] = useState([]);
 
   useEffect(() => {
     fetchRequests();
@@ -41,9 +44,12 @@ export default function MonitoringUser() {
   const fetchRequests = async () => {
     try {
       setLoading(true);
+      const freshToken = localStorage.getItem("token");
+
+      // 1. Fetch Pengajuan ATK User
       const res = await fetch(`${API_BASE}/monitoring/user`, {
         headers: {
-          "Authorization": `Bearer ${token}`,
+          "Authorization": `Bearer ${freshToken}`,
           "Accept": "application/json",
         },
       });
@@ -51,8 +57,20 @@ export default function MonitoringUser() {
       if (data.success) {
         setRequests(data.requests || []);
       }
+
+      // 2. Fetch Stock Opname User
+      const resSO = await fetch(`${API_BASE}/stock-opname`, {
+        headers: {
+          "Authorization": `Bearer ${freshToken}`,
+          "Accept": "application/json",
+        },
+      });
+      const dataSO = await resSO.json();
+      if (dataSO.success) {
+        setStockOpnames(dataSO.data || []);
+      }
     } catch (err) {
-      console.error("Gagal memuat pengajuan user:", err);
+      console.error("Gagal memuat data monitoring user:", err);
     } finally {
       setLoading(false);
     }
@@ -61,13 +79,17 @@ export default function MonitoringUser() {
   const getStatusBadgeClass = (status) => {
     switch (status) {
       case "diajukan":
+      case "pending":
         return "badge-warning";
       case "diverifikasi_admin":
+      case "verified":
         return "badge-info";
       case "disetujui":
+      case "approved":
         return "badge-success";
       case "ditolak_admin":
       case "ditolak":
+      case "rejected":
         return "badge-danger";
       case "direvisi":
         return "badge-secondary";
@@ -77,6 +99,7 @@ export default function MonitoringUser() {
   };
 
   const formatStatus = (status) => {
+    if (!status) return "-";
     return status.replace(/_/g, " ").toUpperCase();
   };
 
@@ -91,10 +114,22 @@ export default function MonitoringUser() {
     });
   }, [requests, searchTerm, statusFilter]);
 
+  const filteredStockOpnames = useMemo(() => {
+    return stockOpnames.filter((so) => {
+      const userName = so.user?.name || "";
+      const barangName = so.barang?.nama || "";
+      const matchSearch =
+        userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        barangName.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchStatus = statusFilter === "all" || so.status === statusFilter;
+      return matchSearch && matchStatus;
+    });
+  }, [stockOpnames, searchTerm, statusFilter]);
+
   const uniqueStatuses = useMemo(() => {
-    const statuses = requests.map((req) => req.status);
+    const statuses = [...requests.map((r) => r.status), ...stockOpnames.map((s) => s.status)];
     return ["all", ...new Set(statuses)];
-  }, [requests]);
+  }, [requests, stockOpnames]);
 
   const formatRupiah = (number) => {
     return new Intl.NumberFormat("id-ID", {
@@ -147,7 +182,7 @@ export default function MonitoringUser() {
       <main className="main">
         <header className="topbar">
           <div>
-            <div className="topbar-title">Monitoring Pengajuan User</div>
+            <div className="topbar-title">Monitoring Pengajuan & Aktivitas User</div>
             <div className="topbar-sub">
               Selamat datang: {currentUser?.name || "Super Admin"}
             </div>
@@ -159,6 +194,7 @@ export default function MonitoringUser() {
         </header>
 
         <section className="main-content">
+          {/* CARD PENGAJUAN ATK USER */}
           <div className="card">
             <div className="card-title">Daftar Pengajuan ATK User</div>
             <p style={{ marginBottom: 16 }}>
@@ -169,7 +205,7 @@ export default function MonitoringUser() {
             <div style={{ display: "flex", gap: "12px", marginBottom: "16px", flexWrap: "wrap" }}>
               <input
                 type="text"
-                placeholder="Cari pemohon, unit, atau jabatan..."
+                placeholder="Cari pemohon, unit, atau barang..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 style={{
@@ -203,7 +239,7 @@ export default function MonitoringUser() {
             {loading ? (
               <p>Sedang memuat data pengajuan...</p>
             ) : filteredRequests.length === 0 ? (
-              <p>Tidak ada data pengajuan user yang ditemukan.</p>
+              <p style={{ color: "#64748b", fontStyle: "italic" }}>Tidak ada data pengajuan ATK user yang ditemukan.</p>
             ) : (
               <div className="table-wrapper">
                 <table>
@@ -257,6 +293,72 @@ export default function MonitoringUser() {
                           >
                             Lihat Item
                           </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {/* CARD STOCK OPNAME USER */}
+          <div className="card" style={{ marginTop: "24px" }}>
+            <div className="card-title">Daftar Laporan Stock Opname User</div>
+            <p style={{ marginBottom: 16 }}>
+              Halaman ini memantau seluruh input laporan Stock Opname fisik barang yang dimasukkan oleh user.
+            </p>
+
+            {loading ? (
+              <p>Sedang memuat data stock opname...</p>
+            ) : filteredStockOpnames.length === 0 ? (
+              <p style={{ color: "#64748b", fontStyle: "italic" }}>Tidak ada data laporan stock opname user yang ditemukan.</p>
+            ) : (
+              <div className="table-wrapper">
+                <table>
+                  <thead>
+                    <tr>
+                      <th style={{ width: "60px" }}>No</th>
+                      <th>Pemohon / User</th>
+                      <th>Barang</th>
+                      <th>Stok Fisik</th>
+                      <th>Stok Sistem</th>
+                      <th>Selisih</th>
+                      <th>Keterangan</th>
+                      <th>Status</th>
+                      <th>Waktu Input</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredStockOpnames.map((so, index) => (
+                      <tr key={so.id}>
+                        <td>{index + 1}</td>
+                        <td>
+                          <strong>{so.user?.name || "User"}</strong>
+                          <div style={{ fontSize: "11px", color: "#64748b" }}>{so.user?.email}</div>
+                        </td>
+                        <td><strong>{so.barang?.nama || "Barang"}</strong></td>
+                        <td>{so.stok_fisik}</td>
+                        <td>{so.stok_sistem}</td>
+                        <td>
+                          <span style={{ color: so.selisih < 0 ? "#dc2626" : "#16a34a", fontWeight: "700" }}>
+                            {so.selisih}
+                          </span>
+                        </td>
+                        <td>{so.keterangan || "-"}</td>
+                        <td>
+                          <span className={`badge ${getStatusBadgeClass(so.status)}`}>
+                            {formatStatus(so.status)}
+                          </span>
+                        </td>
+                        <td style={{ fontSize: "12px", color: "#64748b" }}>
+                          {so.created_at ? new Date(so.created_at).toLocaleString("id-ID", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit"
+                          }) : "-"}
                         </td>
                       </tr>
                     ))}

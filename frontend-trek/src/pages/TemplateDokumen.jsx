@@ -39,11 +39,12 @@ export default function TemplateDokumen() {
         { label: "Dashboard Super Admin", to: "/dashboardsuperadmin" },
         { label: "Monitoring Admin", to: "/superadmin/monitoring-admin" },
         { label: "Monitoring User", to: "/superadmin/monitoring-user" },
+        { label: "Grafik Barang", to: "/superadmin/grafik-barang" },
+        { label: "Grafik Belanja", to: "/superadmin/grafik-belanja" },
         { label: "Approval Pengajuan", to: "/approval" },
         { label: "Tambah & Kelola User", to: "/tambahuser" },
         { label: "Atur Periode", to: "/periode" },
         { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang" },
-        { label: "Grafik Belanja", to: "/superadmin/grafik-belanja" },
         { label: "Stock Opname Barang", to: "/stock-opname" },
         { label: "Template Dokumen", to: "/template-dokumen", active: true },
       ];

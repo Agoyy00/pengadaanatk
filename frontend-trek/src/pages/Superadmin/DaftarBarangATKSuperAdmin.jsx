@@ -254,11 +254,12 @@ export default function DaftarBarangATKSuperAdmin() {
       { label: "Dashboard Super Admin", to: "/dashboardsuperadmin" },
       { label: "Monitoring Admin", to: "/superadmin/monitoring-admin" },
       { label: "Monitoring User", to: "/superadmin/monitoring-user" },
+      { label: "Grafik Barang", to: "/superadmin/grafik-barang" },
+      { label: "Grafik Belanja", to: "/superadmin/grafik-belanja" },
       { label: "Approval Pengajuan", to: "/approval" },
       { label: "Tambah & Kelola User", to: "/tambahuser" },
       { label: "Atur Periode", to: "/periode" },
       { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang", active: true },
-      { label: "Grafik Belanja", to: "/superadmin/grafik-belanja" },
       { label: "Stock Opname Barang", to: "/stock-opname" },
       { label: "Template Dokumen", to: "/template-dokumen" },
     ];
@@ -267,9 +268,10 @@ export default function DaftarBarangATKSuperAdmin() {
   const loadBarang = async () => {
     setLoading(true);
     try {
+      const freshToken = localStorage.getItem("token");
       const res = await fetch(`${API_BASE}/barang?q=${encodeURIComponent(q)}`, {
         headers: {
-          "Authorization": `Bearer ${token}`,
+          "Authorization": `Bearer ${freshToken}`,
         },
       });
       const data = await res.json();

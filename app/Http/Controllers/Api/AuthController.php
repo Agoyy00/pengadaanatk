@@ -80,11 +80,9 @@ class AuthController extends Controller
             }
 
             // 2. AMBIL NAMA ASLI DARI LDAP (Display Name)
-            // $info berasal dari hasil ldap_get_entries yang sudah kita buat sebelumnya
             $fullName = $info[0]['displayname'][0] ?? $user->name;
 
             // 3. UPDATE NAMA DI DATABASE LOKAL
-            // Sekarang nama 'keke.odsa' akan berubah jadi 'Keke Odsa Maya' secara otomatis
             $user->update([
                 'name' => $fullName,
                 'is_ldap' => 1
@@ -98,16 +96,34 @@ class AuthController extends Controller
                 'token'   => $token,
                 'user'    => [
                     'id'    => $user->id,
-                    'name'  => $user->name, // Ini sudah nama lengkap asli
+                    'name'  => $user->name,
                     'email' => $user->email,
-                    'role'  => $user->role->name,
+                    'role'  => $user->role ? $user->role->name : 'User',
                 ],
             ]);
         }
-        // 6. Jika Password LDAP Salah
+
+        // 5. Fallback ke Login Lokal Database (untuk akun Seeder / Local)
+        if ($user && Hash::check($password, $user->password)) {
+            $user->tokens()->delete();
+            $token = $user->createToken('api-token')->plainTextToken;
+
+            return response()->json([
+                'success' => true,
+                'token'   => $token,
+                'user'    => [
+                    'id'    => $user->id,
+                    'name'  => $user->name,
+                    'email' => $user->email,
+                    'role'  => $user->role ? $user->role->name : 'User',
+                ],
+            ]);
+        }
+
+        // 6. Jika Password LDAP & Lokal Salah
         return response()->json([
             'success' => false,
-            'message' => 'Username atau Password LDAP YARSI salah.',
+            'message' => 'Username atau Password salah.',
         ], 401);
     }
 }

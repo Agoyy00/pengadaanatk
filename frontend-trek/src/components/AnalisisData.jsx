@@ -13,6 +13,7 @@ export default function AnalisisData({ open, onClose }) {
   // =====================
   const [barangList, setBarangList] = useState([]);
   const [barangId, setBarangId] = useState("");
+  const [periodeList, setPeriodeList] = useState([]);
   const [tahunAkademik, setTahunAkademik] = useState("all");
   const [unit, setUnit] = useState("all");
 
@@ -34,52 +35,70 @@ export default function AnalisisData({ open, onClose }) {
   ];
 
   // =====================
-  // LOAD BARANG
+  // LOAD BARANG & PERIODE
   // =====================
   useEffect(() => {
-    async function loadBarang() {
+    async function loadInitialData() {
       try {
-        const res = await fetch(`${API_BASE}/barang`, {
-          headers: { "Authorization": `Bearer ${token}` },
-        });
-        const data = await res.json();
-        setBarangList(data || []);
-        if (data?.length) setBarangId(String(data[0].id));
-      } catch {
-        setErrorMsg("Gagal memuat daftar barang");
+        const freshToken = localStorage.getItem("token");
+        const headers = { "Authorization": `Bearer ${freshToken}` };
+
+        // Fetch barang
+        const resBarang = await fetch(`${API_BASE}/barang`, { headers });
+        const dataBarang = await resBarang.json();
+        setBarangList(Array.isArray(dataBarang) ? dataBarang : []);
+        if (dataBarang?.length) setBarangId(String(dataBarang[0].id));
+
+        // Fetch periode
+        const resPeriode = await fetch(`${API_BASE}/periode`, { headers });
+        const dataPeriode = await resPeriode.json();
+        const listP = Array.isArray(dataPeriode) ? dataPeriode : (dataPeriode?.data || []);
+        if (Array.isArray(listP)) {
+          const uniqueYears = [...new Set(listP.map(p => p.tahun_akademik).filter(Boolean))];
+          setPeriodeList(uniqueYears);
+        }
+      } catch (err) {
+        console.error("Error load initial data:", err);
+        setErrorMsg("Gagal memuat data filter");
       }
     }
-    loadBarang();
-  }, []);
+    if (open) {
+      loadInitialData();
+    }
+  }, [open]);
 
   // =====================
   // ANALISIS
   // =====================
   async function handleAnalisis(e) {
-    e.preventDefault();
+    if (e) e.preventDefault();
+    if (!barangId) return;
     setLoading(true);
     setErrorMsg("");
     setResult(null);
 
     try {
+      const freshToken = localStorage.getItem("token");
       const params = new URLSearchParams({
         barang_id: barangId,
         tahun_akademik: tahunAkademik,
         unit,
       });
 
-      const res = await fetch(`${API_BASE}/analisis-barang?${params}`, 
-        { headers: { "Authorization": `Bearer ${token}` } });
+      const res = await fetch(`${API_BASE}/analisis-barang?${params}`, {
+        headers: { "Authorization": `Bearer ${freshToken}` },
+      });
       const json = await res.json();
 
       if (!res.ok || json.success === false) {
-        setErrorMsg(json.message || "Gagal mengambil analisis");
+        setErrorMsg(json.message || "Gagal mengambil data analisis");
         return;
       }
 
       setResult(json);
-    } catch {
-      setErrorMsg("Kesalahan jaringan");
+    } catch (err) {
+      console.error("Error analisis:", err);
+      setErrorMsg("Kesalahan koneksi ke server");
     } finally {
       setLoading(false);
     }
@@ -117,9 +136,18 @@ export default function AnalisisData({ open, onClose }) {
               onChange={(e) => setTahunAkademik(e.target.value)}
             >
               <option value="all">Semua Tahun</option>
-              <option value="2023/2024">2023/2024</option>
-              <option value="2024/2025">2024/2025</option>
-              <option value="2025/2026">2025/2026</option>
+              {periodeList.length > 0 ? (
+                periodeList.map((th) => (
+                  <option key={th} value={th}>
+                    {th}
+                  </option>
+                ))
+              ) : (
+                <>
+                  <option value="2024/2025">2024/2025</option>
+                  <option value="2025/2026">2025/2026</option>
+                </>
+              )}
             </select>
 
             <select value={unit} onChange={(e) => setUnit(e.target.value)}>
@@ -140,6 +168,12 @@ export default function AnalisisData({ open, onClose }) {
         </form>
 
         {/* HASIL */}
+        {result && !result.summary && (
+          <p style={{ marginTop: "16px", color: "#64748b", fontStyle: "italic", fontSize: "13.5px" }}>
+            {result.message || "Belum ada data pengajuan untuk barang ini dengan filter yang dipilih."}
+          </p>
+        )}
+
         {result?.summary && (
           <div className="analisis-result">
             <h3>
