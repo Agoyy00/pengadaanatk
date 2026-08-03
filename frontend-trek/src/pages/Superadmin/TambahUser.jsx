@@ -1,0 +1,346 @@
+import { FaEye, FaEyeSlash } from "react-icons/fa";
+import React, { useState, useMemo, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import "../../css/User.css";
+import "../../css/layout.css";
+import RoleSwitcher from "../../components/RoleSwitcher";
+
+const API_BASE = import.meta.env.VITE_API_BASE;
+
+export default function TambahUser() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState("user");
+  const [password, setPassword] = useState("");
+  const [message, setMessage] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [users, setUsers] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+
+  // Ambil user login (harusnya superadmin)
+  const storedUser = localStorage.getItem("user");
+  const currentUser = storedUser ? JSON.parse(storedUser) : null;
+
+  // ==========================================
+  // 1. FUNGSI SUBMIT (POST USER)
+  // ==========================================
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setLoadingUsers(true);
+    setMessage("");
+    setErrorMsg("");
+
+    const freshToken = localStorage.getItem("token");
+    let cleanEmail = email.trim().toLowerCase();
+
+    if (cleanEmail.includes("@")) {
+      cleanEmail = cleanEmail.split("@")[0];
+    }
+
+    if (!cleanEmail) {
+      setErrorMsg("Username tidak boleh kosong.");
+      setLoadingUsers(false);
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/users`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json", 
+          "Accept": "application/json",
+          "Authorization": `Bearer ${freshToken}` 
+        },
+        body: JSON.stringify({ 
+          email: cleanEmail, 
+          role: role 
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.status === 401) {
+        setErrorMsg("Sesi login habis. Silakan Log Out dan masuk kembali.");
+        setLoadingUsers(false);
+        return;
+      }
+
+      if (!res.ok || !data.success) {
+        setErrorMsg(data.message || "User tidak ditemukan di database kampus.");
+        setLoadingUsers(false);
+        return;
+      }
+
+      setMessage(`Berhasil! ${data.user.name} telah ditambahkan.`);
+      setEmail("");
+      await loadUsers();
+    } catch (err) {
+      setErrorMsg("Terjadi kesalahan koneksi server.");
+    } finally {
+      setLoadingUsers(false);
+    }
+  }
+
+  // ==========================================
+  // 2. FUNGSI LOAD DATA (GET USERS)
+  // ==========================================
+  async function loadUsers() {
+    setLoadingUsers(true);
+    try {
+      const freshToken = localStorage.getItem("token");
+      const baseUrl = API_BASE || import.meta.env.VITE_API_BASE || "";
+
+      const res = await fetch(`${baseUrl}/users`, {
+        method: "GET",
+        headers: { 
+          "Authorization": `Bearer ${freshToken}`,
+          "Accept": "application/json"
+        },
+      });
+
+      if (!res.ok) throw new Error(`Error: ${res.status}`);
+
+      const data = await res.json();
+      setUsers(data);
+    } catch (err) {
+      console.error("Gagal memuat user:", err);
+    } finally {
+      setLoadingUsers(false);
+    }
+  }
+
+  // ==========================================
+  // 3. FUNGSI HAPUS DATA (DELETE USER)
+  // ==========================================
+  async function deleteUser(user) {
+    if (user.role?.name === "superadmin") {
+      alert("Super Admin tidak boleh dihapus");
+      return;
+    }
+
+    const confirmText =
+      user.role?.name === "admin"
+        ? "Ini akun ADMIN. Yakin mau hapus?"
+        : "Yakin hapus user ini?";
+
+    if (!window.confirm(confirmText)) return;
+
+    try {
+      const freshToken = localStorage.getItem("token");
+
+      const res = await fetch(`${API_BASE}/users/${user.id}`, {
+        method: "DELETE",
+        headers: { 
+          "Authorization": `Bearer ${freshToken}`,
+          "Accept": "application/json"
+        },
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        alert(data.message || "Gagal menghapus user");
+        return;
+      }
+
+      setUsers((prev) => prev.filter((u) => u.id !== user.id));
+    } catch (err) {
+      alert("Terjadi kesalahan saat menghapus user.");
+    }
+  }
+
+  const formatRole = (roleName) => {
+    if (!roleName) return "-";
+
+    return roleName
+      .toLowerCase()
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+  };
+
+  // Pemicu load data saat halaman dibuka pertama kali
+  useEffect(() => {
+    loadUsers();
+  }, []);
+
+  const sidebarMenus = useMemo(() => {
+    return [
+      { label: "Dashboard Super Admin", to: "/dashboardsuperadmin" },
+      { label: "Monitoring Admin", to: "/superadmin/monitoring-admin" },
+      { label: "Monitoring User", to: "/superadmin/monitoring-user" },
+      { label: "Grafik Barang", to: "/superadmin/grafik-barang" },
+      { label: "Grafik Belanja", to: "/superadmin/grafik-belanja" },
+      { label: "Approval Pengajuan", to: "/approval" },
+      { label: "Tambah & Kelola User", to: "/tambahuser", active: true },
+      { label: "Atur Periode", to: "/periode" },
+      { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang" },
+      { label: "Stock Opname Barang", to: "/stock-opname" },
+      { label: "Template Dokumen", to: "/template-dokumen" },
+    ];
+  }, []);
+
+  return (
+    <div className="layout">
+      {/* SIDEBAR */}
+      <aside className="sidebar">
+        <div>
+          <div className="sidebar-logo">Sistem Pengajuan ATK</div>
+          <div className="sidebar-subtitle">Universitas Yarsi</div>
+        </div>
+
+        <nav className="sidebar-menu">
+          {sidebarMenus.map((m) => {
+            const isActive = location.pathname === m.to;
+            return (
+              <div
+                key={m.label}
+                className={`menu-item ${isActive ? "active" : ""}`}
+                style={{ cursor: isActive ? "default" : "pointer" }}
+                onClick={() => {
+                  if (!isActive) {
+                    navigate(m.to);
+                  }
+                }}
+              >
+                {m.label}
+              </div>
+            );
+          })}
+        </nav>
+
+        <div
+          className="logout"
+          onClick={() => {
+            localStorage.removeItem("user");
+            localStorage.removeItem("token");
+            window.location.href = "/";
+          }}
+          style={{ cursor: "pointer" }}
+        >
+          Log Out
+        </div>
+      </aside>
+
+      {/* MAIN */}
+      <main className="main">
+        <header className="topbar">
+          <div>
+            <div className="topbar-title">Tambah User Baru</div>
+            <div className="topbar-sub">
+              Super Admin dapat menambahkan akun admin / user baru.
+            </div>
+          </div>
+          <div className="topbar-right">
+            <span>Role: </span>
+            <RoleSwitcher />
+          </div>
+        </header>
+
+        <section className="main-content">
+          <div className="card">
+            <div className="card-title">Form Tambah User</div>
+            <div className="card-subtitle">
+              Isi data user yang akan dibuat. 
+            </div>
+
+            <form onSubmit={handleSubmit}>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 16,
+                  maxWidth: 400,
+                }}
+              >
+                <div className="form-group2">
+                  <label>Username / Email Kampus</label>
+                  <input
+                    type="text"
+                    className="input-text"
+                    placeholder="Contoh: alzkar.muhammad atau alzkarmuhammad@yarsi.ac.id"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                  <p style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                    *Cukup masukkan ID kampus, sistem akan otomatis mendaftarkannya.
+                  </p>
+                </div>
+
+                <div className="form-group">
+                  <label>Role</label>
+                  <select
+                    className="select-input"
+                    value={role}
+                    onChange={(e) => setRole(e.target.value)}
+                  >
+                    <option value="user">User</option>
+                    <option value="admin">Admin</option>
+                    <option value="superadmin">Super Admin</option>
+                  </select>
+                </div>
+
+                <button type="submit" className="btn btn-primary">
+                  Simpan User
+                </button>
+
+                {message && (
+                  <p style={{ color: "green", marginTop: 8 }}>{message}</p>
+                )}
+                {errorMsg && (
+                  <p className="error-text" style={{ marginTop: 8 }}>
+                    {errorMsg}
+                  </p>
+                )}
+              </div>
+            </form>
+          </div>
+          <div className="card" style={{ marginTop: 24 }}>
+            <div className="card-title">Daftar User</div>
+            {loadingUsers ? (
+              <p>Memuat user...</p>
+            ) : (
+              <div style={{ overflowX: "auto" }}>
+                <table className="table" style={{ width: "100%" }}>
+                  <thead>
+                    <tr>
+                      <th>Nama</th>
+                      <th>Email</th>
+                      <th>Role</th>
+                      <th style={{ textAlign: "center" }}>Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {users.map((u) => (
+                      <tr key={u.id}>
+                        <td>{u.name}</td>
+                        <td>{u.email}</td>
+                        <td>
+                          <span className={`role-badge role-${u.role?.name || u.role}`}>
+                            {formatRole(u.role?.name || u.role)}
+                          </span>
+                        </td>
+                        <td style={{ textAlign: "center" }}>
+                          <button
+                            className="btn btn-danger"
+                            disabled={(u.role?.name || u.role) === "superadmin"}
+                            onClick={() => deleteUser(u)}
+                          >
+                            Hapus
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </section>
+      </main>
+    </div>
+  );
+}

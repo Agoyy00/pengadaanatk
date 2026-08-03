@@ -1,0 +1,86 @@
+/* =========================
+   ACTION BUTTONS (KANAN)
+   ========================= */
+
+.action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Import Excel */
+.btn-import {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid #1f6feb;
+  background: #ffffff;
+  color: #1f6feb;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-import:hover {
+  background: #1f6feb;
+  color: #ffffff;
+  box-shadow: 0 6px 14px rgba(31, 111, 235, 0.25);
+}
+
+/* Tambah Barang */
+.btn-add {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  background: #16a34a;
+  color: white;
+  transition: all 0.2s ease;
+}
+
+.btn-add:hover {
+  background: #15803d;
+  box-shadow: 0 6px 14px rgba(22, 163, 74, 0.3);
+}
+
+/* Tablet */
+@media (max-width: 992px) {
+  .action-buttons {
+    gap: 8px;
+  }
+
+  .btn-import,
+  .btn-add {
+    padding: 9px 12px;
+    font-size: 14px;
+  }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+
+  .action-buttons {
+    width: 100%;
+    flex-wrap: wrap;        /* Biar bisa turun */
+    justify-content: flex-start;
+    gap: 8px;
+  }
+
+  .btn-import,
+  .btn-add {
+    flex: 1;                /* Tombol jadi full width */
+    text-align: center;
+    font-size: 14px;
+  }
+
+}
+
+/* Small mobile */
+@media (max-width: 480px) {
+
+  .btn-import,
+  .btn-add {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+
+}

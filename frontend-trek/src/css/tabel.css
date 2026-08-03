@@ -1,0 +1,78 @@
+/* ===== PREMIUM TABLE STYLING ===== */
+.table-wrapper {
+    margin-top: 20px;
+    overflow-x: auto;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+}
+
+.table-title {
+    margin-top: 18px;
+    font-size: 15px;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+    min-width: 900px;
+    background-color: #ffffff;
+}
+
+table thead th {
+    font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+    background: linear-gradient(135deg, #0f172a 0%, #164e63 100%);
+    color: #ffffff !important;
+    font-weight: 700;
+    font-size: 12.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 14px 16px;
+    border-bottom: 2px solid #06b6d4;
+    border-top: none;
+}
+
+/* Table body rows */
+th, td {
+    padding: 14px 16px;
+    text-align: left;
+    transition: background-color 0.2s ease;
+}
+
+td {
+    border-bottom: 1px solid #f1f5f9;
+    color: #334155;
+    line-height: 1.5;
+}
+
+/* Alternating Row Colors */
+table tbody tr:nth-child(even) td {
+    background-color: #f8fafc;
+}
+
+table tbody tr:nth-child(odd) td {
+    background-color: #ffffff;
+}
+
+/* Hover Row Highlight */
+table tbody tr:hover td {
+    background-color: #f0f9ff !important;
+    color: #0369a1;
+}
+
+/* Badges list styling inside table */
+table td li {
+    list-style: none;
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px dashed #e2e8f0;
+}
+
+table td li:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
