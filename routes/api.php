@@ -135,6 +135,7 @@ Route::middleware('auth:sanctum')->group(function () {
     */
     Route::get('/options/{type}', [OptionController::class, 'index']);
     Route::post('/options/{type}', [OptionController::class, 'store']);
+    Route::put('/options/{id}', [OptionController::class, 'update']);
     Route::delete('/options/{id}', [OptionController::class, 'destroy']);
 
     /*

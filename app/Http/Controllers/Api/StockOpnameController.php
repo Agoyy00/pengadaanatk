@@ -111,16 +111,34 @@ class StockOpnameController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
-        $stockOpname->update([
-            'status' => 'verified'
+        $validated = $request->validate([
+            'stok_fisik' => 'nullable|integer|min:0',
+            'keterangan' => 'nullable|string',
         ]);
+
+        $updateData = ['status' => 'verified'];
+
+        if (isset($validated['stok_fisik'])) {
+            $hasil_verifikasi = (int)$validated['stok_fisik'];
+            $updateData['hasil_verifikasi'] = $hasil_verifikasi;
+            $updateData['selisih'] = $hasil_verifikasi - $stockOpname->stok_sistem;
+        } else {
+            $updateData['hasil_verifikasi'] = $stockOpname->stok_fisik;
+            $updateData['selisih'] = $stockOpname->stok_fisik - $stockOpname->stok_sistem;
+        }
+
+        if (isset($validated['keterangan'])) {
+            $updateData['keterangan'] = $validated['keterangan'];
+        }
+
+        $stockOpname->update($updateData);
 
         // LOG ACTIVITY
         \Illuminate\Support\Facades\DB::table('admin_activity_logs')->insert([
             'user_id'     => $user->id,
             'action'      => 'stock_opname_verify',
             'description' => "Admin memverifikasi Laporan Stock Opname #{$stockOpname->id}",
-            'details'     => json_encode(['status' => 'verified']),
+            'details'     => json_encode(['status' => 'verified', 'hasil_verifikasi' => $stockOpname->hasil_verifikasi, 'keterangan' => $stockOpname->keterangan]),
             'ip_address'  => $request->ip(),
             'created_at'  => now(),
             'updated_at'  => now(),
@@ -129,7 +147,7 @@ class StockOpnameController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Laporan stock opname berhasil diverifikasi oleh admin.',
-            'data'    => $stockOpname
+            'data'    => $stockOpname->load(['barang', 'user'])
         ]);
     }
 
@@ -151,9 +169,9 @@ class StockOpnameController extends Controller
             $barang = Barang::findOrFail($stockOpname->barang_id);
             $oldData = $barang->toArray();
 
-            // Update stok barang ke stok fisik
+            // Update stok barang ke hasil verifikasi
             $barang->update([
-                'stok' => $stockOpname->stok_fisik
+                'stok' => $stockOpname->hasil_verifikasi ?? $stockOpname->stok_fisik
             ]);
 
             // Catat ke audit log

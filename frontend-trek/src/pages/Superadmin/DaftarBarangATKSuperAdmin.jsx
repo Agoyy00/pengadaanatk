@@ -1,3 +1,4 @@
+import DesktopSidebarToggle from '../../components/DesktopSidebarToggle';
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import Swal from "sweetalert2";
@@ -5,6 +6,8 @@ import "../../css/layout.css";
 import "../../css/Barang.css";
 import ImportExcelBarang from "../../components/ImportExcelBarang";
 import RoleSwitcher from "../../components/RoleSwitcher";
+
+
 
 const API_BASE = import.meta.env.VITE_API_BASE;
 const token = localStorage.getItem("token");
@@ -541,10 +544,20 @@ const onDeleteSelected = async () => {
   }
 };
 
+  
+  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768);
+
   return (
     <div className="layout">
+      <DesktopSidebarToggle isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
       {/* SIDEBAR */}
-      <aside className="sidebar">
+      {isSidebarOpen && (
+        <div 
+          className="sidebar-overlay open" 
+          onClick={() => setIsSidebarOpen(false)} 
+        />
+      )}
+      <aside className={`sidebar ${isSidebarOpen ? "open" : ""}`}>
         <div>
           <div className="sidebar-logo">Sistem Pengajuan ATK</div>
           <div className="sidebar-subtitle">Universitas Yarsi</div>
@@ -579,11 +592,22 @@ const onDeleteSelected = async () => {
       </aside>
 
       {/* MAIN */}
-      <main className="main">
-        <header className="topbar">
-          <div>
+      <main className={`main ${!isSidebarOpen ? 'expanded' : ''}`}>
+        <header className={`topbar ${!isSidebarOpen ? 'expanded' : ''}`}>
+          <div className="topbar-left-wrapper">
+            <button 
+              className={`hamburger-menu ${isSidebarOpen ? 'open' : ''}`} 
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              aria-label="Toggle Sidebar"
+            >
+              <span className="hamburger-line"></span>
+              <span className="hamburger-line"></span>
+              <span className="hamburger-line"></span>
+            </button>
+            <div>
             <div className="topbar-title">Kelola Barang ATK</div>
             <div className="topbar-sub">Daftar barang agar konsisten & rapi</div>
+          </div>
           </div>
           <div className="topbar-right">
             <span>Role: </span>

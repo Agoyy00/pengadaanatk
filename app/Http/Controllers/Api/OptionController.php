@@ -63,6 +63,35 @@ class OptionController extends Controller
         ]);
     }
 
+    public function update(Request $request, int $id)
+    {
+        $request->validate([
+            'value' => 'required|string|max:255',
+        ]);
+
+        $option = Option::findOrFail($id);
+        $oldValue = $option->value;
+        $newValue = trim($request->input('value'));
+
+        $option->value = $newValue;
+        $option->save();
+
+        // Cascade update to pengajuans table
+        if ($option->type === 'jabatan') {
+            \App\Models\Pengajuan::where('jabatan', $oldValue)->update(['jabatan' => $newValue]);
+        } elseif ($option->type === 'unit') {
+            \App\Models\Pengajuan::where('unit', $oldValue)->update(['unit' => $newValue]);
+            // Cascade update to users table
+            \App\Models\User::where('fakultas', $oldValue)->update(['fakultas' => $newValue]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Opsi berhasil diupdate',
+            'data' => $option
+        ]);
+    }
+
     public function destroy(int $id)
     {
         $option = Option::findOrFail($id);

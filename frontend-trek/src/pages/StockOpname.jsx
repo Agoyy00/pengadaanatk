@@ -1,4 +1,7 @@
-import { useEffect, useState, useMemo } from "react";
+import DesktopSidebarToggle from '../components/DesktopSidebarToggle';
+import React, { useState, useEffect, useMemo, useRef } from "react";
+
+
 import { useNavigate, useLocation } from "react-router-dom";
 import Swal from "sweetalert2";
 import "../css/layout.css";
@@ -46,6 +49,13 @@ export default function StockOpname() {
   const [queryBarang, setQueryBarang] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [formError, setFormError] = useState("");
+
+  // Verify Modal state
+  const [verifyModalOpen, setVerifyModalOpen] = useState(false);
+  const [selectedVerifyOpname, setSelectedVerifyOpname] = useState(null);
+  const [verifyStokFisik, setVerifyStokFisik] = useState("");
+  const [verifyKeterangan, setVerifyKeterangan] = useState("");
+  const [verifyFormError, setVerifyFormError] = useState("");
 
   // CSV Import states
   const [showImportPreview, setShowImportPreview] = useState(false);
@@ -383,30 +393,57 @@ export default function StockOpname() {
     }
   };
 
-  // Admin verifies a report
-  const handleVerify = async (id) => {
-    const ok = window.confirm("Verifikasi laporan stock opname ini?");
-    if (!ok) return;
+  const openVerifyModal = (opname) => {
+    setSelectedVerifyOpname(opname);
+    setVerifyStokFisik(opname.stok_fisik);
+    setVerifyKeterangan(opname.keterangan || "");
+    setVerifyFormError("");
+    setVerifyModalOpen(true);
+  };
+
+  const closeVerifyModal = () => {
+    setVerifyModalOpen(false);
+    setSelectedVerifyOpname(null);
+  };
+
+  const onSubmitVerify = async () => {
+    if (!selectedVerifyOpname) return;
+
+    if (verifyStokFisik === "" || verifyStokFisik === null) {
+      setVerifyFormError("Stok fisik wajib diisi.");
+      return;
+    }
+    if (Number(verifyStokFisik) < 0) {
+      setVerifyFormError("Stok fisik tidak boleh negatif.");
+      return;
+    }
 
     try {
       setLoading(true);
-      const res = await fetch(`${API_BASE}/stock-opname/${id}/verify`, {
+      const res = await fetch(`${API_BASE}/stock-opname/${selectedVerifyOpname.id}/verify`, {
         method: "PATCH",
         headers: {
+          "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`,
           "Accept": "application/json",
         },
+        body: JSON.stringify({
+          stok_fisik: Number(verifyStokFisik),
+          keterangan: verifyKeterangan,
+        }),
       });
+
       const data = await res.json();
-      if (data.success) {
+      if (res.ok && data.success) {
         alert("Laporan berhasil diverifikasi admin ✅");
+        closeVerifyModal();
         loadOpnames();
       } else {
-        alert(data.message || "Gagal memverifikasi laporan.");
+        setVerifyFormError(data.message || "Gagal memverifikasi laporan.");
       }
     } catch (err) {
       console.error(err);
-      alert("Terjadi kesalahan server.");
+      setVerifyFormError("Terjadi kesalahan server.");
     } finally {
       setLoading(false);
     }
@@ -512,30 +549,40 @@ export default function StockOpname() {
     let bg = "#f3f4f6";
     let text = "#374151";
     let label = "Pending";
+    let border = "1px solid #e5e7eb";
 
     if (status === "verified") {
-      bg = "#dbeafe";
-      text = "#1e40af";
-      label = "Terverifikasi Admin";
+      bg = "#fefce8";
+      text = "#a16207";
+      border = "1px solid #fef08a";
+      label = "Diverifikasi Admin";
     } else if (status === "approved") {
-      bg = "#dcfce7";
-      text = "#14532d";
+      bg = "#f0fdf4";
+      text = "#15803d";
+      border = "1px solid #bbf7d0";
       label = "Disetujui Superadmin";
     } else if (status === "rejected") {
-      bg = "#fee2e2";
-      text = "#991b1b";
+      bg = "#fef2f2";
+      text = "#b91c1c";
+      border = "1px solid #fecaca";
       label = "Ditolak";
     }
 
     return (
       <span
         style={{
-          padding: "4px 10px",
-          borderRadius: "9999px",
+          display: "inline-flex",
+          alignItems: "center",
+          gap: "4px",
+          padding: "5px 12px",
+          borderRadius: "999px",
           fontSize: "12px",
-          fontWeight: 600,
+          fontWeight: 700,
           backgroundColor: bg,
           color: text,
+          border: border,
+          whiteSpace: "nowrap",
+          boxShadow: "0 1px 2px rgba(0, 0, 0, 0.05)",
         }}
       >
         {label}
@@ -543,10 +590,20 @@ export default function StockOpname() {
     );
   };
 
+  
+  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768);
+
   return (
     <div className="layout">
+      <DesktopSidebarToggle isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
       {/* SIDEBAR */}
-      <aside className="sidebar">
+      {isSidebarOpen && (
+        <div 
+          className="sidebar-overlay open" 
+          onClick={() => setIsSidebarOpen(false)} 
+        />
+      )}
+      <aside className={`sidebar ${isSidebarOpen ? "open" : ""}`}>
         <div>
           <div className="sidebar-logo">Sistem Pengajuan ATK</div>
           <div className="sidebar-subtitle">Universitas Yarsi</div>
@@ -584,16 +641,26 @@ export default function StockOpname() {
       </aside>
 
       {/* MAIN CONTAINER */}
-      <main className="main">
+      <main className={`main ${!isSidebarOpen ? 'expanded' : ''}`}>
         {/* TOPBAR */}
-        <header className="topbar">
-          <div>
+        <header className={`topbar ${!isSidebarOpen ? 'expanded' : ''}`}>
+          <div className="topbar-left-wrapper">
+            <button 
+              className={`hamburger-menu ${isSidebarOpen ? 'open' : ''}`} 
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              aria-label="Toggle Sidebar"
+            >
+              <span className="hamburger-line"></span>
+              <span className="hamburger-line"></span>
+              <span className="hamburger-line"></span>
+            </button>
+            <div>
             <div className="topbar-title">Stock Opname Barang</div>
             <div className="topbar-sub">
               Sistem pencatatan dan penyesuaian stok fisik ATK
             </div>
           </div>
-
+          </div>
           <div className="topbar-right">
             <PeriodeTimer />
             <span style={{ marginRight: 8 }}>Pengguna: <b>{currentUser?.name}</b></span>
@@ -730,10 +797,10 @@ export default function StockOpname() {
                     <tr style={{ borderBottom: "2px solid #e5e7eb", background: "#f9fafb" }}>
                       <th style={{ padding: "12px 16px" }}>Tanggal</th>
                       <th style={{ padding: "12px 16px" }}>Unit / Fakultas</th>
-                      <th style={{ padding: "12px 16px" }}>Barang</th>
-                      <th style={{ padding: "12px 16px", textAlign: "center" }}>Stok Sistem</th>
-                      <th style={{ padding: "12px 16px", textAlign: "center" }}>Stok Fisik</th>
-                      <th style={{ padding: "12px 16px", textAlign: "center" }}>Selisih</th>
+                      <th style={{ padding: "12px 16px" }}>{role === "admin" ? "Nama Barang" : "Barang"}</th>
+                      <th style={{ padding: "12px 16px", textAlign: "center" }}>Jumlah Barang</th>
+                      <th style={{ padding: "12px 16px", textAlign: "center" }}>Hasil Verifikasi</th>
+                      {role !== "user" && <th style={{ padding: "12px 16px", textAlign: "center" }}>Selisih</th>}
                       <th style={{ padding: "12px 16px" }}>Status</th>
                       <th style={{ padding: "12px 16px" }}>Keterangan</th>
                       <th style={{ padding: "12px 16px", textAlign: "right" }}>Aksi</th>
@@ -746,8 +813,9 @@ export default function StockOpname() {
                         month: "short",
                         year: "numeric",
                       });
-                      const selisihLabel = o.selisih > 0 ? `+${o.selisih}` : o.selisih;
-                      const selisihColor = o.selisih === 0 ? "#374151" : o.selisih > 0 ? "#16a34a" : "#dc2626";
+                      const hasHasilVerifikasi = o.hasil_verifikasi !== null && o.hasil_verifikasi !== undefined;
+                      const selisihLabel = hasHasilVerifikasi ? Math.abs(o.stok_fisik - o.hasil_verifikasi) : "-";
+                      const selisihColor = !hasHasilVerifikasi || selisihLabel === 0 ? "#374151" : "#dc2626";
 
                       return (
                         <tr key={o.id} style={{ borderBottom: "1px solid #f3f4f6" }}>
@@ -761,22 +829,24 @@ export default function StockOpname() {
                             <div style={{ fontSize: 12, color: "#9ca3af" }}>Kode: {o.barang?.kode}</div>
                           </td>
                           <td style={{ padding: "14px 16px", textAlign: "center", fontSize: 14 }}>
-                            {o.stok_sistem}
-                          </td>
-                          <td style={{ padding: "14px 16px", textAlign: "center", fontSize: 14 }}>
                             {o.stok_fisik}
                           </td>
-                          <td
-                            style={{
-                              padding: "14px 16px",
-                              textAlign: "center",
-                              fontWeight: 700,
-                              color: selisihColor,
-                              fontSize: 14,
-                            }}
-                          >
-                            {selisihLabel}
+                          <td style={{ padding: "14px 16px", textAlign: "center", fontSize: 14 }}>
+                            {o.hasil_verifikasi !== null && o.hasil_verifikasi !== undefined ? o.hasil_verifikasi : "-"}
                           </td>
+                          {role !== "user" && (
+                            <td
+                              style={{
+                                padding: "14px 16px",
+                                textAlign: "center",
+                                fontWeight: 700,
+                                color: selisihColor,
+                                fontSize: 14,
+                              }}
+                            >
+                              {selisihLabel}
+                            </td>
+                          )}
                           <td style={{ padding: "14px 16px" }}>{getStatusPill(o.status)}</td>
                           <td style={{ padding: "14px 16px", fontSize: 13, color: "#4b5563", maxWidth: 150 }}>
                             {o.keterangan || "-"}
@@ -805,7 +875,7 @@ export default function StockOpname() {
                             {role === "admin" && o.status === "pending" && (
                               <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
                                 <button
-                                  onClick={() => handleVerify(o.id)}
+                                  onClick={() => openVerifyModal(o)}
                                   style={{
                                     padding: "6px 10px",
                                     fontSize: 12,
@@ -818,21 +888,6 @@ export default function StockOpname() {
                                   }}
                                 >
                                   Verifikasi
-                                </button>
-                                <button
-                                  onClick={() => handleReject(o.id)}
-                                  style={{
-                                    padding: "6px 10px",
-                                    fontSize: 12,
-                                    borderRadius: 8,
-                                    border: "1px solid #dc2626",
-                                    background: "transparent",
-                                    color: "#dc2626",
-                                    fontWeight: 600,
-                                    cursor: "pointer",
-                                  }}
-                                >
-                                  Tolak
                                 </button>
                               </div>
                             )}
@@ -900,7 +955,7 @@ export default function StockOpname() {
               <h2 style={{ marginTop: 0 }}>Buat Laporan Stock Opname</h2>
 
               <label style={{ display: "block", marginTop: 10, marginBottom: 6 }}>
-                <b>Cari Barang ATK</b>
+                <b>Nama Barang ATK</b>
               </label>
               
               <div style={{ display: "flex", gap: 8 }}>
@@ -978,7 +1033,7 @@ export default function StockOpname() {
               <div style={{ display: "flex", gap: 16, marginTop: 16 }}>
                 <div style={{ flex: 1 }}>
                   <label style={{ display: "block", marginBottom: 6 }}>
-                    <b>Stok Fisik yang Ditemukan</b>
+                    <b>Jumlah Barang</b>
                   </label>
                   <input
                     type="number"
@@ -995,39 +1050,39 @@ export default function StockOpname() {
                   />
                 </div>
 
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: "block", marginBottom: 6 }}>
-                    <b>Selisih Perhitungan</b>
-                  </label>
-                  <div
-                    style={{
-                      padding: 10,
-                      borderRadius: 10,
-                      border: "1px solid #ddd",
-                      background: "#f9fafb",
-                      fontWeight: 700,
-                      color:
-                        selectedBarang && stokFisik !== ""
-                          ? Number(stokFisik) - selectedBarang.stok === 0
-                            ? "#374151"
-                            : Number(stokFisik) - selectedBarang.stok > 0
-                            ? "#16a34a"
-                            : "#dc2626"
-                          : "#9ca3af",
-                    }}
-                  >
-                    {selectedBarang && stokFisik !== ""
-                      ? `${Number(stokFisik) - selectedBarang.stok > 0 ? "+" : ""}${
-                          Number(stokFisik) - selectedBarang.stok
-                        }`
-                      : "Pilih barang & isi stok fisik"}
+                {role !== "user" && (
+                  <div style={{ flex: 1 }}>
+                    <label style={{ display: "block", marginBottom: 6 }}>
+                      <b>Selisih Perhitungan</b>
+                    </label>
+                    <div
+                      style={{
+                        padding: 10,
+                        borderRadius: 10,
+                        border: "1px solid #ddd",
+                        background: "#f9fafb",
+                        fontWeight: 700,
+                        color:
+                          selectedBarang && stokFisik !== ""
+                            ? Number(stokFisik) - selectedBarang.stok === 0
+                              ? "#374151"
+                              : Number(stokFisik) - selectedBarang.stok > 0
+                              ? "#16a34a"
+                              : "#dc2626"
+                            : "#9ca3af",
+                      }}
+                    >
+                      {selectedBarang && stokFisik !== ""
+                        ? Math.abs(Number(stokFisik) - selectedBarang.stok)
+                        : "Pilih barang & isi stok fisik"}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
 
               {/* Keterangan */}
               <label style={{ display: "block", marginTop: 16, marginBottom: 6 }}>
-                <b>Keterangan (Alasan Selisih / Kondisi Barang)</b>
+                <b>Keterangan (Alasan Selisih / Kondisi Barang) (Opsional)</b>
               </label>
               <textarea
                 style={{
@@ -1063,8 +1118,9 @@ export default function StockOpname() {
                   style={{
                     padding: "10px 14px",
                     borderRadius: 10,
-                    border: "1px solid #ddd",
-                    background: "white",
+                    border: "1px solid #ef4444",
+                    background: "transparent",
+                    color: "#ef4444",
                     cursor: "pointer",
                     fontWeight: 700,
                   }}
@@ -1085,6 +1141,151 @@ export default function StockOpname() {
                   }}
                 >
                   Kirim Laporan
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* VERIFY MODAL */}
+      {verifyModalOpen && selectedVerifyOpname && (
+        <div className="modal-overlay">
+          <div className="modal-box-small" style={{ width: 560 }}>
+            <button className="close-btn-small" onClick={closeVerifyModal}>
+              ✖
+            </button>
+
+            <div style={{ padding: 16 }}>
+              <h2 style={{ marginTop: 0 }}>Verifikasi Laporan Stock Opname</h2>
+
+              {/* Selected Barang Info */}
+              <div
+                style={{
+                  marginTop: 12,
+                  padding: 12,
+                  borderRadius: 8,
+                  background: "#eff6ff",
+                  border: "1px solid #bfdbfe",
+                }}
+              >
+                <div style={{ fontSize: 13, color: "#1e40af" }}>Barang yang Diverifikasi:</div>
+                <h4 style={{ margin: "4px 0" }}>{selectedVerifyOpname.barang?.nama || "Barang Terhapus"}</h4>
+                <div style={{ display: "flex", gap: 20, marginTop: 6, fontSize: 13 }}>
+                  <div>Kode: <b>{selectedVerifyOpname.barang?.kode}</b></div>
+                  <div>Stok Sistem: <b>{selectedVerifyOpname.stok_sistem}</b></div>
+                  <div>Stok Fisik Diajukan User: <b>{selectedVerifyOpname.stok_fisik}</b></div>
+                </div>
+              </div>
+
+              {/* Stock count and discrepancy */}
+              <div style={{ display: "flex", gap: 16, marginTop: 16 }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: "block", marginBottom: 6 }}>
+                    <b>Jumlah Barang</b>
+                  </label>
+                  <input
+                    type="number"
+                    style={{
+                      width: "100%",
+                      padding: 10,
+                      borderRadius: 10,
+                      border: "1px solid #ddd",
+                    }}
+                    value={verifyStokFisik}
+                    onChange={(e) => setVerifyStokFisik(e.target.value)}
+                    placeholder="Contoh: 10"
+                    min="0"
+                  />
+                </div>
+
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: "block", marginBottom: 6 }}>
+                    <b>Selisih Perhitungan</b>
+                  </label>
+                  <div
+                    style={{
+                      padding: 10,
+                      borderRadius: 10,
+                      border: "1px solid #ddd",
+                      background: "#f9fafb",
+                      fontWeight: 700,
+                      color:
+                        verifyStokFisik !== ""
+                          ? Math.abs(selectedVerifyOpname.stok_fisik - Number(verifyStokFisik)) === 0
+                            ? "#374151"
+                            : "#dc2626"
+                          : "#9ca3af",
+                    }}
+                  >
+                    {verifyStokFisik !== ""
+                      ? Math.abs(selectedVerifyOpname.stok_fisik - Number(verifyStokFisik))
+                      : "Isi jumlah barang"}
+                  </div>
+                </div>
+              </div>
+
+              {/* Keterangan / Alasan */}
+              <label style={{ display: "block", marginTop: 16, marginBottom: 6 }}>
+                <b>Keterangan (Alasan Penyesuaian / Kondisi Barang) (Opsional)</b>
+              </label>
+              <textarea
+                style={{
+                  width: "100%",
+                  padding: 10,
+                  borderRadius: 10,
+                  border: "1px solid #ddd",
+                  height: 80,
+                  resize: "vertical",
+                }}
+                value={verifyKeterangan}
+                onChange={(e) => setVerifyKeterangan(e.target.value)}
+                placeholder="Tulis alasan jika stok fisik disesuaikan atau tidak sesuai yang diajukan user..."
+              />
+
+              {verifyFormError && (
+                <div style={{ color: "#ef4444", marginTop: 10, fontSize: 14 }}>
+                  <b>⚠️ {verifyFormError}</b>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  gap: 10,
+                  marginTop: 20,
+                }}
+              >
+                <button
+                  onClick={closeVerifyModal}
+                  style={{
+                    padding: "10px 14px",
+                    borderRadius: 10,
+                    border: "1px solid #ef4444",
+                    background: "transparent",
+                    color: "#ef4444",
+                    cursor: "pointer",
+                    fontWeight: 700,
+                  }}
+                >
+                  Batal
+                </button>
+
+                <button
+                  onClick={onSubmitVerify}
+                  style={{
+                    padding: "10px 14px",
+                    borderRadius: 10,
+                    border: "none",
+                    cursor: "pointer",
+                    background: "#2563eb",
+                    color: "white",
+                    fontWeight: 800,
+                  }}
+                >
+                  Verifikasi Laporan
                 </button>
               </div>
             </div>
@@ -1132,7 +1333,7 @@ export default function StockOpname() {
                   <tbody>
                     {importPreviewData.map((item, idx) => {
                       const selisihColor = item.selisih === 0 ? "#374151" : item.selisih > 0 ? "#16a34a" : "#dc2626";
-                      const selisihLabel = item.selisih > 0 ? `+${item.selisih}` : item.selisih;
+                      const selisihLabel = Math.abs(item.selisih);
                       return (
                         <tr key={item.barang_id} style={{ borderBottom: "1px solid #f3f4f6" }}>
                           <td style={{ padding: "10px 12px", color: "#9ca3af" }}>{idx + 1}</td>
@@ -1185,8 +1386,9 @@ export default function StockOpname() {
                   style={{
                     padding: "10px 16px",
                     borderRadius: 10,
-                    border: "1px solid #ddd",
-                    background: "white",
+                    border: "1px solid #ef4444",
+                    background: "transparent",
+                    color: "#ef4444",
                     cursor: "pointer",
                     fontWeight: 600,
                     fontSize: 14,

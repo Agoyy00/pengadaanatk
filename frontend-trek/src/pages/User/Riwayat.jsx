@@ -1,3 +1,4 @@
+import DesktopSidebarToggle from '../../components/DesktopSidebarToggle';
 import React, { useEffect, useState, useMemo } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import Swal from "sweetalert2";
@@ -6,6 +7,8 @@ import "../../css/Riwayat.css";
 import "../../css/layout.css";
 import RoleSwitcher from "../../components/RoleSwitcher";
 import PeriodeTimer from "../../components/PeriodeTimer";
+
+
 
 const API_BASE = import.meta.env.VITE_API_BASE;
 
@@ -368,10 +371,20 @@ export default function Riwayat() {
     0
   );
 
+  
+  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768);
+
   return (
     <div className="layout">
+      <DesktopSidebarToggle isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
       {/* SIDEBAR */}
-      <aside className="sidebar">
+      {isSidebarOpen && (
+        <div 
+          className="sidebar-overlay open" 
+          onClick={() => setIsSidebarOpen(false)} 
+        />
+      )}
+      <aside className={`sidebar ${isSidebarOpen ? "open" : ""}`}>
         <div>
           <div className="sidebar-logo">Sistem Pengajuan ATK</div>
           <div className="sidebar-subtitle">Universitas Yarsi</div>
@@ -401,14 +414,25 @@ export default function Riwayat() {
       </aside>
 
       {/* KANAN */}
-      <main className="main">
+      <main className={`main ${!isSidebarOpen ? 'expanded' : ''}`}>
         {/* TOPBAR */}
-        <header className="topbar">
-          <div>
+        <header className={`topbar ${!isSidebarOpen ? 'expanded' : ''}`}>
+          <div className="topbar-left-wrapper">
+            <button 
+              className={`hamburger-menu ${isSidebarOpen ? 'open' : ''}`} 
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              aria-label="Toggle Sidebar"
+            >
+              <span className="hamburger-line"></span>
+              <span className="hamburger-line"></span>
+              <span className="hamburger-line"></span>
+            </button>
+            <div>
             <div className="topbar-title">Riwayat Pengajuan ATK</div>
             <div className="topbar-sub">
               Selamat datang: {currentUser?.name || "Nama Kamu"}
             </div>
+          </div>
           </div>
           <div className="topbar-right">
             <PeriodeTimer />

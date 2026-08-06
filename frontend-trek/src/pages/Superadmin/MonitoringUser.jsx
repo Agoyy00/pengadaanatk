@@ -1,8 +1,11 @@
+import DesktopSidebarToggle from '../../components/DesktopSidebarToggle';
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import "../../css/layout.css";
 import "../../css/tabel.css";
 import RoleSwitcher from "../../components/RoleSwitcher";
+
+
 
 const API_BASE = import.meta.env.VITE_API_BASE;
 const token = localStorage.getItem("token");
@@ -139,10 +142,20 @@ export default function MonitoringUser() {
     }).format(number);
   };
 
+  
+  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768);
+
   return (
     <div className="layout">
+      <DesktopSidebarToggle isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
       {/* ===================== SIDEBAR ===================== */}
-      <aside className="sidebar">
+      {isSidebarOpen && (
+        <div 
+          className="sidebar-overlay open" 
+          onClick={() => setIsSidebarOpen(false)} 
+        />
+      )}
+      <aside className={`sidebar ${isSidebarOpen ? "open" : ""}`}>
         <div>
           <div className="sidebar-logo">Sistem Pengajuan ATK</div>
           <div className="sidebar-subtitle">Universitas Yarsi</div>
@@ -179,13 +192,24 @@ export default function MonitoringUser() {
       </aside>
 
       {/* ===================== MAIN ===================== */}
-      <main className="main">
-        <header className="topbar">
-          <div>
+      <main className={`main ${!isSidebarOpen ? 'expanded' : ''}`}>
+        <header className={`topbar ${!isSidebarOpen ? 'expanded' : ''}`}>
+          <div className="topbar-left-wrapper">
+            <button 
+              className={`hamburger-menu ${isSidebarOpen ? 'open' : ''}`} 
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              aria-label="Toggle Sidebar"
+            >
+              <span className="hamburger-line"></span>
+              <span className="hamburger-line"></span>
+              <span className="hamburger-line"></span>
+            </button>
+            <div>
             <div className="topbar-title">Monitoring Pengajuan & Aktivitas User</div>
             <div className="topbar-sub">
               Selamat datang: {currentUser?.name || "Super Admin"}
             </div>
+          </div>
           </div>
           <div className="topbar-right">
             <span>Role: </span>

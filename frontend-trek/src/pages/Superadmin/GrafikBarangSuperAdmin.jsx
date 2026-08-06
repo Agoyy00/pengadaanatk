@@ -1,6 +1,8 @@
+import DesktopSidebarToggle from '../../components/DesktopSidebarToggle';
 import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
+
   BarChart,
   Bar,
   XAxis,
@@ -15,6 +17,7 @@ import {
 import "../../css/layout.css";
 import "../../css/tabel.css";
 import RoleSwitcher from "../../components/RoleSwitcher";
+
 
 const API_BASE = import.meta.env.VITE_API_BASE;
 const COLORS = ["#0284c7", "#16a34a", "#8b5cf6", "#ea580c", "#e11d48", "#06b6d4", "#d97706", "#475569"];
@@ -165,10 +168,20 @@ export default function GrafikBarangSuperAdmin() {
     );
   }, [barangStats.allBarangStats, searchTable]);
 
+  
+  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768);
+
   return (
     <div className="layout">
+      <DesktopSidebarToggle isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
       {/* ===================== SIDEBAR ===================== */}
-      <aside className="sidebar">
+      {isSidebarOpen && (
+        <div 
+          className="sidebar-overlay open" 
+          onClick={() => setIsSidebarOpen(false)} 
+        />
+      )}
+      <aside className={`sidebar ${isSidebarOpen ? "open" : ""}`}>
         <div>
           <div className="sidebar-logo">Sistem Pengajuan ATK</div>
           <div className="sidebar-subtitle">Universitas Yarsi</div>
@@ -205,13 +218,24 @@ export default function GrafikBarangSuperAdmin() {
       </aside>
 
       {/* ===================== MAIN ===================== */}
-      <main className="main">
-        <header className="topbar">
-          <div>
+      <main className={`main ${!isSidebarOpen ? 'expanded' : ''}`}>
+        <header className={`topbar ${!isSidebarOpen ? 'expanded' : ''}`}>
+          <div className="topbar-left-wrapper">
+            <button 
+              className={`hamburger-menu ${isSidebarOpen ? 'open' : ''}`} 
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              aria-label="Toggle Sidebar"
+            >
+              <span className="hamburger-line"></span>
+              <span className="hamburger-line"></span>
+              <span className="hamburger-line"></span>
+            </button>
+            <div>
             <div className="topbar-title">Grafik & Analisis Usulan Barang ATK</div>
             <div className="topbar-sub">
               Selamat datang: {currentUser?.name || "Super Admin ATK"}
             </div>
+          </div>
           </div>
           <div className="topbar-right">
             <span>Role: </span>

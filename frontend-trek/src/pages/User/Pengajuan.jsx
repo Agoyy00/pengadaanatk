@@ -1,3 +1,4 @@
+import DesktopSidebarToggle from '../../components/DesktopSidebarToggle';
 import React, { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import Swal from "sweetalert2";
@@ -5,6 +6,7 @@ import "../../css/Pengajuan.css";
 import "../../css/layout.css";
 import RoleSwitcher from "../../components/RoleSwitcher";
 import PeriodeTimer from "../../components/PeriodeTimer";
+
 
 function Pengajuan() {
   const navigate = useNavigate();
@@ -63,7 +65,10 @@ function Pengajuan() {
     const optionsHtml = optionsList.map(opt => `
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; padding:6px 12px; background:#f8fafc; border-radius:6px; border:1px solid #e2e8f0;">
         <span style="font-weight:600; color:#334155;">${opt.value}</span>
-        <button type="button" class="swal-del-opt-btn" data-id="${opt.id}" data-val="${opt.value}" style="padding:4px 10px; font-size:12px; border-radius:4px; background:#ef4444; color:#fff; border:none; cursor:pointer;">Hapus</button>
+        <div>
+          <button type="button" class="swal-edit-opt-btn" data-id="${opt.id}" data-val="${opt.value}" style="padding:4px 10px; font-size:12px; border-radius:4px; background:#eab308; color:#fff; border:none; cursor:pointer; margin-right:4px;">Edit</button>
+          <button type="button" class="swal-del-opt-btn" data-id="${opt.id}" data-val="${opt.value}" style="padding:4px 10px; font-size:12px; border-radius:4px; background:#ef4444; color:#fff; border:none; cursor:pointer;">Hapus</button>
+        </div>
       </div>
     `).join('');
 
@@ -81,6 +86,50 @@ function Pengajuan() {
       confirmButtonColor: "#2563eb",
       didOpen: () => {
         const popup = Swal.getPopup();
+        
+        // Handle Edit
+        popup.querySelectorAll('.swal-edit-opt-btn').forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            const id = e.target.getAttribute('data-id');
+            const val = e.target.getAttribute('data-val');
+            Swal.close();
+            
+            const editRes = await Swal.fire({
+                title: "Edit Opsi",
+                input: "text",
+                inputValue: val,
+                showCancelButton: true,
+                confirmButtonText: "Simpan Perubahan",
+                confirmButtonColor: "#eab308",
+                inputValidator: (value) => {
+                    if (!value) return "Nama opsi tidak boleh kosong!";
+                }
+            });
+
+            if (editRes.isConfirmed && editRes.value) {
+                try {
+                    const putRes = await fetch(`${API_BASE}/options/${id}`, {
+                        method: "PUT",
+                        headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ value: editRes.value })
+                    });
+                    const putJson = await putRes.json();
+                    if (putJson.success) {
+                        await refreshFn();
+                        setFn(editRes.value);
+                        Swal.fire({ icon: "success", title: "Berhasil", text: "Opsi telah diperbarui dan disinkronisasikan ke data sebelumnya.", timer: 2000, showConfirmButton: false });
+                    }
+                } catch (err) {
+                    Swal.fire("Error", "Gagal mengedit opsi", "error");
+                }
+            }
+          });
+        });
+
+        // Handle Delete
         popup.querySelectorAll('.swal-del-opt-btn').forEach(btn => {
           btn.addEventListener('click', async (e) => {
             const id = e.target.getAttribute('data-id');
@@ -139,6 +188,7 @@ function Pengajuan() {
   // Error step 1
   const [errorsStep1, setErrorsStep1] = useState({});
   const [limitError, setLimitError] = useState("CHECKING"); // ❗ pesan "hanya 1x per periode"
+  const [stockOpnameRequired, setStockOpnameRequired] = useState(false);
 
   // STEP 2 – pencarian & item
   const [query, setQuery] = useState("");
@@ -245,13 +295,12 @@ function Pengajuan() {
   // ====== CEK: user sudah pernah mengajukan di tahun akademik ini? ======
   useEffect(() => {
     if (!tahunAkademik || !userId) {
-      setLimitError(null);
-      setLimitChecked(true);
       return;
     }
 
     async function checkLimit() {
       try {
+        setLimitChecked(false);
         const res = await fetch(
           `${API_BASE}/pengajuan/check/${userId}?tahun=${encodeURIComponent(tahunAkademik)}`,
           {
@@ -262,7 +311,10 @@ function Pengajuan() {
           }
         );
 
-        if (!res.ok) return;
+        if (!res.ok) {
+          setLimitChecked(true);
+          return;
+        }
 
         const data = await res.json();
 
@@ -270,12 +322,19 @@ function Pengajuan() {
           setLimitError(
             "Anda sudah pernah mengajukan ATK pada periode ini. Pengajuan hanya boleh 1 kali."
           );
+          setStockOpnameRequired(false);
+        } else if (data.has_stock_opname === false) {
+          setLimitError(
+            "Anda belum melakukan Stock Opname pada periode pengajuan ini. Sesuai ketentuan, Anda wajib melakukan Stock Opname Barang terlebih dahulu sebelum dapat membuat pengajuan ATK baru."
+          );
+          setStockOpnameRequired(true);
         } else {
           setLimitError(null);
+          setStockOpnameRequired(false);
         }
       } catch (err) {
         console.error(err);
-        setLimitError("null");
+        setLimitError(null);
       } finally {
         setLimitChecked(true); // 🔥 PENTING
       }
@@ -480,6 +539,7 @@ function Pengajuan() {
   };
 
   // Confirm import dari preview
+
   const handleConfirmImport = () => {
     setItems(prev => [...prev, ...importPreviewData]);
     setShowImportPreview(false);
@@ -746,10 +806,20 @@ function Pengajuan() {
     ];
   }, []);
 
+  
+  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768);
+
   return (
     <div className="layout">
+      <DesktopSidebarToggle isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
       {/* SIDEBAR */}
-      <aside className="sidebar">
+      {isSidebarOpen && (
+        <div 
+          className="sidebar-overlay open" 
+          onClick={() => setIsSidebarOpen(false)} 
+        />
+      )}
+      <aside className={`sidebar ${isSidebarOpen ? "open" : ""}`}>
         <div>
           <div className="sidebar-logo">Sistem Pengajuan ATK</div>
           <div className="sidebar-subtitle">Universitas Yarsi</div>
@@ -779,14 +849,25 @@ function Pengajuan() {
       </aside>
 
       {/* KANAN */}
-      <main className="main">
+      <main className={`main ${!isSidebarOpen ? 'expanded' : ''}`}>
         {/* TOPBAR */}
-        <header className="topbar">
-          <div>
+        <header className={`topbar ${!isSidebarOpen ? 'expanded' : ''}`}>
+          <div className="topbar-left-wrapper">
+            <button 
+              className={`hamburger-menu ${isSidebarOpen ? 'open' : ''}`} 
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              aria-label="Toggle Sidebar"
+            >
+              <span className="hamburger-line"></span>
+              <span className="hamburger-line"></span>
+              <span className="hamburger-line"></span>
+            </button>
+            <div>
             <div className="topbar-title">Buat Pengajuan Baru</div>
             <div className="topbar-sub">
               Selamat datang: {currentUser?.name || "Nama Kamu"}
             </div>
+          </div>
           </div>
           <div className="topbar-right">
             <PeriodeTimer />
@@ -821,18 +902,31 @@ function Pengajuan() {
               </button>
             </div>
           ) : limitError ? (
-            // 🚫 SUDAH PERNAH MENGAJUKAN
+            // 🚫 SUDAH PERNAH MENGAJUKAN ATAU BELUM STOCK OPNAME
             <div className="card periode-closed-card">
-              <div className="card-title">Pengajuan Tidak Dapat Dilanjutkan</div>
+              <div className="card-title">
+                {stockOpnameRequired ? "Wajib Melakukan Stock Opname" : "Pengajuan Tidak Dapat Dilanjutkan"}
+              </div>
               <p>{limitError}</p>
 
-              <button
-                type="button"
-                className="btn btn-back-dashboard"
-                onClick={() => navigate("/riwayat")}
-              >
-                Lihat Riwayat Pengajuan
-              </button>
+              {stockOpnameRequired ? (
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  style={{ marginTop: 12, padding: "10px 20px", fontWeight: 700 }}
+                  onClick={() => navigate("/stock-opname")}
+                >
+                  Lakukan Stock Opname Sekarang ➔
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="btn btn-back-dashboard"
+                  onClick={() => navigate("/riwayat")}
+                >
+                  Lihat Riwayat Pengajuan
+                </button>
+              )}
             </div>
           ) : (
             // ✅ BOLEH MENGAJUKAN → FORM + STEPPER

@@ -1,9 +1,12 @@
+import DesktopSidebarToggle from '../../components/DesktopSidebarToggle';
 import React, { useEffect, useState, useMemo } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import "../../css/DashboardUser.css";
 import "../../css/layout.css";
 import RoleSwitcher from "../../components/RoleSwitcher";
 import PeriodeTimer from "../../components/PeriodeTimer";
+
+
 
 const API_BASE = import.meta.env.VITE_API_BASE;
 const token = localStorage.getItem("token");
@@ -30,6 +33,44 @@ export default function DashboardUser() {
   const [statusText, setStatusText] = useState("");
   const [notifText, setNotifText] = useState(""); // notifikasi kalau status berubah
   const [errorMsg, setErrorMsg] = useState("");
+  const [soNeedWarning, setSoNeedWarning] = useState(false);
+
+  useEffect(() => {
+    async function checkSoStatus() {
+      if (!userId) return;
+      try {
+        const resPeriode = await fetch(`${API_BASE}/periode/active`);
+        if (!resPeriode.ok) return;
+        const pData = await resPeriode.json();
+
+        const isOpen =
+          pData.is_open === true ||
+          pData.is_open === 1 ||
+          pData.is_open === "1" ||
+          pData.is_open === "open";
+
+        if (isOpen) {
+          const tahun = pData.periode?.tahun_akademik || "";
+          const resCheck = await fetch(
+            `${API_BASE}/pengajuan/check/${userId}?tahun=${encodeURIComponent(tahun)}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          if (resCheck.ok) {
+            const checkData = await resCheck.json();
+            if (checkData.has_stock_opname === false) {
+              setSoNeedWarning(true);
+            } else {
+              setSoNeedWarning(false);
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Gagal cek status stock opname:", err);
+      }
+    }
+
+    checkSoStatus();
+  }, [userId]);
 
   // Ambil pengajuan terbaru user
   async function fetchLatestPengajuan(showNotification = true) {
@@ -135,10 +176,20 @@ export default function DashboardUser() {
     ];
   }, []);
 
+  
+  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768);
+
   return (
     <div className="layout">
+      <DesktopSidebarToggle isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
       {/* SIDEBAR */}
-      <aside className="sidebar">
+      {isSidebarOpen && (
+        <div 
+          className="sidebar-overlay open" 
+          onClick={() => setIsSidebarOpen(false)} 
+        />
+      )}
+      <aside className={`sidebar ${isSidebarOpen ? "open" : ""}`}>
         <div>
           <div className="sidebar-logo">Sistem Pengajuan ATK</div>
           <div className="sidebar-subtitle">Universitas Yarsi</div>
@@ -168,14 +219,25 @@ export default function DashboardUser() {
       </aside>
 
       {/* MAIN */}
-      <main className="main">
+      <main className={`main ${!isSidebarOpen ? 'expanded' : ''}`}>
         {/* TOPBAR */}
-        <header className="topbar">
-          <div>
+        <header className={`topbar ${!isSidebarOpen ? 'expanded' : ''}`}>
+          <div className="topbar-left-wrapper">
+            <button 
+              className={`hamburger-menu ${isSidebarOpen ? 'open' : ''}`} 
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              aria-label="Toggle Sidebar"
+            >
+              <span className="hamburger-line"></span>
+              <span className="hamburger-line"></span>
+              <span className="hamburger-line"></span>
+            </button>
+            <div>
             <div className="topbar-title">Dashboard Pemohon</div>
             <div className="topbar-sub">
               Selamat datang: {currentUser?.name || "Nama Kamu"}
             </div>
+          </div>
           </div>
           <div className="topbar-right">
             <PeriodeTimer />
@@ -186,6 +248,53 @@ export default function DashboardUser() {
 
         {/* CONTENT */}
         <section className="main-content">
+          {/* Banner Peringatan Stock Opname */}
+          {soNeedWarning && (
+            <div
+              style={{
+                background: "#fef2f2",
+                border: "1px solid #fca5a5",
+                borderRadius: 12,
+                padding: "16px 20px",
+                marginBottom: 20,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 16,
+                boxShadow: "0 2px 4px rgba(239,68,68,0.05)",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <span style={{ fontSize: 24 }}>⚠️</span>
+                <div>
+                  <h4 style={{ margin: 0, color: "#991b1b", fontSize: 16, fontWeight: 700 }}>
+                    Pemberitahuan Wajib Stock Opname
+                  </h4>
+                  <p style={{ margin: "4px 0 0", color: "#7f1d1d", fontSize: 14 }}>
+                    Periode pengajuan ATK telah dibuka! Anda <b>wajib melakukan Stock Opname Barang</b> terlebih dahulu sebelum dapat membuat pengajuan baru.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                style={{
+                  background: "#dc2626",
+                  color: "#ffffff",
+                  border: "none",
+                  padding: "10px 16px",
+                  borderRadius: 8,
+                  fontWeight: 700,
+                  fontSize: 13,
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                }}
+                onClick={() => navigate("/stock-opname")}
+              >
+                Stock Opname Sekarang ➔
+              </button>
+            </div>
+          )}
+
           <div className="card">
             <div className="card-title">Notifikasi Pengajuan</div>
 

@@ -1,8 +1,10 @@
-import { useMemo, useEffect } from "react";
+import DesktopSidebarToggle from '../components/DesktopSidebarToggle';
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import "../css/layout.css";
 import RoleSwitcher from "../components/RoleSwitcher";
 import PeriodeTimer from "../components/PeriodeTimer";
+
 
 const normalizeRole = (role) =>
   String(role || "")
@@ -68,10 +70,20 @@ export default function TemplateDokumen() {
     }
   }, [role]);
 
+
+  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768);
+
   return (
     <div className="layout">
+      <DesktopSidebarToggle isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
       {/* SIDEBAR */}
-      <aside className="sidebar">
+      {isSidebarOpen && (
+        <div
+          className="sidebar-overlay open"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+      <aside className={`sidebar ${isSidebarOpen ? "open" : ""}`}>
         <div>
           <div className="sidebar-logo">Sistem Pengajuan ATK</div>
           <div className="sidebar-subtitle">Universitas Yarsi</div>
@@ -109,16 +121,26 @@ export default function TemplateDokumen() {
       </aside>
 
       {/* MAIN CONTAINER */}
-      <main className="main">
+      <main className={`main ${!isSidebarOpen ? 'expanded' : ''}`}>
         {/* TOPBAR */}
-        <header className="topbar">
-          <div>
-            <div className="topbar-title">Template Dokumen</div>
-            <div className="topbar-sub">
-              Daftar template dokumen resmi siap pakai dalam sistem
+        <header className={`topbar ${!isSidebarOpen ? 'expanded' : ''}`}>
+          <div className="topbar-left-wrapper">
+            <button
+              className={`hamburger-menu ${isSidebarOpen ? 'open' : ''}`}
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              aria-label="Toggle Sidebar"
+            >
+              <span className="hamburger-line"></span>
+              <span className="hamburger-line"></span>
+              <span className="hamburger-line"></span>
+            </button>
+            <div>
+              <div className="topbar-title">Template Dokumen</div>
+              <div className="topbar-sub">
+                Daftar template dokumen resmi siap pakai dalam sistem
+              </div>
             </div>
           </div>
-
           <div className="topbar-right">
             <PeriodeTimer />
             <span style={{ marginRight: 8 }}>Pengguna: <b>{currentUser?.name}</b></span>
@@ -204,6 +226,7 @@ export default function TemplateDokumen() {
                   <p style={{ margin: "0 0 16px 0", color: "#4b5563", fontSize: 13, lineHeight: 1.5 }}>
                     Template CSV untuk mempermudah perincian kebutuhan pengajuan ATK baru oleh setiap unit/fakultas.
                     Isi kolom <strong>kebutuhan total</strong> dan <strong>sisa stock saat ini</strong>, lalu import di halaman Pengajuan.
+
                     <br /><em style={{ color: "#6b7280" }}>💡 Untuk template lengkap dengan semua barang terkini, gunakan tombol "Download Template" di halaman Buat Pengajuan (Step 2).</em>
                   </p>
                 </div>

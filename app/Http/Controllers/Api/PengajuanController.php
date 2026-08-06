@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Pengajuan;
 use App\Models\PengajuanItem;
 use App\Models\Periode;
+use App\Models\StockOpname;
 use App\Models\Notification;
 use App\Models\User;
 use Maatwebsite\Excel\Facades\Excel;
@@ -42,7 +43,7 @@ class PengajuanController extends Controller
      * GET /api/pengajuan/check/{user}/{tahun}
      * Dipakai di STEP 1:
      * - Untuk menampilkan pesan "Anda sudah pernah mengajukan..."
-     * - Hanya cek berdasarkan user_id + tahun_akademik
+     * - Cek berdasarkan user_id + tahun_akademik dan keberadaan stock opname
      */
     public function checkUserPengajuan($userId, $tahunAkademik)
     {
@@ -50,8 +51,28 @@ class PengajuanController extends Controller
             ->where('tahun_akademik', $tahunAkademik)
             ->exists();
 
+        $now = Carbon::now('Asia/Jakarta');
+        $periode = Periode::where('tahun_akademik', $tahunAkademik)->first();
+        if (!$periode) {
+            $periode = Periode::where('mulai', '<=', $now)->where('selesai', '>=', $now)->first();
+        }
+
+        $hasStockOpname = false;
+        if ($periode) {
+            $hasStockOpname = StockOpname::where('user_id', $userId)
+                ->where('created_at', '>=', Carbon::parse($periode->mulai)->subDays(7))
+                ->exists();
+
+            if (!$hasStockOpname) {
+                $hasStockOpname = StockOpname::where('user_id', $userId)->exists();
+            }
+        } else {
+            $hasStockOpname = StockOpname::where('user_id', $userId)->exists();
+        }
+
         return response()->json([
-            'already' => $sudah,
+            'already'          => $sudah,
+            'has_stock_opname' => $hasStockOpname,
         ]);
     }
 
@@ -60,6 +81,7 @@ class PengajuanController extends Controller
      * Simpan pengajuan baru milik user tertentu
      * + Hanya 1x per tahun akademik per user
      * + Hanya boleh kalau periode tahun akademik itu sedang dibuka
+     * + Hanya boleh jika user sudah melakukan stock opname
      */
     public function store(Request $request)
     {
@@ -100,6 +122,22 @@ class PengajuanController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Periode pengajuan saat ini tidak aktif.',
+            ], 422);
+        }
+
+        // 1.5. CEK: USER SUDAH MELAKUKAN STOCK OPNAME PADA PERIODE INI?
+        $hasStockOpname = StockOpname::where('user_id', $userId)
+            ->where('created_at', '>=', Carbon::parse($periode->mulai)->subDays(7))
+            ->exists();
+
+        if (!$hasStockOpname) {
+            $hasStockOpname = StockOpname::where('user_id', $userId)->exists();
+        }
+
+        if (!$hasStockOpname) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda belum melakukan Stock Opname pada periode pengajuan ini. Silakan lakukan Stock Opname terlebih dahulu sebelum membuat pengajuan ATK.',
             ], 422);
         }
 

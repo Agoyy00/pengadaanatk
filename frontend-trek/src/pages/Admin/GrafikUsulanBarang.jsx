@@ -1,7 +1,9 @@
+import DesktopSidebarToggle from '../../components/DesktopSidebarToggle';
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import RoleSwitcher from "../../components/RoleSwitcher";
 import {
+
   BarChart,
   Bar,
   XAxis,
@@ -11,6 +13,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import "../../css/layout.css";
+
 
 const API_BASE = import.meta.env.VITE_API_BASE;
 const token = localStorage.getItem("token");
@@ -62,10 +65,20 @@ export default function GrafikUsulanBarangPage() {
       .replace(/\b\w/g, (c) => c.toUpperCase());
   };
 
+  
+  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768);
+
   return (
     <div className="layout">
+      <DesktopSidebarToggle isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
       {/* ================= SIDEBAR ================= */}
-      <aside className="sidebar">
+      {isSidebarOpen && (
+        <div 
+          className="sidebar-overlay open" 
+          onClick={() => setIsSidebarOpen(false)} 
+        />
+      )}
+      <aside className={`sidebar ${isSidebarOpen ? "open" : ""}`}>
         <div>
           <div className="sidebar-logo">Sistem Pengajuan ATK</div>
           <div className="sidebar-subtitle">Universitas YARSI</div>
@@ -100,14 +113,25 @@ export default function GrafikUsulanBarangPage() {
       </aside>
 
       {/* ================= MAIN ================= */}
-      <main className="main">
+      <main className={`main ${!isSidebarOpen ? 'expanded' : ''}`}>
         {/* ================= TOPBAR ================= */}
-        <header className="topbar">
-          <div>
+        <header className={`topbar ${!isSidebarOpen ? 'expanded' : ''}`}>
+          <div className="topbar-left-wrapper">
+            <button 
+              className={`hamburger-menu ${isSidebarOpen ? 'open' : ''}`} 
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              aria-label="Toggle Sidebar"
+            >
+              <span className="hamburger-line"></span>
+              <span className="hamburger-line"></span>
+              <span className="hamburger-line"></span>
+            </button>
+            <div>
             <div className="topbar-title">Grafik Usulan Barang ATK</div>
             <div className="topbar-sub">
               Selamat datang: {user?.name || "Super Admin"}
             </div>
+          </div>
           </div>
           <div className="topbar-right">
             <span>Role: </span>

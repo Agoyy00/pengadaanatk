@@ -19,6 +19,13 @@ class PeriodeController extends Controller
             'tahun_akademik' => 'required',
             'mulai'          => 'required|date',
             'selesai'        => 'required|date|after:mulai',
+        ], [
+            'tahun_akademik.required' => 'Tahun akademik wajib diisi.',
+            'mulai.required'          => 'Tanggal mulai pengajuan wajib diisi.',
+            'mulai.date'              => 'Format tanggal mulai pengajuan tidak valid.',
+            'selesai.required'        => 'Tanggal berakhir / deadline wajib diisi.',
+            'selesai.date'            => 'Format tanggal berakhir / deadline tidak valid.',
+            'selesai.after'           => 'Tanggal berakhir / deadline harus setelah tanggal mulai pengajuan.',
         ]);
 
         // Pakai timezone Jakarta biar jamnya sama dengan yang dipilih di browser

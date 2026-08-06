@@ -1,7 +1,10 @@
+import DesktopSidebarToggle from '../../components/DesktopSidebarToggle';
 import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import "../../css/layout.css";
 import RoleSwitcher from "../../components/RoleSwitcher";
+
+
 
 const API_BASE = import.meta.env.VITE_API_BASE;
 const token = localStorage.getItem("token");
@@ -113,27 +116,46 @@ export default function Periode() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "Accept": "application/json",
           Authorization: `Bearer ${freshToken}`,
         },
         body: JSON.stringify(payload),
       });
 
-      const data = await res.json();
+      const contentType = res.headers.get("content-type");
+      if (contentType && contentType.indexOf("application/json") !== -1) {
+        const data = await res.json();
 
-      if (!res.ok || !data.success) {
-        console.error("Gagal simpan periode:", data);
-        setErrorMsg(data.message || "Terjadi kesalahan saat menyimpan periode.");
-        return;
+        if (!res.ok) {
+          console.error("Gagal simpan periode HTTP Error:", data);
+          if (data.errors) {
+             const firstError = Object.values(data.errors)[0][0];
+             setErrorMsg(firstError);
+          } else {
+             setErrorMsg(data.message || "Terjadi kesalahan saat menyimpan periode.");
+          }
+          return;
+        }
+        
+        if (!data.success) {
+          console.error("Gagal simpan periode:", data);
+          setErrorMsg(data.message || "Terjadi kesalahan saat menyimpan periode.");
+          return;
+        }
+
+        setActivePeriodeId(data.periode.id);
+        setMessage(
+          `Periode ${data.periode.tahun_akademik} berhasil disimpan.`
+        );
+        loadData();
+      } else {
+        const textData = await res.text();
+        console.error("Gagal simpan periode (Bukan JSON):", textData);
+        setErrorMsg("Terjadi kesalahan pada server.");
       }
-
-      setActivePeriodeId(data.periode.id);
-      setMessage(
-        `Periode ${data.periode.tahun_akademik} berhasil disimpan.`
-      );
-      loadData();
     } catch (err) {
       console.error("Error jaringan:", err);
-      setErrorMsg("Terjadi kesalahan jaringan.");
+      setErrorMsg("Terjadi kesalahan jaringan atau koneksi terputus.");
     }
   }
 
@@ -241,10 +263,20 @@ export default function Periode() {
     }
   };
 
+  
+  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768);
+
   return (
     <div className="layout">
+      <DesktopSidebarToggle isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
       {/* SIDEBAR */}
-      <aside className="sidebar">
+      {isSidebarOpen && (
+        <div 
+          className="sidebar-overlay open" 
+          onClick={() => setIsSidebarOpen(false)} 
+        />
+      )}
+      <aside className={`sidebar ${isSidebarOpen ? "open" : ""}`}>
         <div>
           <div className="sidebar-logo">Sistem Pengajuan ATK</div>
           <div className="sidebar-subtitle">Universitas Yarsi</div>
@@ -276,13 +308,24 @@ export default function Periode() {
       </aside>
 
       {/* MAIN */}
-      <main className="main">
-        <header className="topbar">
-          <div>
+      <main className={`main ${!isSidebarOpen ? 'expanded' : ''}`}>
+        <header className={`topbar ${!isSidebarOpen ? 'expanded' : ''}`}>
+          <div className="topbar-left-wrapper">
+            <button 
+              className={`hamburger-menu ${isSidebarOpen ? 'open' : ''}`} 
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              aria-label="Toggle Sidebar"
+            >
+              <span className="hamburger-line"></span>
+              <span className="hamburger-line"></span>
+              <span className="hamburger-line"></span>
+            </button>
+            <div>
             <div className="topbar-title">Atur & Kelola Periode Pengajuan</div>
             <div className="topbar-sub">
               Super Admin dapat menambah, mengubah, dan menghapus periode pengajuan.
             </div>
+          </div>
           </div>
           <div className="topbar-right">
             <span>Role: </span>

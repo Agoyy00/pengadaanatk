@@ -1,9 +1,12 @@
+import DesktopSidebarToggle from '../../components/DesktopSidebarToggle';
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import Swal from "sweetalert2";
 import "../../css/layout.css";
 import "../../css/tabel.css";
 import RoleSwitcher from "../../components/RoleSwitcher";
+
+
 
 const API_BASE = import.meta.env.VITE_API_BASE;
 const token = localStorage.getItem("token");
@@ -14,6 +17,7 @@ export default function Approval() {
   const [pengajuan, setPengajuan] = useState([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768);
 
   const storedUser = localStorage.getItem("user");
   const currentUser = storedUser ? JSON.parse(storedUser) : null;
@@ -170,7 +174,15 @@ console.log(token); // harus ada
   return (
     
     <div className="layout">
-      <aside className= "sidebar">
+      <DesktopSidebarToggle isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
+      {/* SIDEBAR OVERLAY */}
+      {isSidebarOpen && (
+        <div 
+          className="sidebar-overlay open" 
+          onClick={() => setIsSidebarOpen(false)} 
+        />
+      )}
+      <aside className={`sidebar ${isSidebarOpen ? "open" : ""}`}>
           <div className="sidebar-logo">Sistem Pengajuan ATK</div>
           <div className="sidebar-subtitle">Universitas Yarsi</div>
        
@@ -204,12 +216,23 @@ console.log(token); // harus ada
         </div>
       </aside>
 
-      <main className="main">
-        <header className="topbar">
-          <div>
-            <div className="topbar-title">Approval</div>
-            <div className="topbar-sub">
-              Selamat datang: {currentUser?.name || "Super Admin ATK"}
+      <main className={`main ${!isSidebarOpen ? 'expanded' : ''}`}>
+        <header className={`topbar ${!isSidebarOpen ? 'expanded' : ''}`}>
+          <div className="topbar-left-wrapper">
+            <button 
+              className={`hamburger-menu ${isSidebarOpen ? 'open' : ''}`} 
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              aria-label="Toggle Sidebar"
+            >
+              <span className="hamburger-line"></span>
+              <span className="hamburger-line"></span>
+              <span className="hamburger-line"></span>
+            </button>
+            <div>
+              <div className="topbar-title">Approval</div>
+              <div className="topbar-sub">
+                Selamat datang: {currentUser?.name || "Super Admin ATK"}
+              </div>
             </div>
           </div>
           <div className="topbar-right">

@@ -14,6 +14,7 @@ class StockOpname extends Model
         'user_id',
         'stok_sistem',
         'stok_fisik',
+        'hasil_verifikasi',
         'selisih',
         'keterangan',
         'status',

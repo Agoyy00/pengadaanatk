@@ -1,0 +1,60 @@
+/* ===== DESKTOP SIDEBAR TOGGLE ===== */
+.desktop-sidebar-toggle {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: -60px; /* Hidden initially */
+    transform: translateY(-50%);
+    width: 44px;
+    height: 44px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    box-shadow: 4px 0 15px rgba(0, 0, 0, 0.1);
+    border-radius: 0 12px 12px 0;
+    cursor: pointer;
+    z-index: 9999;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+    padding: 0 8px 0 4px;
+    transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s ease;
+}
+
+@media (min-width: 769px) {
+    .desktop-sidebar-toggle {
+        display: flex; /* Only show on desktop */
+    }
+}
+
+.desktop-sidebar-toggle.visible {
+    left: 0;
+}
+
+.desktop-sidebar-toggle:hover {
+    background: #f8fafc;
+}
+
+/* Hamburger Lines */
+.dt-hamburger-line {
+    width: 20px;
+    height: 2px;
+    background: #0f172a;
+    border-radius: 10px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    transform-origin: center;
+}
+
+/* Open state: X */
+.desktop-sidebar-toggle.open .dt-hamburger-line:nth-child(1) {
+    transform: translateY(7px) rotate(45deg);
+}
+
+.desktop-sidebar-toggle.open .dt-hamburger-line:nth-child(2) {
+    opacity: 0;
+}
+
+.desktop-sidebar-toggle.open .dt-hamburger-line:nth-child(3) {
+    transform: translateY(-7px) rotate(-45deg);
+}
