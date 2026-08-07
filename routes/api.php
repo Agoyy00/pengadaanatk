@@ -70,6 +70,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/pengajuan/{pengajuan}/status', [PengajuanController::class, 'updateStatus']);
     Route::patch('/pengajuan/{pengajuan}/revisi', [PengajuanController::class, 'revisiItems']);
     Route::patch('/pengajuan/{pengajuan}/user-revisi', [PengajuanController::class, 'userRevisiItems']);
+    Route::delete('/pengajuan/{pengajuan}', [PengajuanController::class, 'destroy']);
     /*
     | Approval (Super Admin)
     */
@@ -123,6 +124,7 @@ Route::middleware('auth:sanctum')->group(function () {
     | Stock Opname
     */
     Route::get('/stock-opname', [StockOpnameController::class, 'index']);
+    Route::get('/stock-opname/draft-pengajuan', [StockOpnameController::class, 'draftPengajuan']);
     Route::post('/stock-opname', [StockOpnameController::class, 'store']);
     Route::post('/stock-opname/bulk', [StockOpnameController::class, 'bulkStore']);
     Route::patch('/stock-opname/{id}/verify', [StockOpnameController::class, 'verify']);

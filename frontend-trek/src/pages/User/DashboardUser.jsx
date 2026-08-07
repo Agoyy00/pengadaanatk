@@ -5,8 +5,7 @@ import "../../css/DashboardUser.css";
 import "../../css/layout.css";
 import RoleSwitcher from "../../components/RoleSwitcher";
 import PeriodeTimer from "../../components/PeriodeTimer";
-
-
+import Swal from "sweetalert2";
 
 const API_BASE = import.meta.env.VITE_API_BASE;
 const token = localStorage.getItem("token");
@@ -18,25 +17,19 @@ export default function DashboardUser() {
   const currentUser = storedUser ? JSON.parse(storedUser) : null;
   const user = currentUser;
   const userId = user?.id;
-  const formatRole = (role) => {
-    if (!role) return "-";
-
-    return role
-      .toLowerCase()
-      .replace(/_/g, " ")
-      .replace(/\b\w/g, (c) => c.toUpperCase());
-  };
-
 
   const [loading, setLoading] = useState(true);
   const [latestPengajuan, setLatestPengajuan] = useState(null);
   const [statusText, setStatusText] = useState("");
-  const [notifText, setNotifText] = useState(""); // notifikasi kalau status berubah
+  const [notifText, setNotifText] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [soNeedWarning, setSoNeedWarning] = useState(false);
+  const [periodeOpen, setPeriodeOpen] = useState(false);
+  const [periodeMessage, setPeriodeMessage] = useState("");
+  const [hasStockOpname, setHasStockOpname] = useState(false);
 
   useEffect(() => {
-    async function checkSoStatus() {
+    async function checkAllStatus() {
       if (!userId) return;
       try {
         const resPeriode = await fetch(`${API_BASE}/periode/active`);
@@ -49,6 +42,9 @@ export default function DashboardUser() {
           pData.is_open === "1" ||
           pData.is_open === "open";
 
+        setPeriodeOpen(isOpen);
+        setPeriodeMessage(pData.message || "");
+
         if (isOpen) {
           const tahun = pData.periode?.tahun_akademik || "";
           const resCheck = await fetch(
@@ -57,108 +53,93 @@ export default function DashboardUser() {
           );
           if (resCheck.ok) {
             const checkData = await resCheck.json();
-            if (checkData.has_stock_opname === false) {
-              setSoNeedWarning(true);
-            } else {
-              setSoNeedWarning(false);
-            }
+            setHasStockOpname(checkData.has_stock_opname === true);
+            setSoNeedWarning(checkData.has_stock_opname === false);
           }
         }
       } catch (err) {
-        console.error("Gagal cek status stock opname:", err);
+        console.error("Gagal cek status:", err);
       }
     }
 
-    checkSoStatus();
+    checkAllStatus();
   }, [userId]);
 
-  // Ambil pengajuan terbaru user
-  async function fetchLatestPengajuan(showNotification = true) {
-    if (!userId) {
-      setErrorMsg("User belum login.");
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const res = await fetch(`${API_BASE}/pengajuan?user_id=${userId}`, {
-        headers: {
-          "Authorization": `Bearer ${token}`,
-        },
-      });
-      if (!res.ok) {
-        setErrorMsg("Gagal mengambil data pengajuan.");
-        setLoading(false);
-        return;
-      }
-
-      const data = await res.json();
-      if (!Array.isArray(data) || data.length === 0) {
-        setLatestPengajuan(null);
-        setStatusText("Anda belum pernah mengajukan ATK pada periode apa pun.");
-        setLoading(false);
-        return;
-      }
-
-      // backend sudah orderBy created_at desc → ambil index 0
-      const latest = data[0];
-      setLatestPengajuan(latest);
-
-      // Teks status di kartu
-      let statusLabel = "";
-      switch (latest.status) {
-        case "diajukan":
-          statusLabel = "Pengajuan Anda sudah dikirim dan menunggu verifikasi.";
-          break;
-        case "diverifikasi":
-          statusLabel = "Pengajuan Anda telah diverifikasi oleh admin.";
-          break;
-        case "ditolak":
-          statusLabel =
-            "Pengajuan Anda DITOLAK. Silakan hubungi admin untuk informasi lebih lanjut.";
-          break;
-        case "disetujui":
-          statusLabel =
-            "Pengajuan Anda DISETUJUI. Proses pengadaan akan dilanjutkan.";
-          break;
-        default:
-          statusLabel = `Status pengajuan Anda: ${latest.status}`;
-      }
-      setStatusText(statusLabel);
-
-      // ====== NOTIFIKASI PERUBAHAN STATUS ======
-      const storageKey = `pengajuan_status_${latest.id}`;
-      const prevStatus = localStorage.getItem(storageKey);
-
-      if (showNotification && prevStatus && prevStatus !== latest.status) {
-        setNotifText(
-          `Status pengajuan Anda telah berubah menjadi "${latest.status.toUpperCase()}".`
-        );
-      }
-
-      localStorage.setItem(storageKey, latest.status);
-    } catch (err) {
-      console.error("Gagal mengambil pengajuan:", err);
-      setErrorMsg("Terjadi kesalahan jaringan.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  // Load pertama & polling tiap 30 detik
   useEffect(() => {
-    // pertama: jangan munculin notif (supaya tidak dikira perubahan)
-    fetchLatestPengajuan(false);
+    async function fetchLatestPengajuan(showNotification = true) {
+      if (!userId) {
+        setErrorMsg("User belum login.");
+        setLoading(false);
+        return;
+      }
 
+      try {
+        const res = await fetch(`${API_BASE}/pengajuan?user_id=${userId}`, {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+          },
+        });
+        if (!res.ok) {
+          setErrorMsg("Gagal mengambil data pengajuan.");
+          setLoading(false);
+          return;
+        }
+
+        const data = await res.json();
+        if (!Array.isArray(data) || data.length === 0) {
+          setLatestPengajuan(null);
+          setStatusText("Anda belum pernah mengajukan ATK pada periode ini.");
+          setLoading(false);
+          return;
+        }
+
+        const latest = data[0];
+        setLatestPengajuan(latest);
+
+        let statusLabel = "";
+        switch (latest.status) {
+          case "diajukan":
+            statusLabel = "Pengajuan Anda sudah dikirim dan menunggu verifikasi admin.";
+            break;
+          case "diverifikasi":
+            statusLabel = "Pengajuan Anda telah diverifikasi oleh admin dan menunggu persetujuan super admin.";
+            break;
+          case "ditolak":
+            statusLabel = "Pengajuan Anda DITOLAK. Silakan hubungi admin untuk informasi lebih lanjut.";
+            break;
+          case "disetujui":
+            statusLabel = "Pengajuan Anda DISETUJUI. Proses pengadaan akan dilanjutkan.";
+            break;
+          default:
+            statusLabel = `Status pengajuan Anda: ${latest.status}`;
+        }
+        setStatusText(statusLabel);
+
+        const storageKey = `pengajuan_status_${latest.id}`;
+        const prevStatus = localStorage.getItem(storageKey);
+
+        if (showNotification && prevStatus && prevStatus !== latest.status) {
+          setNotifText(
+            `Status pengajuan Anda telah berubah menjadi "${latest.status.toUpperCase()}".`
+          );
+        }
+
+        localStorage.setItem(storageKey, latest.status);
+      } catch (err) {
+        console.error("Gagal mengambil pengajuan:", err);
+        setErrorMsg("Terjadi kesalahan jaringan.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchLatestPengajuan(false);
     const intervalId = setInterval(() => {
       fetchLatestPengajuan(true);
     }, 30000);
-
     return () => clearInterval(intervalId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [userId]);
 
-  // Cek apakah ada item yang direvisi (jumlah_disetujui != jumlah_diajukan)
   const revisedItems =
     latestPengajuan?.items?.filter(
       (item) =>
@@ -176,17 +157,27 @@ export default function DashboardUser() {
     ];
   }, []);
 
-  
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768);
+
+  const handleQuickAction = (action) => {
+    if (action === "stock-opname") {
+      navigate("/stock-opname");
+    } else if (action === "pengajuan-manual") {
+      navigate("/pengajuan");
+    } else if (action === "riwayat") {
+      navigate("/riwayat");
+    } else if (action === "template") {
+      navigate("/template-dokumen");
+    }
+  };
 
   return (
     <div className="layout">
       <DesktopSidebarToggle isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
-      {/* SIDEBAR */}
       {isSidebarOpen && (
-        <div 
-          className="sidebar-overlay open" 
-          onClick={() => setIsSidebarOpen(false)} 
+        <div
+          className="sidebar-overlay open"
+          onClick={() => setIsSidebarOpen(false)}
         />
       )}
       <aside className={`sidebar ${isSidebarOpen ? "open" : ""}`}>
@@ -223,8 +214,8 @@ export default function DashboardUser() {
         {/* TOPBAR */}
         <header className={`topbar ${!isSidebarOpen ? 'expanded' : ''}`}>
           <div className="topbar-left-wrapper">
-            <button 
-              className={`hamburger-menu ${isSidebarOpen ? 'open' : ''}`} 
+            <button
+              className={`hamburger-menu ${isSidebarOpen ? 'open' : ''}`}
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
               aria-label="Toggle Sidebar"
             >
@@ -233,11 +224,11 @@ export default function DashboardUser() {
               <span className="hamburger-line"></span>
             </button>
             <div>
-            <div className="topbar-title">Dashboard Pemohon</div>
-            <div className="topbar-sub">
-              Selamat datang: {currentUser?.name || "Nama Kamu"}
+              <div className="topbar-title">Dashboard Pemohon</div>
+              <div className="topbar-sub">
+                Selamat datang: {currentUser?.name || "Nama Kamu"}
+              </div>
             </div>
-          </div>
           </div>
           <div className="topbar-right">
             <PeriodeTimer />
@@ -248,8 +239,34 @@ export default function DashboardUser() {
 
         {/* CONTENT */}
         <section className="main-content">
-          {/* Banner Peringatan Stock Opname */}
-          {soNeedWarning && (
+          {/* PERIODE STATUS BANNER */}
+          {!periodeOpen && (
+            <div
+              style={{
+                background: "#fffbeb",
+                border: "1px solid #fcd34d",
+                borderRadius: 12,
+                padding: "16px 20px",
+                marginBottom: 20,
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+              }}
+            >
+              <span style={{ fontSize: 24 }}>🔒</span>
+              <div>
+                <h4 style={{ margin: 0, color: "#92400e", fontSize: 16, fontWeight: 700 }}>
+                  Periode Pengajuan Tertutup
+                </h4>
+                <p style={{ margin: "4px 0 0", color: "#a16207", fontSize: 14 }}>
+                  {periodeMessage || "Saat ini pengajuan ATK belum dibuka. Silakan tunggu hingga periode dibuka oleh admin."}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* STOCK OPNAME WARNING */}
+          {periodeOpen && soNeedWarning && (
             <div
               style={{
                 background: "#fef2f2",
@@ -261,14 +278,13 @@ export default function DashboardUser() {
                 alignItems: "center",
                 justifyContent: "space-between",
                 gap: 16,
-                boxShadow: "0 2px 4px rgba(239,68,68,0.05)",
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <span style={{ fontSize: 24 }}>⚠️</span>
                 <div>
                   <h4 style={{ margin: 0, color: "#991b1b", fontSize: 16, fontWeight: 700 }}>
-                    Pemberitahuan Wajib Stock Opname
+                    Wajib: Stock Opname Barang
                   </h4>
                   <p style={{ margin: "4px 0 0", color: "#7f1d1d", fontSize: 14 }}>
                     Periode pengajuan ATK telah dibuka! Anda <b>wajib melakukan Stock Opname Barang</b> terlebih dahulu sebelum dapat membuat pengajuan baru.
@@ -295,29 +311,246 @@ export default function DashboardUser() {
             </div>
           )}
 
-          <div className="card">
-            <div className="card-title">Notifikasi Pengajuan</div>
+          {/* STEP PROGRESS */}
+          {periodeOpen && (
+            <div
+              style={{
+                background: "#ffffff",
+                border: "1px solid #e2e8f0",
+                borderRadius: 12,
+                padding: "16px 20px",
+                marginBottom: 20,
+              }}
+            >
+              <h4 style={{ margin: "0 0 12px 0", fontSize: 15, fontWeight: 700, color: "#0f172a" }}>
+                Langkah Pengajuan ATK
+              </h4>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {[
+                  { step: 1, label: "Periode Dibuka", done: periodeOpen },
+                  { step: 2, label: "Stock Opname", done: hasStockOpname },
+                  { step: 3, label: "Buat Pengajuan", done: !!latestPengajuan },
+                  { step: 4, label: "Verifikasi & Approval", done: latestPengajuan?.status === "disetujui" },
+                ].map((item) => (
+                  <div
+                    key={item.step}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      padding: "6px 12px",
+                      borderRadius: 8,
+                      background: item.done ? "#f0fdf4" : "#f8fafc",
+                      border: `1px solid ${item.done ? "#bbf7d0" : "#e2e8f0"}`,
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 22,
+                        height: 22,
+                        borderRadius: "50%",
+                        background: item.done ? "#16a34a" : "#94a3b8",
+                        color: "#fff",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 12,
+                        fontWeight: 700,
+                      }}
+                    >
+                      {item.done ? "✓" : item.step}
+                    </div>
+                    <span
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: item.done ? "#15803d" : "#64748b",
+                      }}
+                    >
+                      {item.label}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
-            {/* Info 1x per periode */}
+          {/* ACTION CARDS */}
+          {periodeOpen && !latestPengajuan && (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                gap: 16,
+                marginBottom: 20,
+              }}
+            >
+              {/* Stock Opname Card */}
+              {!hasStockOpname && (
+                <div
+                  style={{
+                    background: "#ffffff",
+                    border: "1px solid #fca5a5",
+                    borderRadius: 12,
+                    padding: "16px 20px",
+                    cursor: "pointer",
+                    transition: "transform 0.15s ease, box-shadow 0.15s ease",
+                  }}
+                  onClick={() => handleQuickAction("stock-opname")}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "translateY(-2px)";
+                    e.currentTarget.style.boxShadow = "0 8px 16px rgba(220,38,38,0.08)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow = "none";
+                  }}
+                >
+                  <div style={{ fontSize: 28, marginBottom: 8 }}>📦</div>
+                  <h5 style={{ margin: "0 0 4px 0", fontSize: 15, fontWeight: 700, color: "#991b1b" }}>
+                    Stock Opname Barang
+                  </h5>
+                  <p style={{ margin: 0, fontSize: 13, color: "#7f1d1d" }}>
+                    Lakukan stock opname terlebih dahulu sebelum membuat pengajuan.
+                  </p>
+                  <button
+                    type="button"
+                    style={{
+                      marginTop: 12,
+                      background: "#dc2626",
+                      color: "#fff",
+                      border: "none",
+                      padding: "8px 14px",
+                      borderRadius: 8,
+                      fontWeight: 700,
+                      fontSize: 12,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Mulai Stock Opname ➔
+                  </button>
+                </div>
+              )}
+
+              {/* Pengajuan Manual Card */}
+              {hasStockOpname && !latestPengajuan && (
+                <div
+                  style={{
+                    background: "#ffffff",
+                    border: "1px solid #bfdbfe",
+                    borderRadius: 12,
+                    padding: "16px 20px",
+                    cursor: "pointer",
+                    transition: "transform 0.15s ease, box-shadow 0.15s ease",
+                  }}
+                  onClick={() => handleQuickAction("pengajuan-manual")}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "translateY(-2px)";
+                    e.currentTarget.style.boxShadow = "0 8px 16px rgba(37,99,235,0.08)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow = "none";
+                  }}
+                >
+                  <div style={{ fontSize: 28, marginBottom: 8 }}>📝</div>
+                  <h5 style={{ margin: "0 0 4px 0", fontSize: 15, fontWeight: 700, color: "#1e40af" }}>
+                    Buat Pengajuan Manual
+                  </h5>
+                  <p style={{ margin: 0, fontSize: 13, color: "#1e3a8a" }}>
+                    Isi pengajuan ATK secara manual langkah demi langkah.
+                  </p>
+                  <button
+                    type="button"
+                    style={{
+                      marginTop: 12,
+                      background: "#2563eb",
+                      color: "#fff",
+                      border: "none",
+                      padding: "8px 14px",
+                      borderRadius: 8,
+                      fontWeight: 700,
+                      fontSize: 12,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Buat Pengajuan Manual ➔
+                  </button>
+                </div>
+              )}
+
+              {/* Import CSV Card */}
+              {hasStockOpname && !latestPengajuan && (
+                <div
+                  style={{
+                    background: "#ffffff",
+                    border: "1px solid #bbf7d0",
+                    borderRadius: 12,
+                    padding: "16px 20px",
+                    cursor: "pointer",
+                    transition: "transform 0.15s ease, box-shadow 0.15s ease",
+                  }}
+                  onClick={() => handleQuickAction("pengajuan-manual")}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "translateY(-2px)";
+                    e.currentTarget.style.boxShadow = "0 8px 16px rgba(22,163,74,0.08)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow = "none";
+                  }}
+                >
+                  <div style={{ fontSize: 28, marginBottom: 8 }}>📥</div>
+                  <h5 style={{ margin: "0 0 4px 0", fontSize: 15, fontWeight: 700, color: "#166534" }}>
+                    Import dari CSV
+                  </h5>
+                  <p style={{ margin: 0, fontSize: 13, color: "#14532d" }}>
+                    Unduh template CSV, isi data, lalu impor untuk pengajuan cepat.
+                  </p>
+                  <button
+                    type="button"
+                    style={{
+                      marginTop: 12,
+                      background: "#16a34a",
+                      color: "#fff",
+                      border: "none",
+                      padding: "8px 14px",
+                      borderRadius: 8,
+                      fontWeight: 700,
+                      fontSize: 12,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Import CSV di Halaman Pengajuan ➔
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* NOTIFICATION BANNER */}
+          {notifText && (
+            <div className="notif-banner">
+              <span>{notifText}</span>
+              <button
+                type="button"
+                className="notif-close"
+                onClick={() => setNotifText("")}
+              >
+                ×
+              </button>
+            </div>
+          )}
+
+          {/* PENGajuan STATUS CARD */}
+          <div className="card">
+            <div className="card-title">Status Pengajuan Anda</div>
+
             <div className="info-banner">
               Pengajuan ATK hanya dapat dilakukan{" "}
               <b>1 kali dalam 1 periode tahun akademik</b>. Pastikan data yang
               Anda isi sudah benar sebelum mengirim.
             </div>
-
-            {/* Banner notifikasi status berubah */}
-            {notifText && (
-              <div className="notif-banner">
-                <span>{notifText}</span>
-                <button
-                  type="button"
-                  className="notif-close"
-                  onClick={() => setNotifText("")}
-                >
-                  ×
-                </button>
-              </div>
-            )}
 
             {loading ? (
               <p>Sedang memuat data pengajuan...</p>
@@ -325,21 +558,114 @@ export default function DashboardUser() {
               <p className="error-text">{errorMsg}</p>
             ) : latestPengajuan ? (
               <div className="status-card">
-                <p>
-                  <strong>Tahun Akademik:</strong>{" "}
-                  {latestPengajuan.tahun_akademik}
-                </p>
-                <p>
-                  <strong>Status:</strong>{" "}
-                  <span
-                    className={`badge-status status-${latestPengajuan.status}`}
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 12,
+                    marginBottom: 12,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <div
+                    style={{
+                      background: "#f8fafc",
+                      border: "1px solid #e2e8f0",
+                      borderRadius: 8,
+                      padding: "10px 14px",
+                      flex: 1,
+                      minWidth: 140,
+                    }}
                   >
-                    {latestPengajuan.status.toUpperCase()}
-                  </span>
-                </p>
-                <p>{statusText}</p>
+                    <div style={{ fontSize: 12, color: "#64748b", marginBottom: 2 }}>
+                      Tahun Akademik
+                    </div>
+                    <div style={{ fontWeight: 700, fontSize: 14, color: "#0f172a" }}>
+                      {latestPengajuan.tahun_akademik}
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      background: "#f8fafc",
+                      border: "1px solid #e2e8f0",
+                      borderRadius: 8,
+                      padding: "10px 14px",
+                      flex: 1,
+                      minWidth: 140,
+                    }}
+                  >
+                    <div style={{ fontSize: 12, color: "#64748b", marginBottom: 2 }}>
+                      Status
+                    </div>
+                    <div style={{ fontWeight: 700, fontSize: 14, color: "#0f172a" }}>
+                      <span
+                        className={`badge-status status-${latestPengajuan.status}`}
+                        style={{ marginRight: 6 }}
+                      >
+                        {latestPengajuan.status.toUpperCase()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
 
-                {/* Jika ada item direvisi, tampilkan ringkasannya */}
+                <p style={{ margin: "0 0 12px 0", fontSize: 14, color: "#334155" }}>
+                  {statusText}
+                </p>
+
+                {/* Progress timeline */}
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 4,
+                    marginBottom: 16,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  {[
+                    { label: "Diajukan", status: "diajukan", done: ["diverifikasi", "disetujui"].includes(latestPengajuan.status) },
+                    { label: "Diverifikasi Admin", status: "diverifikasi", done: ["disetujui"].includes(latestPengajuan.status) },
+                    { label: "Disetujui", status: "disetujui", done: latestPengajuan.status === "disetujui" },
+                  ].map((s, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
+                        padding: "4px 10px",
+                        borderRadius: 6,
+                        background: s.done ? "#f0fdf4" : "#f8fafc",
+                        border: `1px solid ${s.done ? "#bbf7d0" : "#e2e8f0"}`,
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 18,
+                          height: 18,
+                          borderRadius: "50%",
+                          background: s.done ? "#16a34a" : "#94a3b8",
+                          color: "#fff",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: 10,
+                          fontWeight: 700,
+                        }}
+                      >
+                        {s.done ? "✓" : idx + 1}
+                      </div>
+                      <span
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 600,
+                          color: s.done ? "#15803d" : "#64748b",
+                        }}
+                      >
+                        {s.label}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
                 {revisedItems.length > 0 && (
                   <div className="revisi-block">
                     <p style={{ marginTop: 12, marginBottom: 4 }}>
@@ -379,22 +705,81 @@ export default function DashboardUser() {
                   type="button"
                   className="btn btn-primary"
                   onClick={() => navigate("/riwayat")}
+                  style={{ marginTop: 12 }}
                 >
                   Lihat Detail Pengajuan
                 </button>
               </div>
             ) : (
-              <div>
-                <p>Anda belum memiliki pengajuan ATK.</p>
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={() => navigate("/pengajuan")}
-                >
-                  Buat Pengajuan Pertama
-                </button>
+              <div
+                style={{
+                  background: "#f8fafc",
+                  border: "1px dashed #cbd5e1",
+                  borderRadius: 10,
+                  padding: "16px 20px",
+                  textAlign: "center",
+                }}
+              >
+                <p style={{ margin: "0 0 12px 0", fontSize: 14, color: "#475569" }}>
+                  Anda belum memiliki pengajuan ATK pada periode ini.
+                </p>
+                {hasStockOpname && (
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={() => navigate("/pengajuan")}
+                  >
+                    Buat Pengajuan Pertama
+                  </button>
+                )}
               </div>
             )}
+          </div>
+
+          {/* QUICK LINKS */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+              gap: 12,
+              marginTop: 20,
+            }}
+          >
+            {[
+              { label: "Stock Opname", to: "/stock-opname", emoji: "📦", color: "#dc2626" },
+              { label: "Buat Pengajuan", to: "/pengajuan", emoji: "📝", color: "#2563eb" },
+              { label: "Riwayat Pengajuan", to: "/riwayat", emoji: "📋", color: "#9333ea" },
+              { label: "Template Dokumen", to: "/template-dokumen", emoji: "📄", color: "#ea580c" },
+            ].map((item) => (
+              <div
+                key={item.label}
+                onClick={() => navigate(item.to)}
+                style={{
+                  background: "#ffffff",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: 10,
+                  padding: "12px 16px",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  transition: "transform 0.15s ease, box-shadow 0.15s ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(-2px)";
+                  e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.06)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow = "none";
+                }}
+              >
+                <span style={{ fontSize: 22 }}>{item.emoji}</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: item.color }}>
+                  {item.label}
+                </span>
+              </div>
+            ))}
           </div>
         </section>
       </main>

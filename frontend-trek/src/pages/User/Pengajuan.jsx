@@ -344,6 +344,53 @@ function Pengajuan() {
   }, [tahunAkademik, userId]);
 
 
+  // ====== AUTO-FILL DARI STOCK OPNAME ======
+  const [draftLoaded, setDraftLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!userId || !tahunAkademik || draftLoaded || !periodeOpen) return;
+
+    async function loadDraftFromStockOpname() {
+      try {
+        const res = await fetch(
+          `${API_BASE}/stock-opname/draft-pengajuan`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              Accept: "application/json",
+            },
+          }
+        );
+
+        if (!res.ok) return;
+
+        const data = await res.json();
+        if (data.success && Array.isArray(data.items) && data.items.length > 0) {
+          setItems((prev) => {
+            if (prev.length > 0) return prev;
+            return data.items.map((it) => ({
+              id: it.barang_id,
+              nama: it.nama,
+              satuan: it.satuan,
+              kebutuhanTotal: it.kebutuhan_total || 0,
+              sisaStok: it.sisa_stok || 0,
+              jumlahDiajukan: it.jumlah_diajukan || 0,
+              estimasiNilai: it.estimasi_nilai || 0,
+              foto: null,
+            }));
+          });
+        }
+      } catch (err) {
+        console.error("Gagal memuat draft stock opname:", err);
+      } finally {
+        setDraftLoaded(true);
+      }
+    }
+
+    loadDraftFromStockOpname();
+  }, [userId, tahunAkademik, periodeOpen, draftLoaded]);
+
+
   // ====== AUTO-SUGGEST BARANG ======
   useEffect(() => {
     if (!query.trim()) {

@@ -6,9 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Models\StockOpname;
 use App\Models\Barang;
 use App\Models\BarangAuditLog;
+use App\Models\Periode;
+use App\Models\Pengajuan;
+use App\Models\PengajuanItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 
 class StockOpnameController extends Controller
 {
@@ -27,6 +31,52 @@ class StockOpnameController extends Controller
         return response()->json([
             'success' => true,
             'data' => $data
+        ]);
+    }
+
+    public function draftPengajuan(Request $request)
+    {
+        $user = $request->user();
+        $now = Carbon::now('Asia/Jakarta');
+
+        $periode = Periode::where('mulai', '<=', $now)->where('selesai', '>=', $now)->first();
+        if (!$periode) {
+            return response()->json([
+                'success' => true,
+                'items' => []
+            ]);
+        }
+
+        $stockOpnames = StockOpname::with(['barang'])
+            ->where('user_id', $user->id)
+            ->where('created_at', '>=', Carbon::parse($periode->mulai)->subDays(7))
+            ->get();
+
+        $items = $stockOpnames->map(function ($so) {
+            $barang = $so->barang;
+            $stokFisik = (int)($so->stok_fisik ?? 0);
+            $sisaStok = $so->hasil_verifikasi !== null && $so->hasil_verifikasi !== undefined
+                ? (int)$so->hasil_verifikasi
+                : $stokFisik;
+
+            return [
+                'barang_id'       => $so->barang_id,
+                'nama'            => $barang->nama ?? 'Barang Terhapus',
+                'satuan'          => $barang->satuan ?? '',
+                'kebutuhan_total' => 0,
+                'sisa_stok'       => $sisaStok,
+                'jumlah_diajukan' => 0,
+                'estimasi_nilai'  => $barang->harga_satuan ?? 0,
+                'stok_sistem'     => (int)($so->stok_sistem ?? 0),
+                'stok_fisik'      => $stokFisik,
+                'hasil_verifikasi' => $so->hasil_verifikasi,
+                'selisih'         => $so->selisih,
+            ];
+        })->values()->all();
+
+        return response()->json([
+            'success' => true,
+            'items' => $items
         ]);
     }
 
@@ -132,6 +182,33 @@ class StockOpnameController extends Controller
         }
 
         $stockOpname->update($updateData);
+
+        // Update pengajuan user jika ada yang masih diajukan untuk periode aktif
+        $now = Carbon::now('Asia/Jakarta');
+        $periode = Periode::where('mulai', '<=', $now)->where('selesai', '>=', $now)->first();
+        if ($periode) {
+            $pengajuan = Pengajuan::where('user_id', $stockOpname->user_id)
+                ->where('tahun_akademik', $periode->tahun_akademik)
+                ->where('status', 'diajukan')
+                ->first();
+
+            if ($pengajuan) {
+                $item = PengajuanItem::where('pengajuan_id', $pengajuan->id)
+                    ->where('barang_id', $stockOpname->barang_id)
+                    ->first();
+
+                if ($item) {
+                    $kebutuhanTotal = $item->kebutuhan_total;
+                    $sisaStokBaru = $stockOpname->hasil_verifikasi;
+                    $jumlahDiajukanBaru = max(0, $kebutuhanTotal - $sisaStokBaru);
+
+                    $item->update([
+                        'sisa_stok' => $sisaStokBaru,
+                        'jumlah_diajukan' => $jumlahDiajukanBaru,
+                    ]);
+                }
+            }
+        }
 
         // LOG ACTIVITY
         \Illuminate\Support\Facades\DB::table('admin_activity_logs')->insert([

@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import "../../css/layout.css";
 import "../../css/tabel.css";
 import RoleSwitcher from "../../components/RoleSwitcher";
-
+import Swal from "sweetalert2";
 
 
 const API_BASE = import.meta.env.VITE_API_BASE;
@@ -18,6 +18,8 @@ export default function MonitoringUser() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedRequest, setSelectedRequest] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
+  const [deletingSoId, setDeletingSoId] = useState(null);
 
   const storedUser = localStorage.getItem("user");
   const currentUser = storedUser ? JSON.parse(storedUser) : null;
@@ -76,6 +78,107 @@ export default function MonitoringUser() {
       console.error("Gagal memuat data monitoring user:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteRequest = async (req) => {
+    const result = await Swal.fire({
+      title: "Hapus Pengajuan?",
+      html: `Anda akan menghapus pengajuan <b>${req.nama_pemohon}</b> (${req.tahun_akademik}).<br>Tindakan ini tidak dapat dibatalkan.`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#dc2626",
+      cancelButtonColor: "#64748b",
+      confirmButtonText: "Ya, Hapus",
+      cancelButtonText: "Batal",
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      setDeletingId(req.id);
+      const res = await fetch(`${API_BASE}/pengajuan/${req.id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+        },
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || data.success === false) {
+        throw new Error(data.message || "Gagal menghapus pengajuan");
+      }
+
+      setRequests((prev) => prev.filter((r) => r.id !== req.id));
+      setSelectedRequest(null);
+
+      Swal.fire({
+        icon: "success",
+        title: "Terhapus",
+        text: "Pengajuan berhasil dihapus.",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+    } catch (err) {
+      Swal.fire({
+        icon: "error",
+        title: "Gagal",
+        text: err.message || "Terjadi kesalahan saat menghapus pengajuan.",
+      });
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleDeleteStockOpname = async (so) => {
+    const result = await Swal.fire({
+      title: "Hapus Laporan Stock Opname?",
+      html: `Anda akan menghapus laporan stock opname <b>${so.barang?.nama || 'Barang'}</b> oleh <b>${so.user?.name || 'User'}</b>.<br>Tindakan ini tidak dapat dibatalkan.`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#dc2626",
+      cancelButtonColor: "#64748b",
+      confirmButtonText: "Ya, Hapus",
+      cancelButtonText: "Batal",
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      setDeletingSoId(so.id);
+      const res = await fetch(`${API_BASE}/stock-opname/${so.id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+        },
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || data.success === false) {
+        throw new Error(data.message || "Gagal menghapus laporan stock opname");
+      }
+
+      setStockOpnames((prev) => prev.filter((s) => s.id !== so.id));
+
+      Swal.fire({
+        icon: "success",
+        title: "Terhapus",
+        text: "Laporan stock opname berhasil dihapus.",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+    } catch (err) {
+      Swal.fire({
+        icon: "error",
+        title: "Gagal",
+        text: err.message || "Terjadi kesalahan saat menghapus laporan stock opname.",
+      });
+    } finally {
+      setDeletingSoId(null);
     }
   };
 
@@ -267,59 +370,78 @@ export default function MonitoringUser() {
             ) : (
               <div className="table-wrapper">
                 <table>
-                  <thead>
-                    <tr>
-                      <th style={{ width: "60px" }}>No</th>
-                      <th>Pemohon</th>
-                      <th>Unit / Fakultas</th>
-                      <th>Jabatan</th>
-                      <th>Tahun Akademik</th>
-                      <th>Total Nilai</th>
-                      <th>Status</th>
-                      <th style={{ width: "120px" }}>Detail</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredRequests.map((req, index) => (
-                      <tr key={req.id}>
-                        <td>{index + 1}</td>
-                        <td>
-                          <strong>{req.nama_pemohon}</strong>
-                          <div style={{ fontSize: "11px", color: "#64748b" }}>{req.user?.email}</div>
-                        </td>
-                        <td>{req.unit}</td>
-                        <td>{req.jabatan}</td>
-                        <td>{req.tahun_akademik}</td>
-                        <td>
-                          <strong>{formatRupiah(req.total_nilai || 0)}</strong>
-                          <div style={{ fontSize: "11px", color: "#64748b" }}>
-                            {req.total_jumlah_diajukan} item diajukan
-                          </div>
-                        </td>
-                        <td>
-                          <span className={`badge ${getStatusBadgeClass(req.status)}`}>
-                            {formatStatus(req.status)}
-                          </span>
-                        </td>
-                        <td>
-                          <button
-                            onClick={() => setSelectedRequest(req)}
-                            style={{
-                              padding: "4px 8px",
-                              background: "#0ea5e9",
-                              color: "#fff",
-                              border: "none",
-                              borderRadius: "4px",
-                              cursor: "pointer",
-                              fontSize: "12px",
-                              fontWeight: "600"
-                            }}
-                          >
-                            Lihat Item
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
+                   <thead>
+                     <tr>
+                       <th style={{ width: "60px" }}>No</th>
+                       <th>Pemohon</th>
+                       <th>Unit / Fakultas</th>
+                       <th>Jabatan</th>
+                       <th>Tahun Akademik</th>
+                       <th>Total Nilai</th>
+                       <th>Status</th>
+                       <th style={{ width: "120px" }}>Detail</th>
+                       <th style={{ width: "80px" }}>Aksi</th>
+                     </tr>
+                   </thead>
+                   <tbody>
+                     {filteredRequests.map((req, index) => (
+                       <tr key={req.id}>
+                         <td>{index + 1}</td>
+                         <td>
+                           <strong>{req.nama_pemohon}</strong>
+                           <div style={{ fontSize: "11px", color: "#64748b" }}>{req.user?.email}</div>
+                         </td>
+                         <td>{req.unit}</td>
+                         <td>{req.jabatan}</td>
+                         <td>{req.tahun_akademik}</td>
+                         <td>
+                           <strong>{formatRupiah(req.total_nilai || 0)}</strong>
+                           <div style={{ fontSize: "11px", color: "#64748b" }}>
+                             {req.total_jumlah_diajukan} item diajukan
+                           </div>
+                         </td>
+                         <td>
+                           <span className={`badge ${getStatusBadgeClass(req.status)}`}>
+                             {formatStatus(req.status)}
+                           </span>
+                         </td>
+                         <td>
+                           <button
+                             onClick={() => setSelectedRequest(req)}
+                             style={{
+                               padding: "4px 8px",
+                               background: "#0ea5e9",
+                               color: "#fff",
+                               border: "none",
+                               borderRadius: "4px",
+                               cursor: "pointer",
+                               fontSize: "12px",
+                               fontWeight: "600"
+                             }}
+                           >
+                             Lihat Item
+                           </button>
+                         </td>
+                         <td>
+                           <button
+                             onClick={() => handleDeleteRequest(req)}
+                             disabled={deletingId === req.id}
+                             style={{
+                               padding: "4px 8px",
+                               background: deletingId === req.id ? "#94a3b8" : "#dc2626",
+                               color: "#fff",
+                               border: "none",
+                               borderRadius: "4px",
+                               cursor: deletingId === req.id ? "not-allowed" : "pointer",
+                               fontSize: "12px",
+                               fontWeight: "600"
+                             }}
+                           >
+                             {deletingId === req.id ? "..." : "Hapus"}
+                           </button>
+                         </td>
+                       </tr>
+                     ))}
                   </tbody>
                 </table>
               </div>
@@ -340,7 +462,7 @@ export default function MonitoringUser() {
             ) : (
               <div className="table-wrapper">
                 <table>
-                  <thead>
+                   <thead>
                     <tr>
                       <th style={{ width: "60px" }}>No</th>
                       <th>Pemohon / User</th>
@@ -351,6 +473,7 @@ export default function MonitoringUser() {
                       <th>Keterangan</th>
                       <th>Status</th>
                       <th>Waktu Input</th>
+                      <th style={{ width: "80px" }}>Aksi</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -383,6 +506,24 @@ export default function MonitoringUser() {
                             hour: "2-digit",
                             minute: "2-digit"
                           }) : "-"}
+                        </td>
+                        <td>
+                          <button
+                            onClick={() => handleDeleteStockOpname(so)}
+                            disabled={deletingSoId === so.id}
+                            style={{
+                              padding: "4px 8px",
+                              background: deletingSoId === so.id ? "#94a3b8" : "#dc2626",
+                              color: "#fff",
+                              border: "none",
+                              borderRadius: "4px",
+                              cursor: deletingSoId === so.id ? "not-allowed" : "pointer",
+                              fontSize: "12px",
+                              fontWeight: "600"
+                            }}
+                          >
+                            {deletingSoId === so.id ? "..." : "Hapus"}
+                          </button>
                         </td>
                       </tr>
                     ))}

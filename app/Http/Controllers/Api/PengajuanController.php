@@ -557,23 +557,59 @@ class PengajuanController extends Controller
     }
 
     public function checkLimit(Request $request, $userId)
-{
-    $tahun = $request->query('tahun');
+    {
+        $tahun = $request->query('tahun');
 
-    if (!$tahun) {
+        if (!$tahun) {
+            return response()->json([
+                'already' => false,
+                'has_stock_opname' => false,
+            ]);
+        }
+
+        $exists = Pengajuan::where('user_id', $userId)
+            ->where('tahun_akademik', $tahun)
+            ->exists();
+
+        $now = Carbon::now('Asia/Jakarta');
+        $periode = Periode::where('tahun_akademik', $tahun)->first();
+        if (!$periode) {
+            $periode = Periode::where('mulai', '<=', $now)->where('selesai', '>=', $now)->first();
+        }
+
+        $hasStockOpname = false;
+        if ($periode) {
+            $hasStockOpname = StockOpname::where('user_id', $userId)
+                ->where('created_at', '>=', Carbon::parse($periode->mulai)->subDays(7))
+                ->exists();
+
+            if (!$hasStockOpname) {
+                $hasStockOpname = StockOpname::where('user_id', $userId)->exists();
+            }
+        } else {
+            $hasStockOpname = StockOpname::where('user_id', $userId)->exists();
+        }
+
         return response()->json([
-            'already' => false
+            'already' => $exists,
+            'has_stock_opname' => $hasStockOpname,
         ]);
     }
 
-    $exists = Pengajuan::where('user_id', $userId)
-        ->where('tahun_akademik', $tahun)
-        ->exists();
+    /**
+     * DELETE /api/pengajuan/{pengajuan}
+     * Hapus pengajuan beserta seluruh item-nya (cascade).
+     */
+    public function destroy(Pengajuan $pengajuan)
+    {
+        $pengajuan->items()->delete();
+        $pengajuan->delete();
 
-    return response()->json([
-        'already' => $exists
-    ]);
-}
+        return response()->json([
+            'success' => true,
+            'message' => 'Pengajuan berhasil dihapus',
+        ]);
+    }
 
     /**
      * PATCH /api/pengajuan/{pengajuan}/user-revisi
