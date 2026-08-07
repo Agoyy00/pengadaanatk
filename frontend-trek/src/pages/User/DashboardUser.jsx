@@ -23,7 +23,6 @@ export default function DashboardUser() {
   const [statusText, setStatusText] = useState("");
   const [notifText, setNotifText] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
-  const [soNeedWarning, setSoNeedWarning] = useState(false);
   const [periodeOpen, setPeriodeOpen] = useState(false);
   const [periodeMessage, setPeriodeMessage] = useState("");
   const [hasStockOpname, setHasStockOpname] = useState(false);
@@ -54,7 +53,6 @@ export default function DashboardUser() {
           if (resCheck.ok) {
             const checkData = await resCheck.json();
             setHasStockOpname(checkData.has_stock_opname === true);
-            setSoNeedWarning(checkData.has_stock_opname === false);
           }
         }
       } catch (err) {
@@ -265,52 +263,6 @@ export default function DashboardUser() {
             </div>
           )}
 
-          {/* STOCK OPNAME WARNING */}
-          {periodeOpen && soNeedWarning && (
-            <div
-              style={{
-                background: "#fef2f2",
-                border: "1px solid #fca5a5",
-                borderRadius: 12,
-                padding: "16px 20px",
-                marginBottom: 20,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: 16,
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <span style={{ fontSize: 24 }}>⚠️</span>
-                <div>
-                  <h4 style={{ margin: 0, color: "#991b1b", fontSize: 16, fontWeight: 700 }}>
-                    Wajib: Stock Opname Barang
-                  </h4>
-                  <p style={{ margin: "4px 0 0", color: "#7f1d1d", fontSize: 14 }}>
-                    Periode pengajuan ATK telah dibuka! Anda <b>wajib melakukan Stock Opname Barang</b> terlebih dahulu sebelum dapat membuat pengajuan baru.
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                style={{
-                  background: "#dc2626",
-                  color: "#ffffff",
-                  border: "none",
-                  padding: "10px 16px",
-                  borderRadius: 8,
-                  fontWeight: 700,
-                  fontSize: 13,
-                  cursor: "pointer",
-                  whiteSpace: "nowrap",
-                }}
-                onClick={() => navigate("/stock-opname")}
-              >
-                Stock Opname Sekarang ➔
-              </button>
-            </div>
-          )}
-
           {/* STEP PROGRESS */}
           {periodeOpen && (
             <div
@@ -372,6 +324,28 @@ export default function DashboardUser() {
                   </div>
                 ))}
               </div>
+
+              {!hasStockOpname && (
+                <div
+                  style={{
+                    marginTop: 10,
+                    padding: "8px 12px",
+                    background: "#fef2f2",
+                    border: "1px solid #fecaca",
+                    borderRadius: 8,
+                    fontSize: 13,
+                    color: "#991b1b",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                  }}
+                >
+                  <span style={{ fontSize: 16 }}>ℹ️</span>
+                  <span>
+                    <b>Langkah selanjutnya:</b> lakukan Stock Opname Barang terlebih dahulu agar Anda dapat membuat pengajuan ATK.
+                  </span>
+                </div>
+              )}
             </div>
           )}
 
