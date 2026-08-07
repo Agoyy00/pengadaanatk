@@ -21,6 +21,18 @@ import RoleSwitcher from "../../components/RoleSwitcher";
 
 const API_BASE = import.meta.env.VITE_API_BASE;
 const COLORS = ["#0284c7", "#16a34a", "#8b5cf6", "#ea580c", "#e11d48", "#06b6d4", "#d97706", "#475569"];
+const DEFAULT_UNITS = [
+  "Direktorat",
+  "DPJJ",
+  "PDJAMA",
+  "Pascasarjana",
+  "Fakultas Kedokteran",
+  "Fakultas Kedokteran Gigi",
+  "Fakultas Teknologi Informasi",
+  "Fakultas Hukum",
+  "Fakultas Psikologi",
+  "Fakultas Ekonomi",
+];
 
 export default function GrafikBarangSuperAdmin() {
   const navigate = useNavigate();
@@ -157,6 +169,86 @@ export default function GrafikBarangSuperAdmin() {
     };
   }, [filteredRequests]);
 
+  // Dynamic list of available Units
+  const availableUnits = useMemo(() => {
+    const unitSet = new Set(DEFAULT_UNITS);
+    requests.forEach((r) => {
+      if (r.unit) unitSet.add(r.unit);
+    });
+    return Array.from(unitSet).sort();
+  }, [requests]);
+
+  // Filter Perbandingan State
+  const [compareSearch, setCompareSearch] = useState("");
+  const [comparePeriode, setComparePeriode] = useState("all");
+  const [selectedUnits, setSelectedUnits] = useState([]); // empty = all units
+  const [showUnitDropdown, setShowUnitDropdown] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  const toggleUnit = (uName) => {
+    if (uName === "all") {
+      setSelectedUnits([]);
+    } else {
+      setSelectedUnits((prev) =>
+        prev.includes(uName) ? prev.filter((item) => item !== uName) : [...prev, uName]
+      );
+    }
+  };
+
+  // Suggestions for search column
+  const barangSuggestions = useMemo(() => {
+    if (!compareSearch.trim()) return [];
+    const query = compareSearch.toLowerCase();
+    const names = new Set();
+    barangs.forEach((b) => {
+      if (b.nama && b.nama.toLowerCase().includes(query)) names.add(b.nama);
+    });
+    requests.forEach((r) => {
+      (r.items || []).forEach((it) => {
+        const n = it.barang?.nama;
+        if (n && n.toLowerCase().includes(query)) names.add(n);
+      });
+    });
+    return Array.from(names).slice(0, 8);
+  }, [compareSearch, barangs, requests]);
+
+  // Computed comparison results
+  const comparisonResults = useMemo(() => {
+    const list = [];
+    requests.forEach((req) => {
+      if (comparePeriode !== "all" && req.tahun_akademik !== comparePeriode) return;
+      if (selectedUnits.length > 0 && !selectedUnits.includes(req.unit)) return;
+
+      (req.items || []).forEach((item) => {
+        const bName = item.barang?.nama || "Barang";
+        if (compareSearch.trim() && !bName.toLowerCase().includes(compareSearch.toLowerCase())) {
+          return;
+        }
+
+        list.push({
+          id: `${req.id}-${item.id || bName}`,
+          nama: bName,
+          satuan: item.barang?.satuan || "pcs",
+          unit: req.unit || "Lainnya",
+          periode: req.tahun_akademik || "-",
+          jumlahDiajukan: item.jumlah_diajukan || 0,
+          jumlahDisetujui: item.jumlah_disetujui || item.jumlah_diajukan || 0,
+          pemohon: req.user?.name || req.nama_pemohon || "User",
+          status: req.status || "diproses",
+        });
+      });
+    });
+    return list;
+  }, [requests, compareSearch, comparePeriode, selectedUnits]);
+
+  // Aggregate stats for comparison table
+  const comparisonSummary = useMemo(() => {
+    const totalQty = comparisonResults.reduce((acc, c) => acc + c.jumlahDiajukan, 0);
+    const uniqueUnits = new Set(comparisonResults.map(c => c.unit)).size;
+    const uniqueItems = new Set(comparisonResults.map(c => c.nama)).size;
+    return { totalQty, uniqueUnits, uniqueItems, totalRecords: comparisonResults.length };
+  }, [comparisonResults]);
+
   const [showAnalisisModal, setShowAnalisisModal] = useState(false);
   const [searchTable, setSearchTable] = useState("");
 
@@ -275,7 +367,7 @@ export default function GrafikBarangSuperAdmin() {
               <div style={{ fontSize: "26px", fontWeight: 800, marginTop: "6px" }}>
                 {filteredRequests.reduce((acc, r) => acc + (r.items?.length || 0), 0)} Item
               </div>
-              <div style={{ fontSize: "11px", opacity: 0.8, marginTop: "4px" }}>Periode / filter terpilih</div>
+              <div style={{ fontSize: "11px", opacity: 0.8, marginTop: "4px" }}>Akumulasi dari pengajuan</div>
             </div>
 
             <div className="card" style={{ padding: "20px", background: "linear-gradient(135deg, #8b5cf6, #6d28d9)", color: "#fff" }}>
@@ -289,12 +381,271 @@ export default function GrafikBarangSuperAdmin() {
             </div>
           </div>
 
-          {/* FILTER PARAMETER & TAHUN AKADEMIK */}
-          <div className="card" style={{ marginBottom: "24px" }}>
-            <div className="card-title">Filter Parameter Grafik & Laporan</div>
-            <div className="filter-row" style={{ display: "flex", gap: "20px", marginTop: "12px", flexWrap: "wrap", alignItems: "center" }}>
+          {/* =========================================================
+              🔥 FILTER UNIFIKASI PARAMETER & PERBANDINGAN DATA BARANG
+          ========================================================= */}
+          <div className="card" style={{ marginBottom: "24px", border: "1px solid #3b82f6", backgroundColor: "#f0f9ff" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px", marginBottom: "16px" }}>
               <div>
-                <label style={{ fontSize: "12px", color: "#64748b", fontWeight: "600", display: "block", marginBottom: "4px" }}>
+                <div className="card-title" style={{ color: "#1d4ed8", display: "flex", alignItems: "center", gap: "8px" }}>
+                  ⚖️ Filter Parameter & Perbandingan Data Barang
+                </div>
+                <p className="card-subtitle" style={{ color: "#3b82f6" }}>
+                  Cari nama barang, pilih rentang tahun, periode, dan unit untuk menyaring data grafik dan laporan perbandingan.
+                </p>
+              </div>
+              {(compareSearch || selectedYear !== "all" || selectedUnits.length > 0 || yearsCount !== 3) && (
+                <button
+                  onClick={() => {
+                    setCompareSearch("");
+                    setSelectedYear("all");
+                    setComparePeriode("all");
+                    setSelectedUnits([]);
+                    setYearsCount(3);
+                  }}
+                  style={{
+                    padding: "6px 12px",
+                    fontSize: "12px",
+                    fontWeight: "600",
+                    color: "#dc2626",
+                    backgroundColor: "#fee2e2",
+                    border: "none",
+                    borderRadius: "6px",
+                    cursor: "pointer"
+                  }}
+                >
+                  Reset Filter
+                </button>
+              )}
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px", marginBottom: "16px" }}>
+              {/* Kolom 1: Nama Barang */}
+              <div style={{ position: "relative" }}>
+                <label style={{ fontSize: "12px", color: "#1e3a8a", fontWeight: "700", display: "block", marginBottom: "4px" }}>
+                  Nama Barang:
+                </label>
+                <div style={{ position: "relative" }}>
+                  <input
+                    type="text"
+                    placeholder="🔍 Cari nama barang"
+                    value={compareSearch}
+                    onChange={(e) => {
+                      setCompareSearch(e.target.value);
+                      setShowSuggestions(true);
+                    }}
+                    onFocus={() => setShowSuggestions(true)}
+                    style={{
+                      width: "100%",
+                      padding: "9px 32px 9px 12px",
+                      borderRadius: "8px",
+                      border: "1px solid #93c5fd",
+                      fontSize: "13.5px",
+                      outline: "none",
+                      backgroundColor: "#ffffff"
+                    }}
+                  />
+                  {compareSearch && (
+                    <button
+                      onClick={() => {
+                        setCompareSearch("");
+                        setShowSuggestions(false);
+                      }}
+                      style={{
+                        position: "absolute",
+                        right: "8px",
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        background: "none",
+                        border: "none",
+                        color: "#94a3b8",
+                        cursor: "pointer",
+                        fontSize: "14px",
+                        fontWeight: "bold"
+                      }}
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+
+                {/* Dropdown Suggestion Box */}
+                {showSuggestions && barangSuggestions.length > 0 && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "100%",
+                      left: 0,
+                      right: 0,
+                      zIndex: 50,
+                      backgroundColor: "#ffffff",
+                      border: "1px solid #cbd5e1",
+                      borderRadius: "8px",
+                      marginTop: "4px",
+                      boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)",
+                      maxHeight: "200px",
+                      overflowY: "auto"
+                    }}
+                  >
+                    {barangSuggestions.map((sug) => (
+                      <div
+                        key={sug}
+                        onClick={() => {
+                          setCompareSearch(sug);
+                          setShowSuggestions(false);
+                        }}
+                        style={{
+                          padding: "8px 12px",
+                          fontSize: "13px",
+                          cursor: "pointer",
+                          borderBottom: "1px solid #f1f5f9",
+                          color: "#334155"
+                        }}
+                        onMouseDown={(e) => e.preventDefault()}
+                      >
+                        📦 {sug}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Kolom 2: Periode (Tahun Akademik) */}
+              <div>
+                <label style={{ fontSize: "12px", color: "#1e3a8a", fontWeight: "700", display: "block", marginBottom: "4px" }}>
+                  Periode (Tahun Akademik):
+                </label>
+                <select
+                  value={comparePeriode}
+                  onChange={(e) => {
+                    setComparePeriode(e.target.value);
+                    setSelectedYear(e.target.value);
+                  }}
+                  style={{
+                    width: "100%",
+                    padding: "9px 12px",
+                    borderRadius: "8px",
+                    border: "1px solid #93c5fd",
+                    fontSize: "13.5px",
+                    outline: "none",
+                    backgroundColor: "#ffffff"
+                  }}
+                >
+                  <option value="all">Semua Periode</option>
+                  {availableYears.map((yr) => (
+                    <option key={`cmp-yr-${yr}`} value={yr}>
+                      📅 {yr}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Kolom 3: Unit / Fakultas (Multi-Select) */}
+              <div style={{ position: "relative" }}>
+                <label style={{ fontSize: "12px", color: "#1e3a8a", fontWeight: "700", display: "block", marginBottom: "4px" }}>
+                  Unit / Fakultas:
+                </label>
+                <div
+                  onClick={() => setShowUnitDropdown(!showUnitDropdown)}
+                  style={{
+                    width: "100%",
+                    padding: "9px 12px",
+                    borderRadius: "8px",
+                    border: "1px solid #93c5fd",
+                    fontSize: "13.5px",
+                    backgroundColor: "#ffffff",
+                    cursor: "pointer",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    userSelect: "none"
+                  }}
+                >
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    🏢 {selectedUnits.length === 0 ? "Semua Unit / Fakultas" : `${selectedUnits.length} Unit Terpilih`}
+                  </span>
+                  <span style={{ fontSize: "10px", color: "#64748b" }}>{showUnitDropdown ? "▲" : "▼"}</span>
+                </div>
+
+                {showUnitDropdown && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "100%",
+                      left: 0,
+                      right: 0,
+                      zIndex: 50,
+                      backgroundColor: "#ffffff",
+                      border: "1px solid #cbd5e1",
+                      borderRadius: "8px",
+                      marginTop: "4px",
+                      boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)",
+                      maxHeight: "220px",
+                      overflowY: "auto",
+                      padding: "6px 0"
+                    }}
+                  >
+                    <label
+                      onClick={() => toggleUnit("all")}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        padding: "8px 12px",
+                        fontSize: "13px",
+                        cursor: "pointer",
+                        backgroundColor: selectedUnits.length === 0 ? "#eff6ff" : "transparent",
+                        fontWeight: selectedUnits.length === 0 ? "bold" : "normal",
+                        borderBottom: "1px solid #f1f5f9"
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedUnits.length === 0}
+                        onChange={() => toggleUnit("all")}
+                        style={{ cursor: "pointer" }}
+                      />
+                      Semua Unit / Fakultas
+                    </label>
+
+                    {availableUnits.map((u) => {
+                      const isChecked = selectedUnits.includes(u);
+                      return (
+                        <label
+                          key={`unit-chk-${u}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleUnit(u);
+                          }}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            padding: "8px 12px",
+                            fontSize: "13px",
+                            cursor: "pointer",
+                            backgroundColor: isChecked ? "#f0fdf4" : "transparent",
+                            fontWeight: isChecked ? "bold" : "normal",
+                            borderBottom: "1px solid #f1f5f9"
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => {}}
+                            style={{ cursor: "pointer" }}
+                          />
+                          🏢 {u}
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Kolom 4: Rentang Tahun */}
+              <div>
+                <label style={{ fontSize: "12px", color: "#1e3a8a", fontWeight: "700", display: "block", marginBottom: "4px" }}>
                   Rentang Tahun:
                 </label>
                 <select
@@ -302,32 +653,92 @@ export default function GrafikBarangSuperAdmin() {
                   onChange={(e) => {
                     setYearsCount(Number(e.target.value));
                     setSelectedYear("all");
+                    setComparePeriode("all");
                   }}
-                  style={{ padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "13.5px", outline: "none" }}
+                  style={{
+                    width: "100%",
+                    padding: "9px 12px",
+                    borderRadius: "8px",
+                    border: "1px solid #93c5fd",
+                    fontSize: "13.5px",
+                    outline: "none",
+                    backgroundColor: "#ffffff"
+                  }}
                 >
                   <option value={3}>3 Tahun Terakhir</option>
                   <option value={4}>4 Tahun Terakhir</option>
                   <option value={5}>5 Tahun Terakhir</option>
                 </select>
               </div>
+            </div>
 
-              <div>
-                <label style={{ fontSize: "12px", color: "#64748b", fontWeight: "600", display: "block", marginBottom: "4px" }}>
-                  Tahun Akademik:
-                </label>
-                <select
-                  value={selectedYear}
-                  onChange={(e) => setSelectedYear(e.target.value)}
-                  style={{ padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "13.5px", outline: "none" }}
-                >
-                  <option value="all">Semua Tahun</option>
-                  {availableYears.map((yr) => (
-                    <option key={yr} value={yr}>
-                      {yr}
-                    </option>
-                  ))}
-                </select>
+            {/* HASIL RINGKASAN & TABEL PERBANDINGAN */}
+            <div style={{ backgroundColor: "#ffffff", padding: "16px", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
+              <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", marginBottom: "12px" }}>
+                <span style={{ fontSize: "12px", fontWeight: "700", color: "#0284c7", backgroundColor: "#e0f2fe", padding: "4px 10px", borderRadius: "20px" }}>
+                  📊 Total Usulan Ditemukan: {comparisonSummary.totalRecords} Transaksi
+                </span>
+                <span style={{ fontSize: "12px", fontWeight: "700", color: "#16a34a", backgroundColor: "#dcfce7", padding: "4px 10px", borderRadius: "20px" }}>
+                  📦 Total Volume Requested: {comparisonSummary.totalQty} Item
+                </span>
+                <span style={{ fontSize: "12px", fontWeight: "700", color: "#8b5cf6", backgroundColor: "#f3e8ff", padding: "4px 10px", borderRadius: "20px" }}>
+                  🏢 Unit Terlibat: {comparisonSummary.uniqueUnits} Unit
+                </span>
               </div>
+
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+                  <thead>
+                    <tr style={{ backgroundColor: "#f8fafc", borderBottom: "2px solid #e2e8f0", textAlign: "left" }}>
+                      <th style={{ padding: "10px" }}>Nama Barang</th>
+                      <th style={{ padding: "10px" }}>Unit / Fakultas</th>
+                      <th style={{ padding: "10px" }}>Periode</th>
+                      <th style={{ padding: "10px", textAlign: "center" }}>Jumlah Diajukan</th>
+                      <th style={{ padding: "10px" }}>Pemohon</th>
+                      <th style={{ padding: "10px", textAlign: "center" }}>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {comparisonResults.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} style={{ padding: "16px", textAlign: "center", color: "#64748b", fontStyle: "italic" }}>
+                          Tidak ada data yang sesuai dengan kombinasi filter perbandingan terpilih.
+                        </td>
+                      </tr>
+                    ) : (
+                      comparisonResults.slice(0, 15).map((row, idx) => (
+                        <tr key={row.id} style={{ borderBottom: "1px solid #f1f5f9", backgroundColor: idx % 2 === 0 ? "#ffffff" : "#f8fafc" }}>
+                          <td style={{ padding: "10px", fontWeight: "700", color: "#0f172a" }}>{row.nama}</td>
+                          <td style={{ padding: "10px", color: "#334155" }}>{row.unit}</td>
+                          <td style={{ padding: "10px", color: "#64748b" }}>{row.periode}</td>
+                          <td style={{ padding: "10px", textAlign: "center", fontWeight: "700", color: "#16a34a" }}>
+                            {row.jumlahDiajukan} {row.satuan}
+                          </td>
+                          <td style={{ padding: "10px", color: "#475569" }}>{row.pemohon}</td>
+                          <td style={{ padding: "10px", textAlign: "center" }}>
+                            <span style={{
+                              padding: "3px 8px",
+                              borderRadius: "12px",
+                              fontSize: "11px",
+                              fontWeight: "700",
+                              textTransform: "capitalize",
+                              backgroundColor: row.status === "disetujui" ? "#dcfce7" : row.status === "ditolak" ? "#fee2e2" : "#fef3c7",
+                              color: row.status === "disetujui" ? "#15803d" : row.status === "ditolak" ? "#b91c1c" : "#b45309"
+                            }}>
+                              {row.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              {comparisonResults.length > 15 && (
+                <div style={{ fontSize: "11.5px", color: "#64748b", marginTop: "8px", fontStyle: "italic", textAlign: "right" }}>
+                  * Menampilkan 15 transaksi pertama dari total {comparisonResults.length} hasil.
+                </div>
+              )}
             </div>
           </div>
 
@@ -395,37 +806,10 @@ export default function GrafikBarangSuperAdmin() {
                       </ResponsiveContainer>
                     </div>
                   )}
-                </div>
-
-                {/* DIAGRAM 3: FREKUENSI PENGADAAN BARANG */}
-                <div className="card">
-                  <div className="card-title">Frekuensi Pengadaan Barang ATK</div>
-                  <p className="card-subtitle">Menampilkan 5 barang ATK yang paling sering diajukan dalam transaksi.</p>
-
-                  {barangStats.freqBarangs.length === 0 ? (
-                    <p style={{ color: "#64748b", fontStyle: "italic", fontSize: "13px", marginTop: "16px" }}>Belum ada data frekuensi.</p>
-                  ) : (
-                    <div style={{ width: "100%", height: 320, marginTop: "16px" }}>
-                      <ResponsiveContainer>
-                        <BarChart data={barangStats.freqBarangs} layout="vertical">
-                          <XAxis type="number" />
-                          <YAxis type="category" dataKey="nama" width={110} tick={{ fontSize: 11 }} />
-                          <Tooltip formatter={(v) => `${v} Kali Usulan`} />
-                          <Bar dataKey="totalFreq" name="Frekuensi Pengadaan" fill="#16a34a" radius={[0, 6, 6, 0]}>
-                            {barangStats.freqBarangs.map((entry, index) => (
-                              <Cell key={`cell-freq-${index}`} fill={COLORS[(index + 2) % COLORS.length]} />
-                            ))}
-                          </Bar>
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  )}
-                </div>
-
               </div>
-
             </div>
-          )}
+          </div>
+        )}
 
           {/* MODAL TAMPILKAN ANALISIS (BERISI TABEL RINCIAN PERMINTAAN BARANG MASTER ATK) */}
           {showAnalisisModal && (
