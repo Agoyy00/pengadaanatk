@@ -70,6 +70,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/pengajuan/{pengajuan}/status', [PengajuanController::class, 'updateStatus']);
     Route::patch('/pengajuan/{pengajuan}/revisi', [PengajuanController::class, 'revisiItems']);
     Route::patch('/pengajuan/{pengajuan}/user-revisi', [PengajuanController::class, 'userRevisiItems']);
+    Route::get('/pengajuan/user-statistik', [PengajuanController::class, 'userStatistik']);
     Route::delete('/pengajuan/{pengajuan}', [PengajuanController::class, 'destroy']);
     /*
     | Approval (Super Admin)

@@ -469,11 +469,10 @@ export default function MonitoringUser() {
                       <th>Barang</th>
                       <th>Stok Fisik</th>
                       <th>Stok Sistem</th>
-                      <th>Selisih</th>
-                      <th>Keterangan</th>
-                      <th>Status</th>
-                      <th>Waktu Input</th>
-                      <th style={{ width: "80px" }}>Aksi</th>
+                       <th>Selisih</th>
+                       <th>Status</th>
+                       <th>Waktu Input</th>
+                       <th style={{ width: "80px" }}>Aksi</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -492,7 +491,6 @@ export default function MonitoringUser() {
                             {so.selisih}
                           </span>
                         </td>
-                        <td>{so.keterangan || "-"}</td>
                         <td>
                           <span className={`badge ${getStatusBadgeClass(so.status)}`}>
                             {formatStatus(so.status)}

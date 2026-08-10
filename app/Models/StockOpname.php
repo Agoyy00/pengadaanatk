@@ -16,7 +16,6 @@ class StockOpname extends Model
         'stok_fisik',
         'hasil_verifikasi',
         'selisih',
-        'keterangan',
         'status',
     ];
 

@@ -7,10 +7,29 @@ import "../../css/Riwayat.css";
 import "../../css/layout.css";
 import RoleSwitcher from "../../components/RoleSwitcher";
 import PeriodeTimer from "../../components/PeriodeTimer";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  AreaChart,
+  Area,
+} from "recharts";
 
 
 
 const API_BASE = import.meta.env.VITE_API_BASE;
+
+const PIE_COLORS = [
+  '#2563eb', '#16a34a', '#d97706', '#dc2626', '#9333ea',
+  '#0891b2', '#db2777', '#65a30d',
+];
 
 export default function Riwayat() {
   const navigate = useNavigate();
@@ -19,8 +38,14 @@ export default function Riwayat() {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
 
-  // Expand state for items in table row
-  const [expandedRows, setExpandedRows] = useState({});
+  // Chart & Filter State
+  const [chartData, setChartData] = useState(null);
+  const [chartLoading, setChartLoading] = useState(true);
+  const [tahunFilter, setTahunFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+
+  // Modal Detail Barang State
+  const [detailPengajuan, setDetailPengajuan] = useState(null);
 
   // Modal Revisi State
   const [selectedPengajuan, setSelectedPengajuan] = useState(null); // pengajuan object
@@ -87,14 +112,36 @@ export default function Riwayat() {
     }
   }
 
+  async function loadChartData() {
+    if (!userId) return;
+    try {
+      setChartLoading(true);
+      const params = new URLSearchParams({ user_id: userId });
+      if (tahunFilter && tahunFilter !== 'all') params.append('tahun_akademik', tahunFilter);
+      if (statusFilter && statusFilter !== 'all') params.append('status', statusFilter);
+
+      const res = await fetch(`${API_BASE}/pengajuan/user-statistik?${params}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = await res.json();
+      if (json.success) {
+        setChartData(json);
+      }
+    } catch (err) {
+      console.error("Gagal load data grafik:", err);
+    } finally {
+      setChartLoading(false);
+    }
+  }
+
   useEffect(() => {
     loadRiwayat();
     loadMasterBarang();
   }, [userId]);
 
-  const toggleExpandRow = (id) => {
-    setExpandedRows((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
+  useEffect(() => {
+    loadChartData();
+  }, [userId, tahunFilter, statusFilter]);
 
   const renderStatus = (status) => {
     if (status === "diajukan") {
@@ -441,9 +488,9 @@ export default function Riwayat() {
           </div>
         </header>
 
-        {/* MAIN CONTENT */}
-        <section className="main-content">
-          <div className="card">
+         {/* MAIN CONTENT */}
+         <section className="main-content">
+           <div className="card">
             <div className="card-title">Riwayat Pengajuan</div>
             <div className="card-subtitle">
               Semua pengajuan ATK yang pernah kamu lakukan.
@@ -476,11 +523,8 @@ export default function Riwayat() {
                       <tbody>
                         {data.map((p) => {
                           const itemsList = p.items || [];
-                          const isExpanded = expandedRows[p.id];
-                          const visibleItems = isExpanded
-                            ? itemsList
-                            : itemsList.slice(0, 2);
-                          const hiddenCount = itemsList.length - 2;
+                          const visibleItems = itemsList.slice(0, 3);
+                          const hiddenCount = itemsList.length - 3;
 
                           return (
                             <tr key={p.id}>
@@ -521,10 +565,8 @@ export default function Riwayat() {
                                           <li key={item.id} style={{ marginBottom: "8px" }}>
                                             <span className="barang-name">{namaBarang}</span>
 
-                                            {/* Jika sudah diproses admin, tampilkan history before/after */}
                                             {isProcessed && disetujui != null ? (
                                               <div className="revisi-history-box">
-                                                {/* Grid Perubahan Kebutuhan & Sisa */}
                                                 <div className="revisi-history-meta-grid">
                                                   <div>
                                                     <span className="meta-label">Kebutuhan:</span>{" "}
@@ -570,7 +612,6 @@ export default function Riwayat() {
                                                 )}
                                               </div>
                                             ) : (
-                                              /* Jika belum diproses, tampilkan biasa */
                                               <div style={{ paddingLeft: "4px", marginTop: "2px", fontSize: "12px", color: "#64748b" }}>
                                                 Kebutuhan: <strong>{item.kebutuhan_total}</strong> · Sisa: <strong>{item.sisa_stok}</strong> · Diajukan: <strong className="qty-tag">{diajukan} {satuan}</strong>
                                               </div>
@@ -580,15 +621,13 @@ export default function Riwayat() {
                                       })}
                                     </ul>
 
-                                    {itemsList.length > 2 && (
+                                    {hiddenCount > 0 && (
                                       <button
                                         type="button"
                                         className="btn-expand-items"
-                                        onClick={() => toggleExpandRow(p.id)}
+                                        onClick={() => setDetailPengajuan(p)}
                                       >
-                                        {isExpanded
-                                          ? "▲ Sembunyikan"
-                                          : `+ ${hiddenCount} barang lainnya...`}
+                                        + {hiddenCount} barang lainnya...
                                       </button>
                                     )}
                                   </div>
@@ -614,6 +653,180 @@ export default function Riwayat() {
                   </div>
                 )}
               </>
+            )}
+          </div>
+
+          {/* ================= ANALISIS PENGAJUAN USER ================= */}
+          <div className="card">
+            <div className="card-title">Analisis Pengajuan Anda</div>
+            <div className="card-subtitle">
+              Grafik dan ringkasan untuk membantu Anda memahami pola penggunaan ATK dan dana.
+            </div>
+
+            {/* ================= FILTER BAR ================= */}
+            <div className="chart-filter-bar">
+              <div className="filter-group">
+                <label>Tahun Akademik</label>
+                <select
+                  value={tahunFilter}
+                  onChange={(e) => setTahunFilter(e.target.value)}
+                >
+                  <option value="all">Semua Tahun</option>
+                  {chartData?.filters?.tahun_list?.map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="filter-group">
+                <label>Status</label>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                >
+                  {chartData?.filters?.status_list?.map((s) => (
+                    <option key={s.value} value={s.value}>{s.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="filter-actions">
+                <button
+                  type="button"
+                  className="btn-filter-reset"
+                  onClick={() => {
+                    setTahunFilter('all');
+                    setStatusFilter('all');
+                  }}
+                >
+                  Reset Filter
+                </button>
+              </div>
+            </div>
+
+            {/* ================= STATISTIK RINGKASAN ================= */}
+            {chartData && (
+              <div className="stats-grid">
+                <div className="stat-card">
+                  <div className="stat-label">Total Pengajuan</div>
+                  <div className="stat-value">{chartData.summary.total_pengajuan}</div>
+                  <div className="stat-desc">Periode terfilter</div>
+                </div>
+                <div className="stat-card stat-blue">
+                  <div className="stat-label">Total Nilai Diajukan</div>
+                  <div className="stat-value">
+                    Rp {chartData.summary.total_nilai_diajukan.toLocaleString("id-ID")}
+                  </div>
+                  <div className="stat-desc">
+                    {chartData.summary.total_qty_diajukan} barang diajukan
+                  </div>
+                </div>
+                <div className="stat-card stat-green">
+                  <div className="stat-label">Total Nilai Disetujui</div>
+                  <div className="stat-value">
+                    Rp {chartData.summary.total_nilai_disetujui.toLocaleString("id-ID")}
+                  </div>
+                  <div className="stat-desc">
+                    {chartData.summary.total_qty_disetujui} barang disetujui
+                  </div>
+                </div>
+                <div className={`stat-card ${chartData.summary.selisih_nilai >= 0 ? 'stat-amber' : 'stat-red'}`}>
+                  <div className="stat-label">Selisih (Disetujui - Diajukan)</div>
+                  <div className="stat-value">
+                    {chartData.summary.selisih_nilai >= 0 ? '+' : ''}
+                    Rp {chartData.summary.selisih_nilai.toLocaleString("id-ID")}
+                  </div>
+                  <div className="stat-desc">
+                    {chartData.summary.selisih_nilai >= 0 ? 'Lebih dari pengajuan' : 'Kurang dari pengajuan'}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ================= CHARTS ================= */}
+            {chartLoading ? (
+              <p className="loading-text">Memuat data grafik...</p>
+            ) : chartData && (
+              <div className="charts-container">
+                {/* Tren Pengeluaran per Tahun */}
+                <div className="chart-card">
+                  <div className="chart-title">Tren Pengeluaran per Tahun Akademik</div>
+                  {chartData.tren_tahun.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={280}>
+                      <AreaChart data={chartData.tren_tahun} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+                        <defs>
+                          <linearGradient id="colorDiajukan2" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#2563eb" stopOpacity={0.3}/>
+                            <stop offset="95%" stopColor="#2563eb" stopOpacity={0}/>
+                          </linearGradient>
+                          <linearGradient id="colorDisetujui2" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#16a34a" stopOpacity={0.3}/>
+                            <stop offset="95%" stopColor="#16a34a" stopOpacity={0}/>
+                          </linearGradient>
+                        </defs>
+                        <XAxis dataKey="tahun" tick={{ fontSize: 12 }} />
+                        <YAxis tickFormatter={(v) => `Rp ${(v / 1000000).toFixed(1)}jt`} tick={{ fontSize: 12 }} />
+                        <Tooltip
+                          formatter={(value) => [`Rp ${value.toLocaleString("id-ID")}`, '']}
+                          labelStyle={{ fontWeight: 700 }}
+                        />
+                        <Legend />
+                        <Area type="monotone" dataKey="nilai_diajukan" stroke="#2563eb" fillOpacity={1} fill="url(#colorDiajukan2)" name="Diajukan" />
+                        <Area type="monotone" dataKey="nilai_disetujui" stroke="#16a34a" fillOpacity={1} fill="url(#colorDisetujui2)" name="Disetujui" />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="chart-empty">Belum ada data tren untuk filter ini.</div>
+                  )}
+                </div>
+
+                {/* Perbandingan Jumlah Barang */}
+                <div className="chart-card">
+                  <div className="chart-title">Perbandingan Jumlah Barang: Diajukan vs Disetujui</div>
+                  {chartData.perbandingan_barang.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={280}>
+                      <BarChart data={chartData.perbandingan_barang} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+                        <XAxis dataKey="tahun" tick={{ fontSize: 12 }} />
+                        <YAxis tick={{ fontSize: 12 }} />
+                        <Tooltip cursor={{ fill: 'rgba(0,0,0,0.05)' }} />
+                        <Legend />
+                        <Bar dataKey="diajukan" fill="#2563eb" radius={[4, 4, 0, 0]} name="Diajukan" />
+                        <Bar dataKey="disetujui" fill="#16a34a" radius={[4, 4, 0, 0]} name="Disetujui" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="chart-empty">Belum ada data perbandingan untuk filter ini.</div>
+                  )}
+                </div>
+
+                {/* Komposisi Barang Disetujui */}
+                <div className="chart-card chart-card-wide">
+                  <div className="chart-title">Komposisi Barang Disetujui (Top 8)</div>
+                  {chartData.komposisi_barang.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={320}>
+                      <PieChart>
+                        <Pie
+                          data={chartData.komposisi_barang}
+                          dataKey="nilai_disetujui"
+                          nameKey="nama_barang"
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={100}
+                          label={({ nama_barang, percent }) => `${nama_barang} (${(percent * 100).toFixed(0)}%)`}
+                          labelLine={{ stroke: '#94a3b8', strokeWidth: 1 }}
+                        >
+                          {chartData.komposisi_barang.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          formatter={(value, name) => [`Rp ${value.toLocaleString("id-ID")}`, name]}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="chart-empty">Belum ada data komposisi untuk filter ini.</div>
+                  )}
+                </div>
+              </div>
             )}
           </div>
         </section>
@@ -908,6 +1121,108 @@ export default function Riwayat() {
                     );
                   })
                 )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL DETAIL BARANG PENGAJUAN ================= */}
+      {detailPengajuan && (
+        <div className="modal-backdrop" onClick={() => setDetailPengajuan(null)}>
+          <div className="modal-container" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <div className="modal-title">Detail Barang - Pengajuan #{detailPengajuan.id}</div>
+                <div className="modal-subtitle">
+                  {detailPengajuan.nama_pemohon} • {detailPengajuan.unit} • {detailPengajuan.tahun_akademik}
+                </div>
+              </div>
+              <button className="modal-close-btn" onClick={() => setDetailPengajuan(null)}>
+                &times;
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="detail-barang-table-wrapper">
+                <table className="detail-barang-table">
+                  <thead>
+                    <tr>
+                      <th>No</th>
+                      <th>Nama Barang</th>
+                      <th>Satuan</th>
+                      <th>Kebutuhan</th>
+                      <th>Sisa Stok</th>
+                      <th>Diajukan</th>
+                      <th>Harga Satuan</th>
+                      <th>Subtotal</th>
+                      <th>Status Disetujui</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {detailPengajuan.items.map((item, idx) => {
+                      const namaBarang = item.barang?.nama ?? "Barang";
+                      const satuan = item.barang?.satuan ?? "";
+                      const diajukan = item.jumlah_diajukan;
+                      const disetujui = item.jumlah_disetujui;
+                      const harga = item.harga_satuan ?? 0;
+                      const subtotal = diajukan * harga;
+
+                      const hasRevisi =
+                        disetujui != null &&
+                        (disetujui !== diajukan || 
+                         item.kebutuhan_total_admin != null || 
+                         item.sisa_stok_admin != null);
+
+                      const isProcessed = ["diverifikasi_admin", "disetujui", "ditolak_admin"].includes(detailPengajuan.status);
+
+                      return (
+                        <tr key={item.id}>
+                          <td className="text-center">{idx + 1}</td>
+                          <td>
+                            <div className="item-primary-name">{namaBarang}</div>
+                            {isProcessed && disetujui != null && hasRevisi && item.catatan_revisi && (
+                              <div className="revisi-note" style={{ marginTop: 4 }}>
+                                📝 {item.catatan_revisi}
+                              </div>
+                            )}
+                          </td>
+                          <td className="text-center">{satuan}</td>
+                          <td className="text-center">{item.kebutuhan_total}</td>
+                          <td className="text-center">{item.sisa_stok}</td>
+                          <td className="text-center">
+                            <strong>{diajukan}</strong>
+                          </td>
+                          <td className="text-right">Rp {(harga).toLocaleString("id-ID")}</td>
+                          <td className="text-right font-semibold">Rp {subtotal.toLocaleString("id-ID")}</td>
+                          <td className="text-center">
+                            {isProcessed && disetujui != null ? (
+                              <span className={`revisi-value ${hasRevisi ? (disetujui === 0 ? "revisi-value-rejected" : "revisi-value-new") : "revisi-value-same"}`}>
+                                {disetujui} {satuan}
+                              </span>
+                            ) : (
+                              <span className="text-slate-500">Menunggu</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <div className="total-summary-card">
+                <span className="total-label">Total Barang:</span>
+                <span className="total-amount">{detailPengajuan.items.length} item</span>
+              </div>
+              <div className="modal-footer-btns">
+                <button
+                  type="button"
+                  className="btn-modal-secondary"
+                  onClick={() => setDetailPengajuan(null)}
+                >
+                  Tutup
+                </button>
               </div>
             </div>
           </div>

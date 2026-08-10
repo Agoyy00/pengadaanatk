@@ -597,17 +597,142 @@ class PengajuanController extends Controller
     }
 
     /**
-     * DELETE /api/pengajuan/{pengajuan}
-     * Hapus pengajuan beserta seluruh item-nya (cascade).
+     * GET /api/pengajuan/user-statistik
+     * Data agregat untuk grafik riwayat pengajuan milik user tertentu.
+     * Query: user_id (required), tahun_akademik (optional), status (optional)
      */
-    public function destroy(Pengajuan $pengajuan)
+    public function userStatistik(Request $request)
     {
-        $pengajuan->items()->delete();
-        $pengajuan->delete();
+        $request->validate([
+            'user_id'         => 'required|integer|exists:users,id',
+            'tahun_akademik'  => 'nullable|string',
+            'status'          => 'nullable|string',
+        ]);
+
+        $userId = (int) $request->query('user_id');
+        $tahunFilter = $request->query('tahun_akademik');
+        $statusFilter = $request->query('status');
+
+        $query = Pengajuan::query()
+            ->where('user_id', $userId)
+            ->with(['items.barang']);
+
+        if ($tahunFilter && $tahunFilter !== 'all') {
+            $query->where('tahun_akademik', $tahunFilter);
+        }
+
+        if ($statusFilter && $statusFilter !== 'all') {
+            $query->where('status', $statusFilter);
+        }
+
+        $pengajuans = $query->orderBy('created_at', 'desc')->get();
+
+        $totalPengajuan = $pengajuans->count();
+        $totalNilaiDiajukan = 0;
+        $totalNilaiDisetujui = 0;
+        $totalQtyDiajukan = 0;
+        $totalQtyDisetujui = 0;
+
+        $trenMap = [];
+        $komposisiMap = [];
+        $perbandinganMap = [];
+
+        foreach ($pengajuans as $p) {
+            $tahun = $p->tahun_akademik;
+            $tahunKey = $tahun ?: 'Tanpa Tahun';
+
+            if (!isset($trenMap[$tahunKey])) {
+                $trenMap[$tahunKey] = [
+                    'tahun' => $tahunKey,
+                    'nilai_diajukan' => 0,
+                    'nilai_disetujui' => 0,
+                ];
+            }
+            if (!isset($perbandinganMap[$tahunKey])) {
+                $perbandinganMap[$tahunKey] = [
+                    'tahun' => $tahunKey,
+                    'diajukan' => 0,
+                    'disetujui' => 0,
+                ];
+            }
+
+            $pengajuanNilaiDiajukan = 0;
+            $pengajuanNilaiDisetujui = 0;
+            $pengajuanQtyDiajukan = 0;
+            $pengajuanQtyDisetujui = 0;
+
+            foreach ($p->items as $item) {
+                $qtyDiajukan = (int) ($item->jumlah_diajukan ?? 0);
+                $qtyDisetujui = (int) ($item->jumlah_disetujui ?? $qtyDiajukan);
+                $harga = (int) ($item->harga_satuan ?? 0);
+
+                $nilaiDiajukan = $qtyDiajukan * $harga;
+                $nilaiDisetujui = $qtyDisetujui * $harga;
+
+                $pengajuanNilaiDiajukan += $nilaiDiajukan;
+                $pengajuanNilaiDisetujui += $nilaiDisetujui;
+                $pengajuanQtyDiajukan += $qtyDiajukan;
+                $pengajuanQtyDisetujui += $qtyDisetujui;
+
+                $namaBarang = $item->barang->nama ?? 'Barang Lainnya';
+                if (!isset($komposisiMap[$namaBarang])) {
+                    $komposisiMap[$namaBarang] = [
+                        'nama_barang' => $namaBarang,
+                        'jumlah_disetujui' => 0,
+                        'nilai_disetujui' => 0,
+                    ];
+                }
+                $komposisiMap[$namaBarang]['jumlah_disetujui'] += $qtyDisetujui;
+                $komposisiMap[$namaBarang]['nilai_disetujui'] += $nilaiDisetujui;
+            }
+
+            $trenMap[$tahunKey]['nilai_diajukan'] += $pengajuanNilaiDiajukan;
+            $trenMap[$tahunKey]['nilai_disetujui'] += $pengajuanNilaiDisetujui;
+
+            $perbandinganMap[$tahunKey]['diajukan'] += $pengajuanQtyDiajukan;
+            $perbandinganMap[$tahunKey]['disetujui'] += $pengajuanQtyDisetujui;
+
+            $totalNilaiDiajukan += $pengajuanNilaiDiajukan;
+            $totalNilaiDisetujui += $pengajuanNilaiDisetujui;
+            $totalQtyDiajukan += $pengajuanQtyDiajukan;
+            $totalQtyDisetujui += $pengajuanQtyDisetujui;
+        }
+
+        $trenData = array_values($trenMap);
+        $perbandinganData = array_values($perbandinganMap);
+
+        $komposisiData = array_values($komposisiMap);
+        usort($komposisiData, function ($a, $b) {
+            return $b['nilai_disetujui'] <=> $a['nilai_disetujui'];
+        });
+        $komposisiData = array_slice($komposisiData, 0, 8);
+
+        $tahunList = array_keys($trenMap);
+        sort($tahunList);
 
         return response()->json([
             'success' => true,
-            'message' => 'Pengajuan berhasil dihapus',
+            'filters' => [
+                'tahun_list' => $tahunList,
+                'status_list' => [
+                    ['value' => 'all', 'label' => 'Semua Status'],
+                    ['value' => 'diajukan', 'label' => 'Diajukan'],
+                    ['value' => 'diverifikasi_admin', 'label' => 'Diverifikasi Admin'],
+                    ['value' => 'disetujui', 'label' => 'Disetujui'],
+                    ['value' => 'ditolak_admin', 'label' => 'Ditolak Admin'],
+                ],
+            ],
+            'summary' => [
+                'total_pengajuan' => $totalPengajuan,
+                'total_nilai_diajukan' => $totalNilaiDiajukan,
+                'total_nilai_disetujui' => $totalNilaiDisetujui,
+                'total_qty_diajukan' => $totalQtyDiajukan,
+                'total_qty_disetujui' => $totalQtyDisetujui,
+                'selisih_nilai' => $totalNilaiDisetujui - $totalNilaiDiajukan,
+            ],
+            'tren_tahun' => $trenData,
+            'perbandingan_barang' => $perbandinganData,
+            'komposisi_barang' => $komposisiData,
         ]);
     }
 

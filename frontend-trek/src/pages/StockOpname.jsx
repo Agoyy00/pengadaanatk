@@ -45,7 +45,6 @@ export default function StockOpname() {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedBarang, setSelectedBarang] = useState(null);
   const [stokFisik, setStokFisik] = useState("");
-  const [keterangan, setKeterangan] = useState("");
   const [queryBarang, setQueryBarang] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [formError, setFormError] = useState("");
@@ -54,7 +53,6 @@ export default function StockOpname() {
   const [verifyModalOpen, setVerifyModalOpen] = useState(false);
   const [selectedVerifyOpname, setSelectedVerifyOpname] = useState(null);
   const [verifyStokFisik, setVerifyStokFisik] = useState("");
-  const [verifyKeterangan, setVerifyKeterangan] = useState("");
   const [verifyFormError, setVerifyFormError] = useState("");
 
   // CSV Import states
@@ -162,7 +160,6 @@ export default function StockOpname() {
   const openCreate = () => {
     setSelectedBarang(null);
     setStokFisik("");
-    setKeterangan("");
     setQueryBarang("");
     setSearchResults([]);
     setFormError("");
@@ -184,9 +181,9 @@ export default function StockOpname() {
         return;
       }
 
-      const header = "kode_barang;nama_barang;stok_sistem;stok_fisik;keterangan";
+      const header = "kode_barang;nama_barang;stok_sistem;stok_fisik";
       const rows = masterData.map((b) =>
-        `${b.kode};${b.nama};${b.stok};;`
+        `${b.kode};${b.nama};${b.stok};`
       );
       const csvContent = [header, ...rows].join("\n");
 
@@ -201,7 +198,7 @@ export default function StockOpname() {
       Swal.fire({
         icon: "success",
         title: "Template Diunduh",
-        text: `Template berisi ${masterData.length} barang. Isi kolom Stok Fisik dan Keterangan, lalu import kembali.`,
+        text: `Template berisi ${masterData.length} barang. Isi kolom Stok Fisik, lalu import kembali.`,
         confirmButtonColor: "#2563eb",
       });
     } catch (err) {
@@ -240,12 +237,11 @@ export default function StockOpname() {
 
         for (let i = 1; i < lines.length; i++) {
           const cols = lines[i].split(delimiter).map(c => c.trim().replace(/^"|"$/g, ''));
-          // Format: Kode Barang;Nama Barang;Stok Sistem;Stok Fisik;Keterangan
+          // Format: Kode Barang;Nama Barang;Stok Sistem;Stok Fisik
           if (cols.length >= 4) {
             const kodeCSV = cols[0]?.toLowerCase() || "";
             const namaCSV = cols[1]?.toLowerCase() || "";
             const stokFisikVal = parseInt(cols[3]);
-            const keteranganVal = cols[4] || "";
 
             // Skip baris yang stok fisik tidak diisi
             if (isNaN(stokFisikVal)) continue;
@@ -266,7 +262,6 @@ export default function StockOpname() {
                   stok_sistem: matchedBarang.stok || 0,
                   stok_fisik: stokFisikVal,
                   selisih: selisih,
-                  keterangan: keteranganVal,
                 });
               }
             }
@@ -299,7 +294,6 @@ export default function StockOpname() {
         items: importPreviewData.map(item => ({
           barang_id: item.barang_id,
           stok_fisik: item.stok_fisik,
-          keterangan: item.keterangan || null,
         })),
       };
 
@@ -373,7 +367,6 @@ export default function StockOpname() {
         body: JSON.stringify({
           barang_id: selectedBarang.id,
           stok_fisik: Number(stokFisik),
-          keterangan: keterangan,
         }),
       });
 
@@ -396,7 +389,6 @@ export default function StockOpname() {
   const openVerifyModal = (opname) => {
     setSelectedVerifyOpname(opname);
     setVerifyStokFisik(opname.stok_fisik);
-    setVerifyKeterangan(opname.keterangan || "");
     setVerifyFormError("");
     setVerifyModalOpen(true);
   };
@@ -429,7 +421,6 @@ export default function StockOpname() {
         },
         body: JSON.stringify({
           stok_fisik: Number(verifyStokFisik),
-          keterangan: verifyKeterangan,
         }),
       });
 
@@ -802,7 +793,6 @@ export default function StockOpname() {
                       <th style={{ padding: "12px 16px", textAlign: "center" }}>Hasil Verifikasi</th>
                       {role !== "user" && <th style={{ padding: "12px 16px", textAlign: "center" }}>Selisih</th>}
                       <th style={{ padding: "12px 16px" }}>Status</th>
-                      <th style={{ padding: "12px 16px" }}>Keterangan</th>
                       <th style={{ padding: "12px 16px", textAlign: "right" }}>Aksi</th>
                     </tr>
                   </thead>
@@ -848,9 +838,6 @@ export default function StockOpname() {
                             </td>
                           )}
                           <td style={{ padding: "14px 16px" }}>{getStatusPill(o.status)}</td>
-                          <td style={{ padding: "14px 16px", fontSize: 13, color: "#4b5563", maxWidth: 150 }}>
-                            {o.keterangan || "-"}
-                          </td>
                           <td style={{ padding: "14px 16px", textAlign: "right" }}>
                             {/* User actions */}
                             {role === "user" && o.status === "pending" && (
@@ -1080,24 +1067,6 @@ export default function StockOpname() {
                 )}
               </div>
 
-              {/* Keterangan */}
-              <label style={{ display: "block", marginTop: 16, marginBottom: 6 }}>
-                <b>Keterangan (Alasan Selisih / Kondisi Barang) (Opsional)</b>
-              </label>
-              <textarea
-                style={{
-                  width: "100%",
-                  padding: 10,
-                  borderRadius: 10,
-                  border: "1px solid #ddd",
-                  height: 80,
-                  resize: "vertical",
-                }}
-                value={keterangan}
-                onChange={(e) => setKeterangan(e.target.value)}
-                placeholder="Contoh: Rusak 2 pcs terkena air, 3 pcs dipinjam ruangan lain..."
-              />
-
               {formError && (
                 <div style={{ color: "#ef4444", marginTop: 10, fontSize: 14 }}>
                   <b>⚠️ {formError}</b>
@@ -1226,23 +1195,6 @@ export default function StockOpname() {
               </div>
 
               {/* Keterangan / Alasan */}
-              <label style={{ display: "block", marginTop: 16, marginBottom: 6 }}>
-                <b>Keterangan (Alasan Penyesuaian / Kondisi Barang) (Opsional)</b>
-              </label>
-              <textarea
-                style={{
-                  width: "100%",
-                  padding: 10,
-                  borderRadius: 10,
-                  border: "1px solid #ddd",
-                  height: 80,
-                  resize: "vertical",
-                }}
-                value={verifyKeterangan}
-                onChange={(e) => setVerifyKeterangan(e.target.value)}
-                placeholder="Tulis alasan jika stok fisik disesuaikan atau tidak sesuai yang diajukan user..."
-              />
-
               {verifyFormError && (
                 <div style={{ color: "#ef4444", marginTop: 10, fontSize: 14 }}>
                   <b>⚠️ {verifyFormError}</b>
@@ -1327,7 +1279,6 @@ export default function StockOpname() {
                       <th style={{ padding: "10px 12px", textAlign: "center" }}>Stok Sistem</th>
                       <th style={{ padding: "10px 12px", textAlign: "center" }}>Stok Fisik</th>
                       <th style={{ padding: "10px 12px", textAlign: "center" }}>Selisih</th>
-                      <th style={{ padding: "10px 12px" }}>Keterangan</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1343,9 +1294,6 @@ export default function StockOpname() {
                           <td style={{ padding: "10px 12px", textAlign: "center", fontWeight: 600 }}>{item.stok_fisik}</td>
                           <td style={{ padding: "10px 12px", textAlign: "center", fontWeight: 700, color: selisihColor }}>
                             {selisihLabel}
-                          </td>
-                          <td style={{ padding: "10px 12px", color: "#4b5563", maxWidth: 150 }}>
-                            {item.keterangan || "-"}
                           </td>
                         </tr>
                       );

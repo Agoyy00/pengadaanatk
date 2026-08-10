@@ -182,7 +182,7 @@ export default function TemplateDokumen() {
                   <h4 style={{ margin: "0 0 8px 0", fontSize: 16 }}>Template Stock Opname Barang</h4>
                   <p style={{ margin: "0 0 16px 0", color: "#4b5563", fontSize: 13, lineHeight: 1.5 }}>
                     Template CSV untuk mencatat perhitungan fisik barang (Stock Opname) di gudang/unit.
-                    Berisi kolom kode barang, nama barang, stok terdaftar, stok fisik, dan keterangan selisih.
+                     Berisi kolom kode barang, nama barang, stok terdaftar, dan stok fisik.
                     <br /><em style={{ color: "#6b7280" }}>💡 Untuk template lengkap dengan data barang terkini, gunakan tombol "Download Template" di halaman Stock Opname.</em>
                   </p>
                 </div>

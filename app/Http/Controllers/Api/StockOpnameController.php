@@ -85,7 +85,6 @@ class StockOpnameController extends Controller
         $validated = $request->validate([
             'barang_id'   => 'required|exists:barangs,id',
             'stok_fisik'  => 'required|integer|min:0',
-            'keterangan'  => 'nullable|string',
         ]);
 
         $barang = Barang::findOrFail($validated['barang_id']);
@@ -99,7 +98,6 @@ class StockOpnameController extends Controller
             'stok_sistem' => $stok_sistem,
             'stok_fisik'  => $stok_fisik,
             'selisih'     => $selisih,
-            'keterangan'  => $validated['keterangan'] ?? null,
             'status'      => 'pending',
         ]);
 
@@ -119,7 +117,6 @@ class StockOpnameController extends Controller
             'items'              => 'required|array|min:1',
             'items.*.barang_id'  => 'required|exists:barangs,id',
             'items.*.stok_fisik' => 'required|integer|min:0',
-            'items.*.keterangan' => 'nullable|string',
         ]);
 
         $created = [];
@@ -137,7 +134,6 @@ class StockOpnameController extends Controller
                     'stok_sistem' => $stok_sistem,
                     'stok_fisik'  => $stok_fisik,
                     'selisih'     => $selisih,
-                    'keterangan'  => $item['keterangan'] ?? null,
                     'status'      => 'pending',
                 ]);
 
@@ -163,7 +159,6 @@ class StockOpnameController extends Controller
 
         $validated = $request->validate([
             'stok_fisik' => 'nullable|integer|min:0',
-            'keterangan' => 'nullable|string',
         ]);
 
         $updateData = ['status' => 'verified'];
@@ -175,10 +170,6 @@ class StockOpnameController extends Controller
         } else {
             $updateData['hasil_verifikasi'] = $stockOpname->stok_fisik;
             $updateData['selisih'] = $stockOpname->stok_fisik - $stockOpname->stok_sistem;
-        }
-
-        if (isset($validated['keterangan'])) {
-            $updateData['keterangan'] = $validated['keterangan'];
         }
 
         $stockOpname->update($updateData);
@@ -215,7 +206,7 @@ class StockOpnameController extends Controller
             'user_id'     => $user->id,
             'action'      => 'stock_opname_verify',
             'description' => "Admin memverifikasi Laporan Stock Opname #{$stockOpname->id}",
-            'details'     => json_encode(['status' => 'verified', 'hasil_verifikasi' => $stockOpname->hasil_verifikasi, 'keterangan' => $stockOpname->keterangan]),
+            'details'     => json_encode(['status' => 'verified', 'hasil_verifikasi' => $stockOpname->hasil_verifikasi]),
             'ip_address'  => $request->ip(),
             'created_at'  => now(),
             'updated_at'  => now(),
