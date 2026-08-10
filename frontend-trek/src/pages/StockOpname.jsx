@@ -47,11 +47,12 @@ export default function StockOpname() {
 
   // Unit options
   const [unitOptions, setUnitOptions] = useState([]);
-  const [unit, setUnit] = useState(() => {
+  const getInitialUnit = () => {
     const userUnit = currentUser?.unit;
     const savedUnit = localStorage.getItem("selectedUnit");
     return userUnit || savedUnit || "";
-  });
+  };
+  const [unit, setUnit] = useState(getInitialUnit);
   const unitLocked = !!currentUser?.unit || !!localStorage.getItem("selectedUnit");
 
   const loadUserUnit = async () => {
@@ -102,7 +103,7 @@ export default function StockOpname() {
   const [showImportPreview, setShowImportPreview] = useState(false);
   const [importPreviewData, setImportPreviewData] = useState([]);
   const [importLoading, setImportLoading] = useState(false);
-  const [importUnit, setImportUnit] = useState("");
+  const [importUnit, setImportUnit] = useState(getInitialUnit);
 
   const formatRole = (role) => {
     if (!role) return "-";
@@ -229,7 +230,8 @@ export default function StockOpname() {
   const openCreate = () => {
     setSelectedBarang(null);
     setStokFisik("");
-    setUnit("");
+    const defaultUnit = currentUser?.unit || localStorage.getItem("selectedUnit") || "";
+    setUnit(defaultUnit);
     setQueryBarang("");
     setSearchResults([]);
     setFormError("");
@@ -1157,13 +1159,17 @@ export default function StockOpname() {
                     cursor: unitLocked ? "not-allowed" : "default",
                   }}
                 >
+                  {!unit && <option value="">-- Pilih Unit / Bagian --</option>}
+                  {unit && !unitOptions.includes(unit) && (
+                    <option value={unit}>{unit}</option>
+                  )}
                   {unitOptions.map((opt) => (
                     <option key={opt} value={opt}>{opt}</option>
                   ))}
                 </select>
                 {unitLocked && (
                   <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>
-                    Unit Anda sudah terdaftar dan tidak dapat diubah.
+                    Unit Anda sudah terdaftar ({unit || "terkunci"}) dan tidak dapat diubah.
                   </div>
                 )}
               </div>
@@ -1441,10 +1447,19 @@ export default function StockOpname() {
                     cursor: unitLocked ? "not-allowed" : "default",
                   }}
                 >
+                  {!importUnit && <option value="">-- Pilih Unit / Bagian --</option>}
+                  {importUnit && !unitOptions.includes(importUnit) && (
+                    <option value={importUnit}>{importUnit}</option>
+                  )}
                   {unitOptions.map((opt) => (
                     <option key={opt} value={opt}>{opt}</option>
                   ))}
                 </select>
+                {unitLocked && (
+                  <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>
+                    Unit Anda sudah terdaftar ({importUnit || "terkunci"}) dan tidak dapat diubah.
+                  </div>
+                )}
               </div>
 
               <div style={{ overflowX: "auto", maxHeight: "50vh", overflowY: "auto" }}>
