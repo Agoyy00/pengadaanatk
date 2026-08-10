@@ -122,6 +122,7 @@ export default function StockOpname() {
         { label: "Monitoring User", to: "/superadmin/monitoring-user" },
         { label: "Grafik Barang", to: "/superadmin/grafik-barang" },
         { label: "Grafik Belanja", to: "/superadmin/grafik-belanja" },
+        { label: "Verifikasi Pengajuan", to: "/verifikasi" },
         { label: "Approval Pengajuan", to: "/approval" },
         { label: "Tambah & Kelola User", to: "/tambahuser" },
         { label: "Atur Periode", to: "/periode" },
@@ -1056,8 +1057,8 @@ export default function StockOpname() {
                               </button>
                             )}
 
-                            {/* Admin actions */}
-                            {role === "admin" && o.status === "pending" && (
+                            {/* Admin & Superadmin actions */}
+                            {(role === "admin" || role === "superadmin") && o.status === "pending" && (
                               <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
                                 <button
                                   onClick={() => openVerifyModal(o)}

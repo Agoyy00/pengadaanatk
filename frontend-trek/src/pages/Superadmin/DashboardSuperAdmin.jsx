@@ -137,6 +137,7 @@ export default function DashboardSuperAdmin() {
       { label: "Monitoring User", to: "/superadmin/monitoring-user" },
       { label: "Grafik Barang", to: "/superadmin/grafik-barang" },
       { label: "Grafik Belanja", to: "/superadmin/grafik-belanja" },
+      { label: "Verifikasi Pengajuan", to: "/verifikasi" },
       { label: "Approval Pengajuan", to: "/approval" },
       { label: "Tambah & Kelola User", to: "/tambahuser" },
       { label: "Atur Periode", to: "/periode" },

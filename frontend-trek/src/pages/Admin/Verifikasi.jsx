@@ -184,13 +184,14 @@ const downloadPdfAdmin = async (id, status) => {
         { label: "Monitoring User", to: "/superadmin/monitoring-user" },
         { label: "Grafik Barang", to: "/superadmin/grafik-barang" },
         { label: "Grafik Belanja", to: "/superadmin/grafik-belanja" },
+        { label: "Verifikasi Pengajuan", to: "/verifikasi", active: location.pathname === "/verifikasi" },
         { label: "Approval Pengajuan", to: "/approval" },
         { label: "Tambah & Kelola User", to: "/tambahuser" },
         { label: "Atur Periode", to: "/periode" },
         { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang" },
-         { label: "Stock Opname Barang", to: "/stock-opname" },
-         { label: "Support", to: "/support" },
-       ];
+        { label: "Stock Opname Barang", to: "/stock-opname" },
+        { label: "Support", to: "/support" },
+      ];
      } else {
        return [
          { label: "Dashboard Admin", to: "/dashboardadmin" },

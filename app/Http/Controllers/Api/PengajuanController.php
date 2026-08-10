@@ -237,16 +237,8 @@ class PengajuanController extends Controller
 
     $nextStatus = $validated['status'];
 
-    // ================= ADMIN =================
-    if ($user->role_id === 2) {
-
-        if ($pengajuan->status !== 'diajukan' || !in_array($nextStatus, ['diverifikasi_admin', 'ditolak_admin'])) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Admin hanya boleh memverifikasi atau menolak pengajuan',
-            ], 422);
-        }
-
+    // ================= ADMIN & SUPERADMIN VERIFIKASI =================
+    if (in_array($nextStatus, ['diverifikasi_admin', 'ditolak_admin']) && $pengajuan->status === 'diajukan') {
         $catatanAdmin = $request->input('catatan_admin') ?: ($nextStatus === 'ditolak_admin' ? 'Pengajuan ditolak oleh Admin' : null);
 
         $pengajuan->update([
@@ -258,7 +250,8 @@ class PengajuanController extends Controller
 
         // LOG ACTIVITY
         $actionName = ($nextStatus === 'ditolak_admin') ? 'tolak_pengajuan' : 'verifikasi_pengajuan';
-        $descText   = ($nextStatus === 'ditolak_admin') ? "Admin menolak Pengajuan #{$pengajuan->id}" : "Admin memverifikasi Pengajuan #{$pengajuan->id}";
+        $actorName  = ($user->role_id === 1) ? 'Super Admin' : 'Admin';
+        $descText   = ($nextStatus === 'ditolak_admin') ? "{$actorName} menolak Pengajuan #{$pengajuan->id}" : "{$actorName} memverifikasi Pengajuan #{$pengajuan->id}";
 
         \Illuminate\Support\Facades\DB::table('admin_activity_logs')->insert([
             'user_id'     => Auth::id() ?? $validated['user_id'],
@@ -287,17 +280,17 @@ class PengajuanController extends Controller
                     'is_read'      => false,
                 ]);
             }
-            $message = 'Pengajuan berhasil diverifikasi admin';
+            $message = 'Pengajuan berhasil diverifikasi';
         } else {
             // notif ke user pemohon
             Notification::create([
                 'user_id'      => $pengajuan->user_id,
                 'title'        => 'Pengajuan ATK Ditolak',
-                'message'      => 'Pengajuan ATK Anda ditolak oleh Admin. Catatan: ' . $request->input('catatan_admin'),
+                'message'      => 'Pengajuan ATK Anda ditolak. Catatan: ' . $request->input('catatan_admin'),
                 'pengajuan_id' => $pengajuan->id,
                 'is_read'      => false,
             ]);
-            $message = 'Pengajuan berhasil ditolak admin';
+            $message = 'Pengajuan berhasil ditolak';
         }
 
         return response()->json([
@@ -307,19 +300,8 @@ class PengajuanController extends Controller
         ]);
     }
 
-    // ================= SUPERADMIN =================
-    if ($user->role_id === 1) {
-
-        if (
-            $pengajuan->status !== 'diverifikasi_admin' ||
-            !in_array($nextStatus, ['disetujui', 'ditolak_admin'])
-        ) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Superadmin hanya boleh approve / tolak',
-            ], 422);
-        }
-
+    // ================= SUPERADMIN APPROVAL / REJECTION =================
+    if ($user->role_id === 1 && in_array($nextStatus, ['disetujui', 'ditolak_admin'])) {
         Notification::where('pengajuan_id', $pengajuan->id)->delete();
 
         $pengajuan->update([
@@ -332,7 +314,7 @@ class PengajuanController extends Controller
         \Illuminate\Support\Facades\DB::table('admin_activity_logs')->insert([
             'user_id'     => Auth::id() ?? $validated['user_id'],
             'action'      => 'verifikasi_pengajuan',
-            'description' => "Admin memproses Pengajuan #{$pengajuan->id}",
+            'description' => "Super Admin memproses Pengajuan #{$pengajuan->id}",
             'details'     => json_encode(['status' => $nextStatus]),
             'ip_address'  => $request->ip(),
             'created_at'  => now(),
@@ -348,8 +330,8 @@ class PengajuanController extends Controller
 
     return response()->json([
         'success' => false,
-        'message' => 'Role tidak dikenali',
-    ], 403);
+        'message' => 'Akses ditolak atau status pengajuan tidak dapat diproses',
+    ], 422);
 }
 
 

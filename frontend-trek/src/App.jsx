@@ -283,7 +283,7 @@ function App() {
         <Route
           path="/verifikasi"
           element={
-            <RequireAuth allowRoles={["admin"]}>
+            <RequireAuth allowRoles={["admin", "superadmin"]}>
               <Verifikasi />
             </RequireAuth>
           }
