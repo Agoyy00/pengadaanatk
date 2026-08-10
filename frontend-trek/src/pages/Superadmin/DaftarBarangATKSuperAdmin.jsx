@@ -266,6 +266,7 @@ export default function DaftarBarangATKSuperAdmin() {
       { label: "Atur Periode", to: "/periode" },
       { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang", active: true },
       { label: "Stock Opname Barang", to: "/stock-opname" },
+      { label: "Support", to: "/support" },
     ];
   }, []);
 

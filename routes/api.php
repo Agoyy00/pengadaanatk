@@ -13,8 +13,9 @@ use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\BarangUsulanController;
 use App\Http\Controllers\Api\MonitoringController;
 use App\Http\Controllers\Api\PengajuanAdminPdfController;
-use App\Http\Controllers\Api\Superadmin\PengajuanPdfSuperadminController;
+use App\Http\Controllers\Api\SupportTicketController;
 use App\Http\Controllers\Api\StockOpnameController;
+use App\Http\Controllers\Api\Superadmin\PengajuanPdfSuperadminController;
 use App\Http\Controllers\Api\OptionController;
 /*
 |--------------------------------------------------------------------------
@@ -43,6 +44,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/users', [UserManagementController::class, 'index']);
     Route::post('/users', [UserManagementController::class, 'store']);
     Route::delete('/users/{user}', [UserManagementController::class, 'destroy']);
+    Route::post('/users/{user}/reset-unit', [UserManagementController::class, 'resetUnit']);
 
     /*
     | Barang
@@ -142,9 +144,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/options/{id}', [OptionController::class, 'destroy']);
 
     /*
-    | Monitoring (Superadmin)
+    | Support Ticket
     */
-    Route::get('/monitoring/admin', [MonitoringController::class, 'adminLogs']);
-    Route::get('/monitoring/user', [MonitoringController::class, 'userRequests']);
+    Route::get('/support-tickets', [SupportTicketController::class, 'index']);
+    Route::post('/support-tickets', [SupportTicketController::class, 'store']);
+    Route::get('/support-tickets/{id}', [SupportTicketController::class, 'show']);
+    Route::patch('/support-tickets/{id}/status', [SupportTicketController::class, 'updateStatus']);
+    Route::post('/support-tickets/{id}/reply', [SupportTicketController::class, 'reply']);
 
 });

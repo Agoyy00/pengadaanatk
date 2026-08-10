@@ -55,6 +55,7 @@ export default function GrafikUsulanBarangPage() {
     { label: "Kelola Barang ATK", to: "/kelola-barang", active: false },
     { label: "Grafik Usulan Barang", to: "/grafik-usulan-barang", active: true },
     { label: "Stock Opname Barang", to: "/stock-opname", active: false },
+    { label: "Support", to: "/support", active: false },
   ];
 
   const user = JSON.parse(localStorage.getItem("user") || "{}");

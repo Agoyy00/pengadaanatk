@@ -115,6 +115,7 @@ export default function DashboardSuperAdmin() {
   { label: "Kelola Barang ATK", to: "/kelola-barang" },
   { label: "Grafik Usulan Barang", to: "/grafik-usulan-barang" },
   { label: "Stock Opname Barang", to: "/stock-opname" },
+  { label: "Support", to: "/support" },
 ];
 
   

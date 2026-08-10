@@ -150,10 +150,11 @@ export default function DashboardUser() {
   const sidebarMenus = useMemo(() => {
     return [
       { label: "Dashboard User", to: "/dashboarduser", active: true },
+      { label: "Stock Opname Barang", to: "/stock-opname" },
       { label: "Buat Pengajuan Baru", to: "/pengajuan" },
       { label: "Riwayat Pengajuan", to: "/riwayat" },
-      { label: "Stock Opname Barang", to: "/stock-opname" },
       { label: "Template Dokumen", to: "/template-dokumen" },
+      { label: "Support", to: "/support" },
     ];
   }, []);
 

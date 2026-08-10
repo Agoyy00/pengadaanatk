@@ -66,10 +66,11 @@ export default function TemplateDokumen() {
     } else {
       return [
         { label: "Dashboard User", to: "/dashboarduser" },
+        { label: "Stock Opname Barang", to: "/stock-opname" },
         { label: "Buat Pengajuan Baru", to: "/pengajuan" },
         { label: "Riwayat Pengajuan", to: "/riwayat" },
-        { label: "Stock Opname Barang", to: "/stock-opname" },
         { label: "Template Dokumen", to: "/template-dokumen", active: true },
+        { label: "Support", to: "/support" },
       ];
     }
   }, [role]);

@@ -62,6 +62,7 @@ export default function SuperAdminAnalisisDashboard() {
       { label: "Atur Periode", to: "/periode" },
       { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang" },
       { label: "Stock Opname Barang", to: "/stock-opname" },
+      { label: "Support", to: "/support" },
     ],
     []
   );

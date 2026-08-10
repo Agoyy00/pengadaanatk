@@ -5,24 +5,20 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class StockOpname extends Model
+class SupportTicketReply extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'barang_id',
+        'ticket_id',
         'user_id',
-        'unit',
-        'stok_sistem',
-        'stok_fisik',
-        'hasil_verifikasi',
-        'selisih',
-        'status',
+        'message',
+        'sender_type',
     ];
 
-    public function barang()
+    public function ticket()
     {
-        return $this->belongsTo(Barang::class);
+        return $this->belongsTo(SupportTicket::class);
     }
 
     public function user()

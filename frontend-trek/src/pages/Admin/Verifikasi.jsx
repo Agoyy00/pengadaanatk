@@ -188,16 +188,18 @@ const downloadPdfAdmin = async (id, status) => {
         { label: "Tambah & Kelola User", to: "/tambahuser" },
         { label: "Atur Periode", to: "/periode" },
         { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang" },
-        { label: "Stock Opname Barang", to: "/stock-opname" },
-      ];
-    } else {
-      return [
-        { label: "Dashboard Admin", to: "/dashboardadmin" },
-        { label: "Verifikasi Pengajuan", to: "/verifikasi", active: true },
-        { label: "Kelola Barang ATK", to: "/kelola-barang" },
-        { label: "Grafik Usulan Barang", to: "/grafik-usulan-barang" },
-        { label: "Stock Opname Barang", to: "/stock-opname" },
-      ];
+         { label: "Stock Opname Barang", to: "/stock-opname" },
+         { label: "Support", to: "/support" },
+       ];
+     } else {
+       return [
+         { label: "Dashboard Admin", to: "/dashboardadmin" },
+         { label: "Verifikasi Pengajuan", to: "/verifikasi", active: true },
+         { label: "Kelola Barang ATK", to: "/kelola-barang" },
+         { label: "Grafik Usulan Barang", to: "/grafik-usulan-barang" },
+         { label: "Stock Opname Barang", to: "/stock-opname" },
+         { label: "Support", to: "/support" },
+       ];
     }
   }, [role]);
 

@@ -31,6 +31,11 @@ import MonitoringUser from "./pages/Superadmin/MonitoringUser";
 import GrafikBarangSuperAdmin from "./pages/Superadmin/GrafikBarangSuperAdmin";
 import StockOpname from "./pages/StockOpname";
 import TemplateDokumen from "./pages/TemplateDokumen";
+import Support from "./pages/Support/Support";
+import SupportRouter from "./pages/Support/SupportRouter";
+import OpenTicket from "./pages/Support/OpenTicket";
+import TicketDetail from "./pages/Support/TicketDetail";
+import UserSupport from "./pages/User/UserSupport";
 
 
 // SUPER ADMIN - FITUR BARU
@@ -396,6 +401,32 @@ function App() {
             element={
               <RequireAuth allowRoles={["user", "admin", "superadmin"]}>
                 <TemplateDokumen />
+              </RequireAuth>
+            }
+          />
+
+          {/* ✅ ROUTES BARU: Support Ticket */}
+          <Route
+            path="/support"
+            element={
+              <RequireAuth allowRoles={["user", "admin", "superadmin"]}>
+                <SupportRouter />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/support/open-ticket"
+            element={
+              <RequireAuth allowRoles={["user", "admin", "superadmin"]}>
+                <OpenTicket />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/support/:id"
+            element={
+              <RequireAuth allowRoles={["user", "admin", "superadmin"]}>
+                <TicketDetail />
               </RequireAuth>
             }
           />

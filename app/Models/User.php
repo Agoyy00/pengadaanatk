@@ -19,7 +19,8 @@ class User extends Authenticatable
         'email',
         'password',
         'is_ldap',
-        'role_id',   // ✅ pakai role_id, bukan role
+        'role_id',
+        'unit',
     ];
 
     /**

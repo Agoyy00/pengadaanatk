@@ -141,6 +141,18 @@ class PengajuanController extends Controller
             ], 422);
         }
 
+        // 1.6. CEK & SET UNIT USER (SATU UNIT PER USER)
+        $user = User::findOrFail($userId);
+        if (empty($user->unit)) {
+            $user->unit = $validated['unit'];
+            $user->save();
+        } elseif ($user->unit !== $validated['unit']) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unit Anda sudah terdaftar sebagai "' . $user->unit . '". Anda hanya diperbolehkan menggunakan satu unit.',
+            ], 422);
+        }
+
         // 2. CEK: USER SUDAH PERNAH MENGAJUKAN DI TAHUN INI?
         $sudahAda = Pengajuan::where('user_id', $userId)
             ->where('tahun_akademik', $tahunAkademik)

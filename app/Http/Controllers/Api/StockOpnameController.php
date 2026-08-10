@@ -71,6 +71,7 @@ class StockOpnameController extends Controller
                 'stok_fisik'      => $stokFisik,
                 'hasil_verifikasi' => $so->hasil_verifikasi,
                 'selisih'         => $so->selisih,
+                'unit'            => $so->unit,
             ];
         })->values()->all();
 
@@ -85,7 +86,31 @@ class StockOpnameController extends Controller
         $validated = $request->validate([
             'barang_id'   => 'required|exists:barangs,id',
             'stok_fisik'  => 'required|integer|min:0',
+            'unit'        => 'required|string|max:255',
         ]);
+
+        $existing = StockOpname::where('user_id', $request->user()->id)
+            ->where('barang_id', $validated['barang_id'])
+            ->whereIn('status', ['pending', 'verified'])
+            ->first();
+
+        if ($existing) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Barang ini sudah memiliki laporan stock opname yang belum selesai (pending/verified).',
+            ], 422);
+        }
+
+        $user = $request->user();
+        if (empty($user->unit)) {
+            $user->unit = $validated['unit'];
+            $user->save();
+        } elseif ($user->unit !== $validated['unit']) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unit Anda sudah terdaftar sebagai "' . $user->unit . '". Anda hanya diperbolehkan menggunakan satu unit.',
+            ], 422);
+        }
 
         $barang = Barang::findOrFail($validated['barang_id']);
         $stok_sistem = $barang->stok; // Stok sistem saat ini
@@ -94,7 +119,8 @@ class StockOpnameController extends Controller
 
         $stockOpname = StockOpname::create([
             'barang_id'   => $validated['barang_id'],
-            'user_id'     => $request->user()->id,
+            'user_id'     => $user->id,
+            'unit'        => $validated['unit'],
             'stok_sistem' => $stok_sistem,
             'stok_fisik'  => $stok_fisik,
             'selisih'     => $selisih,
@@ -117,11 +143,46 @@ class StockOpnameController extends Controller
             'items'              => 'required|array|min:1',
             'items.*.barang_id'  => 'required|exists:barangs,id',
             'items.*.stok_fisik' => 'required|integer|min:0',
+            'items.*.unit'       => 'required|string|max:255',
         ]);
+
+        $units = array_unique(array_column($validated['items'], 'unit'));
+        if (count($units) > 1) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Semua barang dalam import harus memiliki unit yang sama.',
+            ], 422);
+        }
+
+        $bulkUnit = $units[0] ?? null;
+
+        $duplicateBarangIds = StockOpname::where('user_id', $request->user()->id)
+            ->whereIn('barang_id', array_column($validated['items'], 'barang_id'))
+            ->whereIn('status', ['pending', 'verified'])
+            ->pluck('barang_id')
+            ->toArray();
+
+        if (!empty($duplicateBarangIds)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Beberapa barang sudah memiliki laporan stock opname yang belum selesai (pending/verified): ' . implode(', ', $duplicateBarangIds),
+            ], 422);
+        }
+
+        $user = $request->user();
+        if (empty($user->unit)) {
+            $user->unit = $bulkUnit;
+            $user->save();
+        } elseif ($user->unit !== $bulkUnit) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unit Anda sudah terdaftar sebagai "' . $user->unit . '". Anda hanya diperbolehkan menggunakan satu unit.',
+            ], 422);
+        }
 
         $created = [];
 
-        DB::transaction(function () use ($validated, $request, &$created) {
+        DB::transaction(function () use ($validated, $request, $bulkUnit, &$created) {
             foreach ($validated['items'] as $item) {
                 $barang = Barang::findOrFail($item['barang_id']);
                 $stok_sistem = $barang->stok;
@@ -129,8 +190,9 @@ class StockOpnameController extends Controller
                 $selisih = $stok_fisik - $stok_sistem;
 
                 $stockOpname = StockOpname::create([
-                    'barang_id'  => $item['barang_id'],
-                    'user_id'    => $request->user()->id,
+                    'barang_id'   => $item['barang_id'],
+                    'user_id'     => $request->user()->id,
+                    'unit'        => $bulkUnit,
                     'stok_sistem' => $stok_sistem,
                     'stok_fisik'  => $stok_fisik,
                     'selisih'     => $selisih,

@@ -21,7 +21,12 @@ function Pengajuan() {
   const [tahunAkademik, setTahunAkademik] = useState("");
   const [namaPemohon, setNamaPemohon] = useState("");
   const [jabatan, setJabatan] = useState("Staf");
-  const [unit, setUnit] = useState("Direktorat");
+  const [unit, setUnit] = useState(() => {
+    const userUnit = currentUser?.unit;
+    const savedUnit = localStorage.getItem("selectedUnit");
+    return userUnit || savedUnit || "Direktorat";
+  });
+  const unitLocked = !!currentUser?.unit || !!localStorage.getItem("selectedUnit");
   const [limitChecked, setLimitChecked] = useState(false);
 
   // Dynamic Options (Jabatan & Unit)
@@ -366,6 +371,11 @@ function Pengajuan() {
 
         const data = await res.json();
         if (data.success && Array.isArray(data.items) && data.items.length > 0) {
+          const firstUnit = data.items[0]?.unit;
+          if (firstUnit && !unit) {
+            setUnit(firstUnit);
+            localStorage.setItem("selectedUnit", firstUnit);
+          }
           setItems((prev) => {
             if (prev.length > 0) return prev;
             return data.items.map((it) => ({
@@ -821,6 +831,19 @@ function Pengajuan() {
         confirmButtonColor: "#10b981",
         confirmButtonText: "Lihat Riwayat",
       }).then(() => {
+        if (!localStorage.getItem("selectedUnit")) {
+          localStorage.setItem("selectedUnit", unit);
+        }
+        const stored = localStorage.getItem("user");
+        if (stored) {
+          try {
+            const userObj = JSON.parse(stored);
+            if (!userObj.unit) {
+              userObj.unit = unit;
+              localStorage.setItem("user", JSON.stringify(userObj));
+            }
+          } catch {}
+        }
         window.location.href = "/riwayat";
       });
     } catch (err) {
@@ -846,10 +869,11 @@ function Pengajuan() {
   const sidebarMenus = useMemo(() => {
     return [
       { label: "Dashboard User", to: "/dashboarduser" },
+      { label: "Stock Opname Barang", to: "/stock-opname" },
       { label: "Buat Pengajuan Baru", to: "/pengajuan", active: true },
       { label: "Riwayat Pengajuan", to: "/riwayat" },
-      { label: "Stock Opname Barang", to: "/stock-opname" },
       { label: "Template Dokumen", to: "/template-dokumen" },
+      { label: "Support", to: "/support" },
     ];
   }, []);
 
@@ -1115,6 +1139,8 @@ function Pengajuan() {
                             className="input-pro"
                             value={unit}
                             onChange={(e) => setUnit(e.target.value)}
+                            disabled={unitLocked}
+                            style={unitLocked ? { background: '#f1f5f9', color: '#64748b', cursor: 'not-allowed' } : {}}
                           >
                             {unitOptions.map((opt) => (
                               <option key={opt.id || opt.value} value={opt.value}>
@@ -1122,6 +1148,11 @@ function Pengajuan() {
                               </option>
                             ))}
                           </select>
+                          {unitLocked && (
+                            <small style={{ color: '#64748b', marginTop: 4, display: 'block', fontSize: 12 }}>
+                              Unit Anda sudah terdaftar dan tidak dapat diubah.
+                            </small>
+                          )}
                         </div>
                       </div>
                     </div>

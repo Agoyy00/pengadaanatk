@@ -22,6 +22,7 @@ export default function MonitoringUser() {
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
   const [deletingSoId, setDeletingSoId] = useState(null);
+  const [resettingUserId, setResettingUserId] = useState(null);
 
   const storedUser = localStorage.getItem("user");
   const currentUser = storedUser ? JSON.parse(storedUser) : null;
@@ -180,6 +181,60 @@ export default function MonitoringUser() {
       });
     } finally {
       setDeletingSoId(null);
+    }
+  };
+
+  const handleResetUnit = async (req) => {
+    const userId = req.user?.id;
+    if (!userId) {
+      Swal.fire("Error", "Data user tidak ditemukan.", "error");
+      return;
+    }
+
+    const result = await Swal.fire({
+      title: "Reset Unit User?",
+      html: `Unit milik <b>${req.nama_pemohon}</b> akan direset.<br>User akan bisa memilih unit baru saat submit berikutnya.`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#2563eb",
+      cancelButtonColor: "#64748b",
+      confirmButtonText: "Ya, Reset",
+      cancelButtonText: "Batal",
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      setResettingUserId(userId);
+      const res = await fetch(`${API_BASE}/users/${userId}/reset-unit`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+        },
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || data.success === false) {
+        throw new Error(data.message || "Gagal mereset unit user.");
+      }
+
+      Swal.fire({
+        icon: "success",
+        title: "Unit Direset",
+        text: `Unit ${req.nama_pemohon} berhasil direset.`,
+        timer: 1500,
+        showConfirmButton: false,
+      });
+    } catch (err) {
+      Swal.fire({
+        icon: "error",
+        title: "Gagal",
+        text: err.message || "Terjadi kesalahan saat mereset unit.",
+      });
+    } finally {
+      setResettingUserId(null);
     }
   };
 
@@ -422,24 +477,41 @@ export default function MonitoringUser() {
                              Lihat Item
                            </button>
                          </td>
-                         <td>
-                           <button
-                             onClick={() => handleDeleteRequest(req)}
-                             disabled={deletingId === req.id}
-                             style={{
-                               padding: "4px 8px",
-                               background: deletingId === req.id ? "#94a3b8" : "#dc2626",
-                               color: "#fff",
-                               border: "none",
-                               borderRadius: "4px",
-                               cursor: deletingId === req.id ? "not-allowed" : "pointer",
-                               fontSize: "12px",
-                               fontWeight: "600"
-                             }}
-                           >
-                             {deletingId === req.id ? "..." : "Hapus"}
-                           </button>
-                         </td>
+                          <td>
+                            <button
+                              onClick={() => handleResetUnit(req)}
+                              disabled={resettingUserId === req.user?.id}
+                              style={{
+                                padding: "4px 8px",
+                                background: resettingUserId === req.user?.id ? "#94a3b8" : "#d97706",
+                                color: "#fff",
+                                border: "none",
+                                borderRadius: "4px",
+                                cursor: resettingUserId === req.user?.id ? "not-allowed" : "pointer",
+                                fontSize: "12px",
+                                fontWeight: "600",
+                                marginRight: "6px"
+                              }}
+                            >
+                              {resettingUserId === req.user?.id ? "..." : "Reset Unit"}
+                            </button>
+                            <button
+                              onClick={() => handleDeleteRequest(req)}
+                              disabled={deletingId === req.id}
+                              style={{
+                                padding: "4px 8px",
+                                background: deletingId === req.id ? "#94a3b8" : "#dc2626",
+                                color: "#fff",
+                                border: "none",
+                                borderRadius: "4px",
+                                cursor: deletingId === req.id ? "not-allowed" : "pointer",
+                                fontSize: "12px",
+                                fontWeight: "600"
+                              }}
+                            >
+                              {deletingId === req.id ? "..." : "Hapus"}
+                            </button>
+                          </td>
                        </tr>
                      ))}
                   </tbody>

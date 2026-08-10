@@ -233,6 +233,7 @@ export default function KelolaBarangATK() {
       { label: "Kelola Barang ATK", to: "/kelola-barang", active: true },
       { label: "Grafik Usulan Barang", to: "/grafik-usulan-barang" },
       { label: "Stock Opname Barang", to: "/stock-opname" },
+      { label: "Support", to: "/support" },
     ];
   }, []);
 

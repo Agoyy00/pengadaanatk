@@ -63,10 +63,11 @@ export default function Riwayat() {
   const sidebarMenus = useMemo(() => {
     return [
       { label: "Dashboard User", to: "/dashboarduser" },
+      { label: "Stock Opname Barang", to: "/stock-opname" },
       { label: "Buat Pengajuan Baru", to: "/pengajuan" },
       { label: "Riwayat Pengajuan", to: "/riwayat", active: true },
-      { label: "Stock Opname Barang", to: "/stock-opname" },
       { label: "Template Dokumen", to: "/template-dokumen" },
+      { label: "Support", to: "/support" },
     ];
   }, []);
 

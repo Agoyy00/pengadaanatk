@@ -26,6 +26,7 @@ export default function StockOpname() {
   const storedUser = localStorage.getItem("user");
   const currentUser = storedUser ? JSON.parse(storedUser) : null;
   const role = normalizeRole(currentUser?.role);
+  const userId = currentUser?.id;
 
   // Safety Redirect
   useEffect(() => {
@@ -39,11 +40,51 @@ export default function StockOpname() {
   const [barangs, setBarangs] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loadingSearch, setLoadingSearch] = useState(false);
+  const [lockedBarangIds, setLockedBarangIds] = useState([]);
 
   // Filters
   const [statusFilter, setStatusFilter] = useState("all");
 
-  // Form Modal state
+  // Unit options
+  const [unitOptions, setUnitOptions] = useState([]);
+  const [unit, setUnit] = useState(() => {
+    const userUnit = currentUser?.unit;
+    const savedUnit = localStorage.getItem("selectedUnit");
+    return userUnit || savedUnit || "";
+  });
+  const unitLocked = !!currentUser?.unit || !!localStorage.getItem("selectedUnit");
+
+  const loadUserUnit = async () => {
+    if (!userId) return;
+    const userUnit = currentUser?.unit;
+    if (userUnit) {
+      setUnit(userUnit);
+      setImportUnit(userUnit);
+      localStorage.setItem("selectedUnit", userUnit);
+      return;
+    }
+    try {
+      const res = await fetch(`${API_BASE}/pengajuan?user_id=${userId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = await res.json();
+      if (Array.isArray(json) && json.length > 0) {
+        const latestUnit = json[0]?.unit;
+        if (latestUnit) {
+          setUnit(latestUnit);
+          setImportUnit(latestUnit);
+          localStorage.setItem("selectedUnit", latestUnit);
+        }
+      }
+    } catch (err) {
+      console.error("Gagal load unit pengajuan:", err);
+    }
+  };
+
+  useEffect(() => {
+    loadUnitOptions();
+    loadUserUnit();
+  }, []);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedBarang, setSelectedBarang] = useState(null);
   const [stokFisik, setStokFisik] = useState("");
@@ -61,6 +102,7 @@ export default function StockOpname() {
   const [showImportPreview, setShowImportPreview] = useState(false);
   const [importPreviewData, setImportPreviewData] = useState([]);
   const [importLoading, setImportLoading] = useState(false);
+  const [importUnit, setImportUnit] = useState("");
 
   const formatRole = (role) => {
     if (!role) return "-";
@@ -96,10 +138,11 @@ export default function StockOpname() {
     } else {
       return [
         { label: "Dashboard User", to: "/dashboarduser" },
+        { label: "Stock Opname Barang", to: "/stock-opname", active: true },
         { label: "Buat Pengajuan Baru", to: "/pengajuan" },
         { label: "Riwayat Pengajuan", to: "/riwayat" },
-        { label: "Stock Opname Barang", to: "/stock-opname", active: true },
         { label: "Template Dokumen", to: "/template-dokumen" },
+        { label: "Support", to: "/support" },
       ];
     }
   }, [role]);
@@ -116,7 +159,13 @@ export default function StockOpname() {
       });
       const data = await res.json();
       if (data.success) {
-        setOpnames(data.data || []);
+        const list = data.data || [];
+        setOpnames(list);
+        const locked = list
+          .filter((o) => ['pending', 'verified'].includes(o.status))
+          .map((o) => o.barang_id)
+          .filter(Boolean);
+        setLockedBarangIds(locked);
       }
     } catch (e) {
       console.error("Gagal memuat stock opname:", e);
@@ -128,6 +177,24 @@ export default function StockOpname() {
   useEffect(() => {
     loadOpnames();
   }, []);
+
+  const loadUnitOptions = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/options/unit`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data)) {
+        // API returns objects {id, type, value} — extract only the value string
+        const values = json.data.map((item) =>
+          typeof item === "string" ? item : item.value
+        );
+        setUnitOptions(values);
+      }
+    } catch (err) {
+      console.error("Gagal load opsi unit:", err);
+    }
+  };
 
   // Search barang inside modal (debounce)
   useEffect(() => {
@@ -146,7 +213,9 @@ export default function StockOpname() {
           },
         });
         const data = await res.json();
-        setSearchResults(Array.isArray(data) ? data : []);
+        const results = Array.isArray(data) ? data : [];
+        const filtered = results.filter((b) => !lockedBarangIds.includes(b.id));
+        setSearchResults(filtered);
       } catch (err) {
         console.error("Gagal memuat barang:", err);
       } finally {
@@ -160,6 +229,7 @@ export default function StockOpname() {
   const openCreate = () => {
     setSelectedBarang(null);
     setStokFisik("");
+    setUnit("");
     setQueryBarang("");
     setSearchResults([]);
     setFormError("");
@@ -269,8 +339,18 @@ export default function StockOpname() {
         }
 
         if (previewItems.length > 0) {
-          setImportPreviewData(previewItems);
+          const filtered = previewItems.filter((item) => !lockedBarangIds.includes(item.barang_id));
+          const skipped = previewItems.length - filtered.length;
+          setImportPreviewData(filtered);
           setShowImportPreview(true);
+          if (skipped > 0) {
+            Swal.fire({
+              icon: "info",
+              title: "Beberapa barang dilewati",
+              text: `${skipped} barang sudah memiliki laporan stock opname yang belum selesai dan tidak ditampilkan.`,
+              confirmButtonColor: "#2563eb",
+            });
+          }
         } else {
           Swal.fire("Info", "Tidak ada barang yang cocok dari CSV, atau kolom Stok Fisik belum diisi.", "info");
         }
@@ -288,12 +368,18 @@ export default function StockOpname() {
 
   // ====== BULK SUBMIT STOCK OPNAME ======
   const handleBulkSubmit = async () => {
+    if (!importUnit) {
+      Swal.fire("Error", "Pilih Unit / Bagian terlebih dahulu.", "error");
+      return;
+    }
+
     try {
       setImportLoading(true);
       const payload = {
         items: importPreviewData.map(item => ({
           barang_id: item.barang_id,
           stok_fisik: item.stok_fisik,
+          unit: importUnit,
         })),
       };
 
@@ -310,6 +396,17 @@ export default function StockOpname() {
       const data = await res.json();
 
       if (res.ok && data.success) {
+        localStorage.setItem("selectedUnit", importUnit);
+        const stored = localStorage.getItem("user");
+        if (stored) {
+          try {
+            const userObj = JSON.parse(stored);
+            if (!userObj.unit) {
+              userObj.unit = importUnit;
+              localStorage.setItem("user", JSON.stringify(userObj));
+            }
+          } catch {}
+        }
         setShowImportPreview(false);
         setImportPreviewData([]);
         loadOpnames();
@@ -350,6 +447,10 @@ export default function StockOpname() {
       setFormError("Stok fisik wajib diisi.");
       return;
     }
+    if (!unit) {
+      setFormError("Unit / Bagian wajib dipilih.");
+      return;
+    }
     if (Number(stokFisik) < 0) {
       setFormError("Stok fisik tidak boleh negatif.");
       return;
@@ -367,11 +468,23 @@ export default function StockOpname() {
         body: JSON.stringify({
           barang_id: selectedBarang.id,
           stok_fisik: Number(stokFisik),
+          unit: unit,
         }),
       });
 
       const data = await res.json();
       if (res.ok && data.success) {
+        localStorage.setItem("selectedUnit", unit);
+        const stored = localStorage.getItem("user");
+        if (stored) {
+          try {
+            const userObj = JSON.parse(stored);
+            if (!userObj.unit) {
+              userObj.unit = unit;
+              localStorage.setItem("user", JSON.stringify(userObj));
+            }
+          } catch {}
+        }
         alert("Laporan stock opname berhasil dikirim ✅");
         closeModal();
         loadOpnames();
@@ -786,8 +899,9 @@ export default function StockOpname() {
                     <tr style={{ borderBottom: "2px solid #e5e7eb", background: "#f9fafb" }}>
                       <th style={{ padding: "12px 16px" }}>Tanggal</th>
                       <th style={{ padding: "12px 16px" }}>Unit / Fakultas</th>
-                      <th style={{ padding: "12px 16px" }}>{role === "admin" ? "Nama Barang" : "Barang"}</th>
-                      <th style={{ padding: "12px 16px", textAlign: "center" }}>Jumlah Barang</th>
+                       <th style={{ padding: "12px 16px" }}>{role === "admin" ? "Nama Barang" : "Barang"}</th>
+                       <th style={{ padding: "12px 16px" }}>Unit</th>
+                       <th style={{ padding: "12px 16px", textAlign: "center" }}>Jumlah Barang</th>
                       <th style={{ padding: "12px 16px", textAlign: "center" }}>Hasil Verifikasi</th>
                       {role !== "user" && <th style={{ padding: "12px 16px", textAlign: "center" }}>Selisih</th>}
                       <th style={{ padding: "12px 16px" }}>Status</th>
@@ -812,13 +926,16 @@ export default function StockOpname() {
                             <div><b>{o.user?.name}</b></div>
                             <div style={{ fontSize: 12, color: "#6b7280" }}>{o.user?.fakultas || "Fakultas Yarsi"}</div>
                           </td>
-                          <td style={{ padding: "14px 16px", fontSize: 14 }}>
-                            <div><b>{o.barang?.nama || "Barang Terhapus"}</b></div>
-                            <div style={{ fontSize: 12, color: "#9ca3af" }}>Kode: {o.barang?.kode}</div>
-                          </td>
-                          <td style={{ padding: "14px 16px", textAlign: "center", fontSize: 14 }}>
-                            {o.stok_fisik}
-                          </td>
+                           <td style={{ padding: "14px 16px", fontSize: 14 }}>
+                             <div><b>{o.barang?.nama || "Barang Terhapus"}</b></div>
+                             <div style={{ fontSize: 12, color: "#9ca3af" }}>Kode: {o.barang?.kode}</div>
+                           </td>
+                           <td style={{ padding: "14px 16px", fontSize: 14 }}>
+                             {o.unit || "-"}
+                           </td>
+                           <td style={{ padding: "14px 16px", textAlign: "center", fontSize: 14 }}>
+                             {o.stok_fisik}
+                           </td>
                           <td style={{ padding: "14px 16px", textAlign: "center", fontSize: 14 }}>
                             {o.hasil_verifikasi !== null && o.hasil_verifikasi !== undefined ? o.hasil_verifikasi : "-"}
                           </td>
@@ -960,6 +1077,12 @@ export default function StockOpname() {
               {/* Search Suggestions */}
               {loadingSearch && <p style={{ fontSize: 12, margin: "6px 0" }}>Mencari barang...</p>}
               
+              {searchResults.length === 0 && queryBarang.trim() && !loadingSearch && (
+                <p style={{ fontSize: 12, margin: "6px 0", color: "#6b7280" }}>
+                  {lockedBarangIds.length > 0 ? "Semua hasil pencarian sudah di-stok opname." : "Barang tidak ditemukan."}
+                </p>
+              )}
+
               {searchResults.length > 0 && (
                 <div
                   style={{
@@ -1013,6 +1136,37 @@ export default function StockOpname() {
                   </div>
                 </div>
               )}
+
+              {/* Unit */}
+              <div style={{ marginTop: 16 }}>
+                <label style={{ display: "block", marginBottom: 6 }}>
+                  <b>Unit / Bagian</b>
+                </label>
+                <select
+                  value={unit}
+                  onChange={(e) => setUnit(e.target.value)}
+                  disabled={unitLocked}
+                  style={{
+                    width: "100%",
+                    padding: 10,
+                    borderRadius: 10,
+                    border: "1px solid #ddd",
+                    fontSize: 14,
+                    background: unitLocked ? "#f3f4f6" : "#fff",
+                    opacity: unitLocked ? 0.8 : 1,
+                    cursor: unitLocked ? "not-allowed" : "default",
+                  }}
+                >
+                  {unitOptions.map((opt) => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </select>
+                {unitLocked && (
+                  <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>
+                    Unit Anda sudah terdaftar dan tidak dapat diubah.
+                  </div>
+                )}
+              </div>
 
               {/* Stock count and discrepancy */}
               <div style={{ display: "flex", gap: 16, marginTop: 16 }}>
@@ -1266,6 +1420,32 @@ export default function StockOpname() {
               <p style={{ color: "#6b7280", margin: "0 0 16px 0", fontSize: 14 }}>
                 {importPreviewData.length} barang ditemukan dari file CSV. Periksa data sebelum mengirim laporan.
               </p>
+
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ display: "block", marginBottom: 6 }}>
+                  <b>Unit / Bagian</b>
+                </label>
+                <select
+                  value={importUnit}
+                  onChange={(e) => setImportUnit(e.target.value)}
+                  disabled={unitLocked}
+                  style={{
+                    width: "100%",
+                    maxWidth: 400,
+                    padding: 10,
+                    borderRadius: 10,
+                    border: "1px solid #ddd",
+                    fontSize: 14,
+                    background: unitLocked ? "#f3f4f6" : "#fff",
+                    opacity: unitLocked ? 0.8 : 1,
+                    cursor: unitLocked ? "not-allowed" : "default",
+                  }}
+                >
+                  {unitOptions.map((opt) => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </select>
+              </div>
 
               <div style={{ overflowX: "auto", maxHeight: "50vh", overflowY: "auto" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: 14 }}>

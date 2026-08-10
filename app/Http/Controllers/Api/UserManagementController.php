@@ -117,4 +117,20 @@ class UserManagementController extends Controller
             'message' => 'User berhasil dihapus.'
         ]);
     }
+
+    /**
+     * POST /api/users/{user}/reset-unit
+     * Super Admin mereset unit user agar bisa memilih unit baru
+     */
+    public function resetUnit(User $user)
+    {
+        $user->unit = null;
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Unit user berhasil direset.',
+            'user' => $user,
+        ]);
+    }
 }
