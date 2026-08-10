@@ -85,7 +85,7 @@ export default function UserSupport() {
         <section className="main-content">
           {location.pathname === "/support/open-ticket" && <OpenTicket />}
           {location.pathname.match(/\/support\/\d+/) && <TicketDetail />}
-          {location.pathname === "/support" && <TicketList />}
+          {location.pathname === "/support" && <TicketList showCreateButton={true} />}
         </section>
       </main>
     </div>

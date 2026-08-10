@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\SupportTicket;
 use App\Models\SupportTicketReply;
+use App\Models\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -94,11 +95,12 @@ class SupportTicketController extends Controller
         }
 
         $validated = $request->validate([
-            'status' => 'required|in:open,read,processing,completed',
+            'status' => 'required|in:open,read,process,complete',
             'admin_message' => 'nullable|string',
         ]);
 
         $ticket = SupportTicket::findOrFail($id);
+        $oldStatus = $ticket->status;
         $ticket->status = $validated['status'];
 
         if (isset($validated['admin_message'])) {
@@ -106,6 +108,23 @@ class SupportTicketController extends Controller
         }
 
         $ticket->save();
+
+        if ($oldStatus !== $validated['status']) {
+            $statusLabels = [
+                'open' => 'Dibuka',
+                'read' => 'Sedang Dibaca',
+                'process' => 'Sedang Diproses',
+                'complete' => 'Selesai',
+            ];
+
+            Notification::create([
+                'user_id' => $ticket->user_id,
+                'title' => 'Status Tiket Support Diperbarui',
+                'message' => "Tiket '{$ticket->subject}' telah diubah ke status: " . ($statusLabels[$validated['status']] ?? $validated['status']),
+                'pengajuan_id' => null,
+                'is_read' => false,
+            ]);
+        }
 
         return response()->json([
             'success' => true,
@@ -137,6 +156,16 @@ class SupportTicketController extends Controller
             'message' => $validated['message'],
             'sender_type' => $user->isAdmin() || $user->isSuperAdmin() ? 'admin' : 'user',
         ]);
+
+        if ($user->isAdmin() || $user->isSuperAdmin()) {
+            Notification::create([
+                'user_id' => $ticket->user_id,
+                'title' => 'Balasan Baru di Tiket Support',
+                'message' => "Ada balasan baru dari tim support untuk tiket '{$ticket->subject}'.",
+                'pengajuan_id' => null,
+                'is_read' => false,
+            ]);
+        }
 
         return response()->json([
             'success' => true,

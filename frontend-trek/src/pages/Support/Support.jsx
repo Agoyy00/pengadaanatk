@@ -37,6 +37,8 @@ export default function Support() {
     return "Daftar Tiket Support";
   };
 
+  const isAdmin = currentUser?.is_admin || currentUser?.is_superadmin || false;
+
   return (
     <div className="layout">
       <DesktopSidebarToggle isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
@@ -92,9 +94,9 @@ export default function Support() {
         </header>
 
         <section className="main-content">
-          {location.pathname === "/support/open-ticket" && <OpenTicket />}
+          {!isAdmin && location.pathname === "/support/open-ticket" && <OpenTicket />}
           {location.pathname.match(/\/support\/\d+/) && <TicketDetail />}
-          {location.pathname === "/support" && <TicketList />}
+          {location.pathname === "/support" && <TicketList showCreateButton={false} />}
         </section>
       </main>
     </div>

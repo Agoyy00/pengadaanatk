@@ -14,11 +14,11 @@ const PRIORITY_CONFIG = {
 const STATUS_CONFIG = {
   open: { label: "Open", bg: "#dbeafe", color: "#2563eb", border: "#bfdbfe", icon: "📋" },
   read: { label: "Read", bg: "#cffafe", color: "#0891b2", border: "#a5f3fc", icon: "👁️" },
-  processing: { label: "Processing", bg: "#fef3c7", color: "#d97706", border: "#fde68a", icon: "⚙️" },
-  completed: { label: "Completed", bg: "#dcfce7", color: "#16a34a", border: "#bbf7d0", icon: "✅" },
+  process: { label: "Process", bg: "#fef3c7", color: "#d97706", border: "#fde68a", icon: "⚙️" },
+  complete: { label: "Complete", bg: "#dcfce7", color: "#16a34a", border: "#bbf7d0", icon: "✅" },
 };
 
-const STATUS_FLOW = ["open", "read", "processing", "completed"];
+const STATUS_FLOW = ["open", "read", "process", "complete"];
 
 export default function TicketDetail() {
   const { id } = useParams();

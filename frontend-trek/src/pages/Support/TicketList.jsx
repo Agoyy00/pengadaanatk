@@ -12,13 +12,13 @@ const PRIORITY_CONFIG = {
 };
 
 const STATUS_CONFIG = {
-  open: { label: "Open", bg: "#dbeafe", color: "#2563eb", border: "#bfdbfe" },
-  read: { label: "Read", bg: "#cffafe", color: "#0891b2", border: "#a5f3fc" },
-  processing: { label: "Processing", bg: "#fef3c7", color: "#d97706", border: "#fde68a" },
-  completed: { label: "Completed", bg: "#dcfce7", color: "#16a34a", border: "#bbf7d0" },
+  open: { label: "Open", bg: "#dbeafe", color: "#2563eb", border: "#bfdbfe", icon: "📋" },
+  read: { label: "Read", bg: "#cffafe", color: "#0891b2", border: "#a5f3fc", icon: "👁️" },
+  process: { label: "Process", bg: "#fef3c7", color: "#d97706", border: "#fde68a", icon: "⚙️" },
+  complete: { label: "Complete", bg: "#dcfce7", color: "#16a34a", border: "#bbf7d0", icon: "✅" },
 };
 
-export default function TicketList() {
+export default function TicketList({ showCreateButton = true }) {
   const navigate = useNavigate();
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -115,8 +115,8 @@ export default function TicketList() {
     switch (status) {
       case "open": return "📋";
       case "read": return "👁️";
-      case "processing": return "⚙️";
-      case "completed": return "✅";
+      case "process": return "⚙️";
+      case "complete": return "✅";
       default: return "📋";
     }
   };
@@ -127,27 +127,29 @@ export default function TicketList() {
         <div>
           <h2 style={{ margin: "0 0 4px 0", fontSize: 20, color: "#0f172a" }}>Daftar Tiket Support</h2>
           <p style={{ margin: 0, color: "#64748b", fontSize: 14 }}>
-            Kelola dan pantau tiket support dari user
+            {showCreateButton ? "Buat dan kelola tiket support Anda" : "Kelola dan pantau tiket support dari user"}
           </p>
         </div>
-        <button
-          onClick={() => navigate("/support/open-ticket")}
-          style={{
-            padding: "10px 20px",
-            borderRadius: 8,
-            border: "none",
-            background: "#2563eb",
-            color: "#fff",
-            cursor: "pointer",
-            fontWeight: 700,
-            fontSize: 14,
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-          }}
-        >
-          <span>+</span> Buat Tiket Baru
-        </button>
+        {showCreateButton && (
+          <button
+            onClick={() => navigate("/support/open-ticket")}
+            style={{
+              padding: "10px 20px",
+              borderRadius: 8,
+              border: "none",
+              background: "#2563eb",
+              color: "#fff",
+              cursor: "pointer",
+              fontWeight: 700,
+              fontSize: 14,
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+            }}
+          >
+            <span>+</span> Buat Tiket Baru
+          </button>
+        )}
       </div>
 
       {loading ? (
@@ -164,7 +166,7 @@ export default function TicketList() {
           <p style={{ margin: "0 0 20px 0", fontSize: 14 }}>
             {tickets.length === 0 ? "Buat tiket pertama untuk mendapatkan bantuan dari tim kami" : "Coba ubah filter untuk melihat tiket lain"}
           </p>
-          {tickets.length === 0 && (
+          {tickets.length === 0 && showCreateButton && (
             <button
               onClick={() => navigate("/support/open-ticket")}
               style={{
@@ -200,8 +202,8 @@ export default function TicketList() {
               <option value="all">Semua Status</option>
               <option value="open">Open</option>
               <option value="read">Read</option>
-              <option value="processing">Processing</option>
-              <option value="completed">Completed</option>
+              <option value="process">Process</option>
+              <option value="complete">Complete</option>
             </select>
             <select
               value={filterPriority}
