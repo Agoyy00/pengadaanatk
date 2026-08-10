@@ -487,9 +487,15 @@ export default function StockOpname() {
             }
           } catch {}
         }
-        alert("Laporan stock opname berhasil dikirim ✅");
         closeModal();
         loadOpnames();
+        Swal.fire({
+          icon: "success",
+          title: "Laporan Berhasil Dikirim!",
+          text: "Laporan Stock Opname Anda telah sukses dikirim ke sistem.",
+          confirmButtonColor: "#10b981",
+          confirmButtonText: "OK",
+        });
       } else {
         setFormError(data.message || "Gagal mengirim laporan.");
       }
@@ -541,9 +547,14 @@ export default function StockOpname() {
 
       const data = await res.json();
       if (res.ok && data.success) {
-        alert("Laporan berhasil diverifikasi admin ✅");
         closeVerifyModal();
         loadOpnames();
+        Swal.fire({
+          icon: "success",
+          title: "Verifikasi Berhasil!",
+          text: "Laporan stock opname telah berhasil diverifikasi admin.",
+          confirmButtonColor: "#10b981",
+        });
       } else {
         setVerifyFormError(data.message || "Gagal memverifikasi laporan.");
       }
@@ -557,10 +568,17 @@ export default function StockOpname() {
 
   // Superadmin approves a report (which updates inventory stock)
   const handleApprove = async (id) => {
-    const ok = window.confirm(
-      "Setujui laporan stock opname ini? Tindakan ini akan memperbarui stok barang di inventaris secara otomatis."
-    );
-    if (!ok) return;
+    const result = await Swal.fire({
+      title: "Setujui Laporan?",
+      text: "Tindakan ini akan memperbarui stok barang di inventaris secara otomatis.",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonColor: "#16a34a",
+      cancelButtonColor: "#64748b",
+      confirmButtonText: "Ya, Setujui",
+      cancelButtonText: "Batal",
+    });
+    if (!result.isConfirmed) return;
 
     try {
       setLoading(true);
@@ -573,14 +591,29 @@ export default function StockOpname() {
       });
       const data = await res.json();
       if (data.success) {
-        alert("Laporan disetujui & Stok inventaris diperbarui ✅");
+        Swal.fire({
+          icon: "success",
+          title: "Laporan Disetujui!",
+          text: "Laporan disetujui dan stok inventaris telah diperbarui.",
+          confirmButtonColor: "#16a34a",
+        });
         loadOpnames();
       } else {
-        alert(data.message || "Gagal menyetujui laporan.");
+        Swal.fire({
+          icon: "error",
+          title: "Gagal",
+          text: data.message || "Gagal menyetujui laporan.",
+          confirmButtonColor: "#ef4444",
+        });
       }
     } catch (err) {
       console.error(err);
-      alert("Terjadi kesalahan server.");
+      Swal.fire({
+        icon: "error",
+        title: "Kesalahan Server",
+        text: "Terjadi kesalahan pada server.",
+        confirmButtonColor: "#ef4444",
+      });
     } finally {
       setLoading(false);
     }
@@ -588,8 +621,17 @@ export default function StockOpname() {
 
   // Admin/Superadmin rejects a report
   const handleReject = async (id) => {
-    const ok = window.confirm("Tolak laporan stock opname ini?");
-    if (!ok) return;
+    const result = await Swal.fire({
+      title: "Tolak Laporan?",
+      text: "Apakah Anda yakin ingin menolak laporan stock opname ini?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#dc2626",
+      cancelButtonColor: "#64748b",
+      confirmButtonText: "Ya, Tolak",
+      cancelButtonText: "Batal",
+    });
+    if (!result.isConfirmed) return;
 
     try {
       setLoading(true);
@@ -602,14 +644,29 @@ export default function StockOpname() {
       });
       const data = await res.json();
       if (data.success) {
-        alert("Laporan ditolak ❌");
+        Swal.fire({
+          icon: "success",
+          title: "Laporan Ditolak",
+          text: "Laporan stock opname telah ditolak.",
+          confirmButtonColor: "#10b981",
+        });
         loadOpnames();
       } else {
-        alert(data.message || "Gagal menolak laporan.");
+        Swal.fire({
+          icon: "error",
+          title: "Gagal",
+          text: data.message || "Gagal menolak laporan.",
+          confirmButtonColor: "#ef4444",
+        });
       }
     } catch (err) {
       console.error(err);
-      alert("Terjadi kesalahan server.");
+      Swal.fire({
+        icon: "error",
+        title: "Kesalahan Server",
+        text: "Terjadi kesalahan pada server.",
+        confirmButtonColor: "#ef4444",
+      });
     } finally {
       setLoading(false);
     }
@@ -617,8 +674,17 @@ export default function StockOpname() {
 
   // Delete pending report
   const handleDelete = async (id) => {
-    const ok = window.confirm("Hapus laporan stock opname pending ini?");
-    if (!ok) return;
+    const result = await Swal.fire({
+      title: "Hapus Laporan?",
+      text: "Apakah Anda yakin ingin menghapus laporan stock opname pending ini?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#dc2626",
+      cancelButtonColor: "#64748b",
+      confirmButtonText: "Ya, Hapus",
+      cancelButtonText: "Batal",
+    });
+    if (!result.isConfirmed) return;
 
     try {
       setLoading(true);
@@ -631,14 +697,29 @@ export default function StockOpname() {
       });
       const data = await res.json();
       if (data.success) {
-        alert("Laporan berhasil dihapus ✅");
+        Swal.fire({
+          icon: "success",
+          title: "Laporan Dihapus",
+          text: "Laporan stock opname berhasil dihapus.",
+          confirmButtonColor: "#10b981",
+        });
         loadOpnames();
       } else {
-        alert(data.message || "Gagal menghapus laporan.");
+        Swal.fire({
+          icon: "error",
+          title: "Gagal",
+          text: data.message || "Gagal menghapus laporan.",
+          confirmButtonColor: "#ef4444",
+        });
       }
     } catch (err) {
       console.error(err);
-      alert("Terjadi kesalahan server.");
+      Swal.fire({
+        icon: "error",
+        title: "Kesalahan Server",
+        text: "Terjadi kesalahan pada server.",
+        confirmButtonColor: "#ef4444",
+      });
     } finally {
       setLoading(false);
     }
