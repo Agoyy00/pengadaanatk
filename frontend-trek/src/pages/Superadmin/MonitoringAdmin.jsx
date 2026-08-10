@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import "../../css/layout.css";
 import "../../css/tabel.css";
 import RoleSwitcher from "../../components/RoleSwitcher";
+import SidebarLogo from "../../components/SidebarLogo";
 
 
 
@@ -39,7 +40,6 @@ export default function MonitoringAdmin() {
       { label: "Atur Periode", to: "/periode" },
       { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang" },
       { label: "Stock Opname Barang", to: "/stock-opname" },
-      { label: "Template Dokumen", to: "/template-dokumen" },
     ];
   }, []);
 
@@ -259,7 +259,9 @@ export default function MonitoringAdmin() {
       case "stock_opname_verify":
         return "Verifikasi Stock Opname";
       default:
-        return tugas.replace(/_/g, " ").toUpperCase();
+        return tugas
+          .replace(/_/g, " ")
+          .replace(/\b\w/g, (c) => c.toUpperCase());
     }
   };
 
@@ -313,10 +315,7 @@ export default function MonitoringAdmin() {
         />
       )}
       <aside className={`sidebar ${isSidebarOpen ? "open" : ""}`}>
-        <div>
-          <div className="sidebar-logo">Sistem Pengajuan ATK</div>
-          <div className="sidebar-subtitle">Universitas Yarsi</div>
-        </div>
+        <SidebarLogo />
 
         <nav className="sidebar-menu">
           {sidebarMenus.map((m) => {
@@ -689,7 +688,7 @@ export default function MonitoringAdmin() {
                             }}>
                               <div>
                                 <div style={{ fontSize: "15px", fontWeight: 700, color: "#0f172a" }}>
-                                  👤 {currentRelatedRequest.nama_pemohon}
+                                  {currentRelatedRequest.nama_pemohon}
                                 </div>
                                 <div style={{ fontSize: "12px", color: "#64748b", marginTop: "2px" }}>
                                   Jabatan: <b>{currentRelatedRequest.jabatan || "-"}</b> • Fakultas: <b>{currentRelatedRequest.unit || "-"}</b> • Tanggal: <b>{logItem.dateTimeStr}</b>
@@ -706,7 +705,7 @@ export default function MonitoringAdmin() {
                                 color: "#ffffff",
                                 boxShadow: "0 1px 2px rgba(0,0,0,0.1)"
                               }}>
-                                {currentRelatedRequest.status.replace(/_/g, " ").toUpperCase()}
+                                {currentRelatedRequest.status ? String(currentRelatedRequest.status).replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "-"}
                               </span>
                             </div>
 
@@ -771,7 +770,7 @@ export default function MonitoringAdmin() {
                                 {currentRelatedSO.selisih}
                               </span>
                             </div>
-                            <div><strong>Status Verifikasi:</strong> <span style={{ fontWeight: "700", color: "#16a34a" }}>{currentRelatedSO.status.toUpperCase()}</span></div>
+                            <div><strong>Status Verifikasi:</strong> <span style={{ fontWeight: "700", color: "#16a34a" }}>{currentRelatedSO.status ? String(currentRelatedSO.status).replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "-"}</span></div>
                             <div><strong>Waktu:</strong> {logItem.dateTimeStr}</div>
                           </div>
                         ) : (

@@ -96,7 +96,7 @@ export default function ImportExcelBarang({
 
           {excelFile && (
             <div className="import-file">
-              📄 {excelFile.name}
+              {excelFile.name}
             </div>
           )}
         </div>

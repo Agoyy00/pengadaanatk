@@ -14,6 +14,8 @@ import RoleSwitcher from "../../components/RoleSwitcher";
 const API_BASE = import.meta.env.VITE_API_BASE;
 const token = localStorage.getItem("token");
 
+import SidebarLogo from "../../components/SidebarLogo";
+
 export default function Verifikasi() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -187,7 +189,6 @@ const downloadPdfAdmin = async (id, status) => {
         { label: "Atur Periode", to: "/periode" },
         { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang" },
         { label: "Stock Opname Barang", to: "/stock-opname" },
-        { label: "Template Dokumen", to: "/template-dokumen" },
       ];
     } else {
       return [
@@ -196,7 +197,6 @@ const downloadPdfAdmin = async (id, status) => {
         { label: "Kelola Barang ATK", to: "/kelola-barang" },
         { label: "Grafik Usulan Barang", to: "/grafik-usulan-barang" },
         { label: "Stock Opname Barang", to: "/stock-opname" },
-        { label: "Template Dokumen", to: "/template-dokumen" },
       ];
     }
   }, [role]);
@@ -563,10 +563,7 @@ const [selectedPengajuan, setSelectedPengajuan] = useState(null);
         />
       )}
       <aside className={`sidebar ${isSidebarOpen ? "open" : ""}`}>
-        <div>
-          <div className="sidebar-logo">Sistem Pengajuan ATK</div>
-          <div className="sidebar-subtitle">Universitas Yarsi</div>
-        </div>
+        <SidebarLogo />
 
         <nav className="sidebar-menu">
           {sidebarMenus.map((m) => {
@@ -714,7 +711,7 @@ const [selectedPengajuan, setSelectedPengajuan] = useState(null);
                                     onMouseEnter={(e) => (e.target.style.transform = "scale(1.05)")}
                                     onMouseLeave={(e) => (e.target.style.transform = "scale(1)")}
                                   >
-                                    👁️ Lihat Detail ▸
+                                    Lihat Detail
                                   </button>
                                 </td>
                               </tr>
@@ -890,7 +887,7 @@ const [selectedPengajuan, setSelectedPengajuan] = useState(null);
                   {!isVerifMode && (
                     <>
                       <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px", flexWrap: "wrap" }}>
-                        {btnBack(() => setActiveUnitView(null), "← Kembali")}
+                        {btnBack(() => setActiveUnitView(null), "Kembali")}
                         <div style={{ flex: 1 }}>
                           <div style={{ fontSize: "18px", fontWeight: 700, color: "#0f172a" }}>{unitName}</div>
                           <div style={{ fontSize: "12px", color: "#64748b" }}>Daftar pengajuan dari unit ini ({unitPengajuan.length} pengajuan)</div>
@@ -899,7 +896,7 @@ const [selectedPengajuan, setSelectedPengajuan] = useState(null);
                           <button type="button" onClick={() => setActiveUnitView("VERIF:" + unitName)}
                             style={{ background: "linear-gradient(135deg, #10b981, #059669)", color: "#fff", padding: "10px 20px", borderRadius: "10px", fontSize: "13px", fontWeight: 700, cursor: "pointer", border: "none", boxShadow: "0 4px 12px rgba(16,185,129,0.3)" }}
                           >
-                            ✓ Mulai Verifikasi ▸
+                            Mulai Verifikasi
                           </button>
                         )}
                       </div>
@@ -911,7 +908,7 @@ const [selectedPengajuan, setSelectedPengajuan] = useState(null);
                           <div key={p.id} style={{ background: "#fff", border: "1px solid #e2e8f0", borderLeft: "4px solid #0284c7", borderRadius: "12px", padding: "20px 24px", marginBottom: "16px", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px", paddingBottom: "10px", borderBottom: "1px solid #f1f5f9", flexWrap: "wrap", gap: "10px" }}>
                               <div>
-                                <div style={{ fontSize: "15px", fontWeight: 700, color: "#0f172a" }}>👤 {p.nama_pemohon}</div>
+                                <div style={{ fontSize: "15px", fontWeight: 700, color: "#0f172a" }}>{p.nama_pemohon}</div>
                                 <div style={{ fontSize: "12px", color: "#64748b", marginTop: "2px" }}>
                                   Jabatan: <b>{p.jabatan}</b> • Tanggal: <b>{p.created_at ? new Date(p.created_at).toLocaleString("id-ID") : "-"}</b>
                                 </div>
@@ -960,11 +957,11 @@ const [selectedPengajuan, setSelectedPengajuan] = useState(null);
                   {isVerifMode && (
                     <>
                       <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px", flexWrap: "wrap" }}>
-                        {btnBack(() => setActiveUnitView(unitName), "← Kembali ke Detail")}
+                        {btnBack(() => setActiveUnitView(unitName), "Kembali ke Detail")}
                         <div>
                           <div style={{ fontSize: "18px", fontWeight: 700, color: "#0f172a" }}>Verifikasi — {unitName}</div>
                           <div style={{ fontSize: "12px", color: "#64748b" }}>
-                            Barang yang sama dari semua user sudah dijumlahkan. Edit, setujui (✓) atau tolak (✗) tiap barang.
+                            Barang yang sama dari semua user sudah dijumlahkan. Edit, setujui atau tolak tiap barang.
                           </div>
                         </div>
                         <div style={{ marginLeft: "auto", display: "flex", gap: "8px" }}>
@@ -985,7 +982,7 @@ const [selectedPengajuan, setSelectedPengajuan] = useState(null);
                               gap: "4px"
                             }}
                           >
-                            ✓ Setujui Semua
+                            Setujui Semua
                           </button>
                           <button
                             type="button"
@@ -1004,7 +1001,7 @@ const [selectedPengajuan, setSelectedPengajuan] = useState(null);
                               gap: "4px"
                             }}
                           >
-                            ✗ Tolak Semua
+                            Tolak Semua
                           </button>
                         </div>
                       </div>
@@ -1055,11 +1052,11 @@ const [selectedPengajuan, setSelectedPengajuan] = useState(null);
                                       <td style={{ padding: "10px 12px", textAlign: "center" }}>
                                         <div style={{ display: "flex", gap: "6px", justifyContent: "center", alignItems: "center" }}>
                                           <button type="button" onClick={() => setItemDecision(mKey, 'approved')} title="Setujui"
-                                            style={{ width: "36px", height: "36px", borderRadius: "8px", border: decision === 'approved' ? "2px solid #10b981" : "2px solid #d1d5db", background: decision === 'approved' ? "#10b981" : "#fff", color: decision === 'approved' ? "#fff" : "#9ca3af", fontSize: "17px", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.15s ease" }}
-                                          >✓</button>
+                                            style={{ height: "36px", padding: "0 12px", borderRadius: "8px", border: decision === 'approved' ? "2px solid #10b981" : "2px solid #d1d5db", background: decision === 'approved' ? "#10b981" : "#fff", color: decision === 'approved' ? "#fff" : "#9ca3af", fontSize: "12px", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.15s ease" }}
+                                          >Setujui</button>
                                           <button type="button" onClick={() => setItemDecision(mKey, 'rejected')} title="Tolak"
-                                            style={{ width: "36px", height: "36px", borderRadius: "8px", border: decision === 'rejected' ? "2px solid #ef4444" : "2px solid #d1d5db", background: decision === 'rejected' ? "#ef4444" : "#fff", color: decision === 'rejected' ? "#fff" : "#9ca3af", fontSize: "17px", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.15s ease" }}
-                                          >✗</button>
+                                            style={{ height: "36px", padding: "0 12px", borderRadius: "8px", border: decision === 'rejected' ? "2px solid #ef4444" : "2px solid #d1d5db", background: decision === 'rejected' ? "#ef4444" : "#fff", color: decision === 'rejected' ? "#fff" : "#9ca3af", fontSize: "12px", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.15s ease" }}
+                                          >Tolak</button>
                                         </div>
                                       </td>
                                     </tr>
@@ -1097,7 +1094,7 @@ const [selectedPengajuan, setSelectedPengajuan] = useState(null);
                               boxShadow: allMergedDecided ? "0 4px 12px rgba(16,185,129,0.3)" : "none"
                             }}
                           >
-                            {processingId === "merged" ? "Memproses..." : "✓ Kirim Hasil Verifikasi Unit"}
+                            {processingId === "merged" ? "Memproses..." : "Kirim Hasil Verifikasi Unit"}
                           </button>
                         </div>
                       </div>

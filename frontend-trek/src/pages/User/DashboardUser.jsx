@@ -10,6 +10,8 @@ import Swal from "sweetalert2";
 const API_BASE = import.meta.env.VITE_API_BASE;
 const token = localStorage.getItem("token");
 
+import SidebarLogo from "../../components/SidebarLogo";
+
 export default function DashboardUser() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -179,10 +181,7 @@ export default function DashboardUser() {
         />
       )}
       <aside className={`sidebar ${isSidebarOpen ? "open" : ""}`}>
-        <div>
-          <div className="sidebar-logo">Sistem Pengajuan ATK</div>
-          <div className="sidebar-subtitle">Universitas Yarsi</div>
-        </div>
+        <SidebarLogo />
 
         <nav className="sidebar-menu">
           {sidebarMenus.map((m) => {
@@ -237,12 +236,12 @@ export default function DashboardUser() {
 
         {/* CONTENT */}
         <section className="main-content">
-          {/* PERIODE STATUS BANNER */}
+          {/* PERIODE CLOSED WARNING */}
           {!periodeOpen && (
             <div
               style={{
                 background: "#fffbeb",
-                border: "1px solid #fcd34d",
+                border: "1px solid #fde68a",
                 borderRadius: 12,
                 padding: "16px 20px",
                 marginBottom: 20,
@@ -251,7 +250,6 @@ export default function DashboardUser() {
                 gap: 12,
               }}
             >
-              <span style={{ fontSize: 24 }}>🔒</span>
               <div>
                 <h4 style={{ margin: 0, color: "#92400e", fontSize: 16, fontWeight: 700 }}>
                   Periode Pengajuan Tertutup
@@ -340,7 +338,6 @@ export default function DashboardUser() {
                     gap: 8,
                   }}
                 >
-                  <span style={{ fontSize: 16 }}>ℹ️</span>
                   <span>
                     <b>Langkah selanjutnya:</b> lakukan Stock Opname Barang terlebih dahulu agar Anda dapat membuat pengajuan ATK.
                   </span>
@@ -380,7 +377,6 @@ export default function DashboardUser() {
                     e.currentTarget.style.boxShadow = "none";
                   }}
                 >
-                  <div style={{ fontSize: 28, marginBottom: 8 }}>📦</div>
                   <h5 style={{ margin: "0 0 4px 0", fontSize: 15, fontWeight: 700, color: "#991b1b" }}>
                     Stock Opname Barang
                   </h5>
@@ -401,7 +397,7 @@ export default function DashboardUser() {
                       cursor: "pointer",
                     }}
                   >
-                    Mulai Stock Opname ➔
+                    Mulai Stock Opname
                   </button>
                 </div>
               )}
@@ -427,7 +423,6 @@ export default function DashboardUser() {
                     e.currentTarget.style.boxShadow = "none";
                   }}
                 >
-                  <div style={{ fontSize: 28, marginBottom: 8 }}>📝</div>
                   <h5 style={{ margin: "0 0 4px 0", fontSize: 15, fontWeight: 700, color: "#1e40af" }}>
                     Buat Pengajuan Manual
                   </h5>
@@ -448,7 +443,7 @@ export default function DashboardUser() {
                       cursor: "pointer",
                     }}
                   >
-                    Buat Pengajuan Manual ➔
+                    Buat Pengajuan Manual
                   </button>
                 </div>
               )}
@@ -474,7 +469,6 @@ export default function DashboardUser() {
                     e.currentTarget.style.boxShadow = "none";
                   }}
                 >
-                  <div style={{ fontSize: 28, marginBottom: 8 }}>📥</div>
                   <h5 style={{ margin: "0 0 4px 0", fontSize: 15, fontWeight: 700, color: "#166534" }}>
                     Import dari CSV
                   </h5>
@@ -495,7 +489,7 @@ export default function DashboardUser() {
                       cursor: "pointer",
                     }}
                   >
-                    Import CSV di Halaman Pengajuan ➔
+                    Import CSV di Halaman Pengajuan
                   </button>
                 </div>
               )}
@@ -720,10 +714,10 @@ export default function DashboardUser() {
             }}
           >
             {[
-              { label: "Stock Opname", to: "/stock-opname", emoji: "📦", color: "#dc2626" },
-              { label: "Buat Pengajuan", to: "/pengajuan", emoji: "📝", color: "#2563eb" },
-              { label: "Riwayat Pengajuan", to: "/riwayat", emoji: "📋", color: "#9333ea" },
-              { label: "Template Dokumen", to: "/template-dokumen", emoji: "📄", color: "#ea580c" },
+              { label: "Stock Opname", to: "/stock-opname", color: "#dc2626" },
+              { label: "Buat Pengajuan", to: "/pengajuan", color: "#2563eb" },
+              { label: "Riwayat Pengajuan", to: "/riwayat", color: "#9333ea" },
+              { label: "Template Dokumen", to: "/template-dokumen", color: "#ea580c" },
             ].map((item) => (
               <div
                 key={item.label}
@@ -748,7 +742,6 @@ export default function DashboardUser() {
                   e.currentTarget.style.boxShadow = "none";
                 }}
               >
-                <span style={{ fontSize: 22 }}>{item.emoji}</span>
                 <span style={{ fontSize: 13, fontWeight: 700, color: item.color }}>
                   {item.label}
                 </span>

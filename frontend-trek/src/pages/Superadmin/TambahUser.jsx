@@ -10,6 +10,8 @@ import RoleSwitcher from "../../components/RoleSwitcher";
 
 const API_BASE = import.meta.env.VITE_API_BASE;
 
+import SidebarLogo from "../../components/SidebarLogo";
+
 export default function TambahUser() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -182,7 +184,6 @@ export default function TambahUser() {
       { label: "Atur Periode", to: "/periode" },
       { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang" },
       { label: "Stock Opname Barang", to: "/stock-opname" },
-      { label: "Template Dokumen", to: "/template-dokumen" },
     ];
   }, []);
 
@@ -200,10 +201,7 @@ export default function TambahUser() {
         />
       )}
       <aside className={`sidebar ${isSidebarOpen ? "open" : ""}`}>
-        <div>
-          <div className="sidebar-logo">Sistem Pengajuan ATK</div>
-          <div className="sidebar-subtitle">Universitas Yarsi</div>
-        </div>
+        <SidebarLogo />
 
         <nav className="sidebar-menu">
           {sidebarMenus.map((m) => {

@@ -106,24 +106,33 @@ function App() {
         const selesai = new Date(p.selesai);
         const now = new Date();
 
+        const formatShortDateTime = (d) => {
+          if (!d || isNaN(d.getTime())) return "";
+          const dateStr = d.toLocaleDateString("id-ID", {
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+          });
+          const hours = String(d.getHours()).padStart(2, "0");
+          const minutes = String(d.getMinutes()).padStart(2, "0");
+          return `${dateStr}, pukul ${hours}:${minutes} WIB`;
+        };
+
+        const strMulai = formatShortDateTime(mulai);
+        const strSelesai = formatShortDateTime(selesai);
+
         let type = "none";
         let msg = "";
 
         if (now < mulai) {
           type = "upcoming";
-          msg = `Periode ${p.tahun_akademik} akan dibuka pada ${mulai.toLocaleString(
-            "id-ID"
-          )} dan ditutup pada ${selesai.toLocaleString("id-ID")}.`;
+          msg = `Periode ${p.tahun_akademik} akan dibuka pada ${strMulai} dan ditutup pada ${strSelesai}.`;
         } else if (now >= mulai && now <= selesai && data.is_open) {
           type = "open";
-          msg = `Periode ${p.tahun_akademik} sedang DIBUKA hingga ${selesai.toLocaleString(
-            "id-ID"
-          )}.`;
+          msg = `Periode ${p.tahun_akademik} sedang DIBUKA hingga ${strSelesai}.`;
         } else {
           type = "closed";
-          msg = `Periode ${p.tahun_akademik} sudah DITUTUP pada ${selesai.toLocaleString(
-            "id-ID"
-          )}.`;
+          msg = `Periode ${p.tahun_akademik} sudah DITUTUP pada ${strSelesai}.`;
         }
 
         setPeriodeType(type);
@@ -166,15 +175,27 @@ function App() {
     return "periode-toast none";
   };
 
+  const renderFormattedToastText = (text) => {
+    if (!text) return null;
+    const parts = text.split(/(DIBUKA|DITUTUP|AKAN DIBUKA)/g);
+    return parts.map((part, i) =>
+      part === "DIBUKA" || part === "DITUTUP" || part === "AKAN DIBUKA" ? (
+        <strong key={i} style={{ fontWeight: 800 }}>{part}</strong>
+      ) : (
+        part
+      )
+    );
+  };
+
   return (
     <BrowserRouter>
-      {/* 🔔 TOAST DI POJOK KANAN ATAS */}
+      {/* TOAST DI POJOK KANAN ATAS */}
       {toastText && (
         <div className={getToastClass()}>
           <div className="periode-toast-title">
-            📢 Informasi Periode Pengajuan
+            Informasi Periode Pengajuan
           </div>
-          <div className="periode-toast-text">{toastText}</div>
+          <div className="periode-toast-text">{renderFormattedToastText(toastText)}</div>
         </div>
       )}
 

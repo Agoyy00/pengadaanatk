@@ -11,6 +11,8 @@ const normalizeRole = (role) =>
     .toLowerCase()
     .replace(/[\s_]+/g, "");
 
+import SidebarLogo from "../components/SidebarLogo";
+
 export default function TemplateDokumen() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -23,8 +25,12 @@ export default function TemplateDokumen() {
   useEffect(() => {
     if (!currentUser?.id) {
       navigate("/", { replace: true });
+    } else if (role === "admin") {
+      navigate("/dashboardadmin", { replace: true });
+    } else if (role === "superadmin") {
+      navigate("/dashboardsuperadmin", { replace: true });
     }
-  }, [currentUser, navigate]);
+  }, [currentUser, role, navigate]);
 
   const formatRole = (role) => {
     if (!role) return "-";
@@ -48,7 +54,6 @@ export default function TemplateDokumen() {
         { label: "Atur Periode", to: "/periode" },
         { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang" },
         { label: "Stock Opname Barang", to: "/stock-opname" },
-        { label: "Template Dokumen", to: "/template-dokumen", active: true },
       ];
     } else if (role === "admin") {
       return [
@@ -57,7 +62,6 @@ export default function TemplateDokumen() {
         { label: "Kelola Barang ATK", to: "/kelola-barang" },
         { label: "Grafik Usulan Barang", to: "/grafik-usulan-barang" },
         { label: "Stock Opname Barang", to: "/stock-opname" },
-        { label: "Template Dokumen", to: "/template-dokumen", active: true },
       ];
     } else {
       return [
@@ -84,10 +88,7 @@ export default function TemplateDokumen() {
         />
       )}
       <aside className={`sidebar ${isSidebarOpen ? "open" : ""}`}>
-        <div>
-          <div className="sidebar-logo">Sistem Pengajuan ATK</div>
-          <div className="sidebar-subtitle">Universitas Yarsi</div>
-        </div>
+        <SidebarLogo />
 
         <nav className="sidebar-menu">
           {sidebarMenus.map((m) => {
@@ -178,12 +179,11 @@ export default function TemplateDokumen() {
                 }}
               >
                 <div>
-                  <div style={{ fontSize: 24, marginBottom: 10 }}>📊</div>
                   <h4 style={{ margin: "0 0 8px 0", fontSize: 16 }}>Template Stock Opname Barang</h4>
                   <p style={{ margin: "0 0 16px 0", color: "#4b5563", fontSize: 13, lineHeight: 1.5 }}>
                     Template CSV untuk mencatat perhitungan fisik barang (Stock Opname) di gudang/unit.
                      Berisi kolom kode barang, nama barang, stok terdaftar, dan stok fisik.
-                    <br /><em style={{ color: "#6b7280" }}>💡 Untuk template lengkap dengan data barang terkini, gunakan tombol "Download Template" di halaman Stock Opname.</em>
+                    <br /><em style={{ color: "#6b7280" }}>Untuk template lengkap dengan data barang terkini, gunakan tombol "Download Template" di halaman Stock Opname.</em>
                   </p>
                 </div>
                 <a
@@ -202,7 +202,7 @@ export default function TemplateDokumen() {
                     boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
                   }}
                 >
-                  📥 Unduh Template Contoh
+                  Unduh Template Contoh
                 </a>
               </div>
 
@@ -221,13 +221,12 @@ export default function TemplateDokumen() {
                 }}
               >
                 <div>
-                  <div style={{ fontSize: 24, marginBottom: 10 }}>📝</div>
                   <h4 style={{ margin: "0 0 8px 0", fontSize: 16 }}>Template Pengajuan ATK</h4>
                   <p style={{ margin: "0 0 16px 0", color: "#4b5563", fontSize: 13, lineHeight: 1.5 }}>
                     Template CSV untuk mempermudah perincian kebutuhan pengajuan ATK baru oleh setiap unit/fakultas.
                     Isi kolom <strong>kebutuhan total</strong> dan <strong>sisa stock saat ini</strong>, lalu import di halaman Pengajuan.
 
-                    <br /><em style={{ color: "#6b7280" }}>💡 Untuk template lengkap dengan semua barang terkini, gunakan tombol "Download Template" di halaman Buat Pengajuan (Step 2).</em>
+                    <br /><em style={{ color: "#6b7280" }}>Untuk template lengkap dengan semua barang terkini, gunakan tombol "Download Template" di halaman Buat Pengajuan (Step 2).</em>
                   </p>
                 </div>
                 <a
@@ -246,7 +245,7 @@ export default function TemplateDokumen() {
                     boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
                   }}
                 >
-                  📥 Unduh Template CSV
+                  Unduh Template CSV
                 </a>
               </div>
             </div>

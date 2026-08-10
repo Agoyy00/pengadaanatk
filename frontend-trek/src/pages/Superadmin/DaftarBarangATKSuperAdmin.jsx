@@ -43,6 +43,8 @@ const DEFAULT_SATUAN_LIST = [
   "Pad",
 ];
 
+import SidebarLogo from "../../components/SidebarLogo";
+
 export default function DaftarBarangATKSuperAdmin() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -264,7 +266,6 @@ export default function DaftarBarangATKSuperAdmin() {
       { label: "Atur Periode", to: "/periode" },
       { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang", active: true },
       { label: "Stock Opname Barang", to: "/stock-opname" },
-      { label: "Template Dokumen", to: "/template-dokumen" },
     ];
   }, []);
 
@@ -558,10 +559,7 @@ const onDeleteSelected = async () => {
         />
       )}
       <aside className={`sidebar ${isSidebarOpen ? "open" : ""}`}>
-        <div>
-          <div className="sidebar-logo">Sistem Pengajuan ATK</div>
-          <div className="sidebar-subtitle">Universitas Yarsi</div>
-        </div>
+        <SidebarLogo />
 
         <nav className="sidebar-menu">
           {sidebarMenus.map((m) => {
@@ -633,14 +631,14 @@ const onDeleteSelected = async () => {
               className="btn-import"
               onClick={() => setImportOpen(true)}
             >
-              📤 Import Excel
+              Import Excel
             </button>
 
             <button
               className="btn-add"
               onClick={openCreate}
             >
-              + Tambah Barang
+              Tambah Barang
             </button>
             <button
             disabled={checkedIds.length === 0}
@@ -658,7 +656,7 @@ const onDeleteSelected = async () => {
               gap: 6,
             }}
           >
-            🗑 Hapus Terpilih
+            Hapus Terpilih
           </button>
           </div>
 
@@ -901,7 +899,7 @@ const onDeleteSelected = async () => {
                         whiteSpace: "nowrap",
                       }}
                     >
-                      ➕ Tambah
+                      Tambah
                     </button>
 
                     <button
@@ -923,7 +921,7 @@ const onDeleteSelected = async () => {
                         whiteSpace: "nowrap",
                       }}
                     >
-                      🗑️ Hapus
+                      Hapus
                     </button>
                   </div>
 

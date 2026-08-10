@@ -105,7 +105,7 @@ function Login({ onClose }) {
                 marginBottom: "16px",
                 textAlign: "center"
               }}>
-                ⚠️ {errorMsg}
+                {errorMsg}
               </div>
             )}
 
@@ -121,7 +121,7 @@ function Login({ onClose }) {
                 marginBottom: "16px",
                 textAlign: "center"
               }}>
-                ✓ {successMsg}
+                {successMsg}
               </div>
             )}
 

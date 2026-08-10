@@ -6,7 +6,7 @@ import "../../css/Pengajuan.css";
 import "../../css/layout.css";
 import RoleSwitcher from "../../components/RoleSwitcher";
 import PeriodeTimer from "../../components/PeriodeTimer";
-
+import SidebarLogo from "../../components/SidebarLogo";
 
 function Pengajuan() {
   const navigate = useNavigate();
@@ -867,10 +867,7 @@ function Pengajuan() {
         />
       )}
       <aside className={`sidebar ${isSidebarOpen ? "open" : ""}`}>
-        <div>
-          <div className="sidebar-logo">Sistem Pengajuan ATK</div>
-          <div className="sidebar-subtitle">Universitas Yarsi</div>
-        </div>
+        <SidebarLogo />
 
         <nav className="sidebar-menu">
           {sidebarMenus.map((m) => {
@@ -963,7 +960,7 @@ function Pengajuan() {
                   style={{ marginTop: 12, padding: "10px 20px", fontWeight: 700 }}
                   onClick={() => navigate("/stock-opname")}
                 >
-                  Lakukan Stock Opname Sekarang ➔
+                  Lakukan Stock Opname Sekarang
                 </button>
               ) : (
                 <button
@@ -1082,7 +1079,7 @@ function Pengajuan() {
                                 title="Kelola Opsi Jabatan"
                                 style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '13px', padding: '0 4px', color: '#2563eb', fontWeight: 600 }}
                               >
-                                ✏️ Kelola
+                                Kelola
                               </button>
                             )}
                           </label>
@@ -1110,7 +1107,7 @@ function Pengajuan() {
                                 title="Kelola Opsi Unit / Bagian"
                                 style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '13px', padding: '0 4px', color: '#2563eb', fontWeight: 600 }}
                               >
-                                ✏️ Kelola
+                                Kelola
                               </button>
                             )}
                           </label>
@@ -1157,10 +1154,10 @@ function Pengajuan() {
                             onClick={handleDownloadTemplate}
                             disabled={importLoading}
                           >
-                            {importLoading ? "⏳ Memuat..." : "📄 Download Template"}
+                            {importLoading ? "Memuat..." : "Download Template"}
                           </button>
                           <label className="btn btn-primary" style={{ padding: '6px 14px', fontSize: '13px', cursor: importLoading ? 'not-allowed' : 'pointer', borderRadius: '6px', margin: 0, opacity: importLoading ? 0.6 : 1 }}>
-                            📥 Import CSV
+                            Import CSV
                             <input
                               type="file"
                               accept=".csv"
@@ -1675,7 +1672,7 @@ function Pengajuan() {
           <div className="detail-panel" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 800 }}>
             <div className="detail-panel-header">
               <div>
-                <h3>📋 Verifikasi Data Import CSV</h3>
+                <h3>Verifikasi Data Import CSV</h3>
                 <p>{importPreviewData.length} barang ditemukan dari file CSV. Periksa data sebelum menambahkan ke daftar pengajuan.</p>
               </div>
               <button

@@ -11,6 +11,8 @@ import RoleSwitcher from "../../components/RoleSwitcher";
 const API_BASE = import.meta.env.VITE_API_BASE;
 const token = localStorage.getItem("token");
 
+import SidebarLogo from "../../components/SidebarLogo";
+
 export default function Approval() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -34,7 +36,6 @@ export default function Approval() {
         { label: "Atur Periode", to: "/periode" },
         { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang" },
         { label: "Stock Opname Barang", to: "/stock-opname" },
-        { label: "Template Dokumen", to: "/template-dokumen" },
       ];
     }, []);
 
@@ -183,8 +184,7 @@ console.log(token); // harus ada
         />
       )}
       <aside className={`sidebar ${isSidebarOpen ? "open" : ""}`}>
-          <div className="sidebar-logo">Sistem Pengajuan ATK</div>
-          <div className="sidebar-subtitle">Universitas Yarsi</div>
+        <SidebarLogo />
        
         <nav className="sidebar-menu">
           {sidebarMenus.map((m) => {

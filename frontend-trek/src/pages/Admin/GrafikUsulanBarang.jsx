@@ -18,6 +18,8 @@ import "../../css/layout.css";
 const API_BASE = import.meta.env.VITE_API_BASE;
 const token = localStorage.getItem("token");
 
+import SidebarLogo from "../../components/SidebarLogo";
+
 export default function GrafikUsulanBarangPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -53,7 +55,6 @@ export default function GrafikUsulanBarangPage() {
     { label: "Kelola Barang ATK", to: "/kelola-barang", active: false },
     { label: "Grafik Usulan Barang", to: "/grafik-usulan-barang", active: true },
     { label: "Stock Opname Barang", to: "/stock-opname", active: false },
-    { label: "Template Dokumen", to: "/template-dokumen", active: false },
   ];
 
   const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -79,10 +80,7 @@ export default function GrafikUsulanBarangPage() {
         />
       )}
       <aside className={`sidebar ${isSidebarOpen ? "open" : ""}`}>
-        <div>
-          <div className="sidebar-logo">Sistem Pengajuan ATK</div>
-          <div className="sidebar-subtitle">Universitas YARSI</div>
-        </div>
+        <SidebarLogo />
 
         <nav className="sidebar-menu">
           {sidebarMenus.map((m) => {

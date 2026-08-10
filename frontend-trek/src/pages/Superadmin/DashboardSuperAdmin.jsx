@@ -9,6 +9,8 @@ import RoleSwitcher from "../../components/RoleSwitcher";
 const API_BASE = import.meta.env.VITE_API_BASE;
 const token = localStorage.getItem("token");
 
+import SidebarLogo from "../../components/SidebarLogo";
+
 export default function DashboardSuperAdmin() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -140,7 +142,6 @@ export default function DashboardSuperAdmin() {
       { label: "Atur Periode", to: "/periode" },
       { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang" },
       { label: "Stock Opname Barang", to: "/stock-opname" },
-      { label: "Template Dokumen", to: "/template-dokumen" },
     ];
   }, []);
 
@@ -167,10 +168,7 @@ export default function DashboardSuperAdmin() {
         />
       )}
       <aside className={`sidebar ${isSidebarOpen ? "open" : ""}`}>
-        <div>
-          <div className="sidebar-logo">Sistem Pengajuan ATK</div>
-          <div className="sidebar-subtitle">Universitas Yarsi</div>
-        </div>
+        <SidebarLogo />
 
         <nav className="sidebar-menu">
           {sidebarMenus.map((m) => {

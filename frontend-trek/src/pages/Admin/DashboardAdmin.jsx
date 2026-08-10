@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import "../../css/layout.css";
 import RoleSwitcher from "../../components/RoleSwitcher";
+import SidebarLogo from "../../components/SidebarLogo";
 
 
 
@@ -114,7 +115,6 @@ export default function DashboardSuperAdmin() {
   { label: "Kelola Barang ATK", to: "/kelola-barang" },
   { label: "Grafik Usulan Barang", to: "/grafik-usulan-barang" },
   { label: "Stock Opname Barang", to: "/stock-opname" },
-  { label: "Template Dokumen", to: "/template-dokumen" },
 ];
 
   
@@ -130,10 +130,7 @@ export default function DashboardSuperAdmin() {
         />
       )}
       <aside className={`sidebar ${isSidebarOpen ? "open" : ""}`}>
-        <div>
-          <div className="sidebar-logo">Sistem Pengajuan ATK</div>
-          <div className="sidebar-subtitle">Universitas Yarsi</div>
-        </div>
+        <SidebarLogo />
 
         <nav className="sidebar-menu">
           {sidebarMenus.map((m) => {

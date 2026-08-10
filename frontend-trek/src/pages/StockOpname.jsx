@@ -17,6 +17,8 @@ const normalizeRole = (role) =>
     .toLowerCase()
     .replace(/[\s_]+/g, "");
 
+import SidebarLogo from "../components/SidebarLogo";
+
 export default function StockOpname() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -82,7 +84,6 @@ export default function StockOpname() {
         { label: "Atur Periode", to: "/periode" },
         { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang" },
         { label: "Stock Opname Barang", to: "/stock-opname", active: true },
-        { label: "Template Dokumen", to: "/template-dokumen" },
       ];
     } else if (role === "admin") {
       return [
@@ -91,7 +92,6 @@ export default function StockOpname() {
         { label: "Kelola Barang ATK", to: "/kelola-barang" },
         { label: "Grafik Usulan Barang", to: "/grafik-usulan-barang" },
         { label: "Stock Opname Barang", to: "/stock-opname", active: true },
-        { label: "Template Dokumen", to: "/template-dokumen" },
       ];
     } else {
       return [
@@ -595,10 +595,7 @@ export default function StockOpname() {
         />
       )}
       <aside className={`sidebar ${isSidebarOpen ? "open" : ""}`}>
-        <div>
-          <div className="sidebar-logo">Sistem Pengajuan ATK</div>
-          <div className="sidebar-subtitle">Universitas Yarsi</div>
-        </div>
+        <SidebarLogo />
 
         <nav className="sidebar-menu">
           {sidebarMenus.map((m) => {
@@ -680,7 +677,7 @@ export default function StockOpname() {
               </div>
 
               {/* Action Buttons */}
-              {(role === "user" || role === "admin" || role === "superadmin") && (
+              {role === "user" && (
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                   <button
                     onClick={handleDownloadTemplateCSV}
@@ -697,25 +694,24 @@ export default function StockOpname() {
                       opacity: importLoading ? 0.6 : 1,
                     }}
                   >
-                    {importLoading ? "⏳ Memuat..." : "📄 Download Template"}
+                    {importLoading ? "Memuat..." : "Download Template"}
                   </button>
                   <label
+                    className="btn btn-primary"
                     style={{
-                      padding: "10px 16px",
-                      borderRadius: 10,
-                      border: "none",
-                      background: "#2563eb",
-                      color: "white",
-                      fontWeight: 600,
+                      padding: "8px 16px",
+                      fontSize: "13px",
+                      fontWeight: "700",
+                      borderRadius: "8px",
+                      margin: 0,
                       cursor: importLoading ? "not-allowed" : "pointer",
-                      fontSize: 13,
                       opacity: importLoading ? 0.6 : 1,
                       display: "inline-flex",
                       alignItems: "center",
-                      gap: 4,
+                      gap: "6px"
                     }}
                   >
-                    📥 Import CSV
+                    Import CSV
                     <input
                       type="file"
                       accept=".csv"
@@ -725,20 +721,22 @@ export default function StockOpname() {
                     />
                   </label>
                   <button
+                    type="button"
                     onClick={openCreate}
                     style={{
-                      padding: "10px 16px",
-                      borderRadius: 10,
-                      border: "none",
-                      background: "#16a34a",
-                      color: "white",
-                      fontWeight: 700,
+                      padding: "8px 16px",
+                      fontSize: "13px",
+                      fontWeight: "700",
+                      borderRadius: "8px",
+                      margin: 0,
                       cursor: "pointer",
-                      boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-                      fontSize: 13,
+                      background: "linear-gradient(135deg, #10b981, #059669)",
+                      color: "#fff",
+                      border: "none",
+                      boxShadow: "0 2px 6px rgba(16, 185, 129, 0.25)"
                     }}
                   >
-                    ➕ Buat Laporan Manual
+                    Buat Laporan Manual
                   </button>
                 </div>
               )}
@@ -1264,7 +1262,7 @@ export default function StockOpname() {
             </button>
 
             <div style={{ padding: 20 }}>
-              <h2 style={{ marginTop: 0, marginBottom: 4 }}>📋 Verifikasi Import CSV Stock Opname</h2>
+              <h2 style={{ marginTop: 0, marginBottom: 4 }}>Verifikasi Import CSV Stock Opname</h2>
               <p style={{ color: "#6b7280", margin: "0 0 16px 0", fontSize: 14 }}>
                 {importPreviewData.length} barang ditemukan dari file CSV. Periksa data sebelum mengirim laporan.
               </p>

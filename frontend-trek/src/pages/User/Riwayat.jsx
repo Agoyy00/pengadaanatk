@@ -31,6 +31,8 @@ const PIE_COLORS = [
   '#0891b2', '#db2777', '#65a30d',
 ];
 
+import SidebarLogo from "../../components/SidebarLogo";
+
 export default function Riwayat() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -346,7 +348,7 @@ export default function Riwayat() {
         <div style="text-align: left; font-size: 13.5px; color: #334155; line-height: 1.5;">
           <p style="margin-bottom: 10px;">Apakah Anda yakin ingin menyimpan perubahan revisi pengajuan ini?</p>
           <div style="background: #fffbeb; border: 1px solid #fde68a; border-left: 4px solid #d97706; padding: 10px 12px; border-radius: 6px; font-size: 12.5px; color: #92400e;">
-            <strong>⚠️ Peringatan Verifikasi:</strong><br/>
+            <strong>Peringatan Verifikasi:</strong><br/>
             Pastikan data barang (<strong>${revisiItems.length} item</strong>, Total <strong>Rp ${totalEstimasi.toLocaleString("id-ID")}</strong>) sudah sesuai sebelum disimpan ke sistem.
           </div>
         </div>
@@ -432,10 +434,7 @@ export default function Riwayat() {
         />
       )}
       <aside className={`sidebar ${isSidebarOpen ? "open" : ""}`}>
-        <div>
-          <div className="sidebar-logo">Sistem Pengajuan ATK</div>
-          <div className="sidebar-subtitle">Universitas Yarsi</div>
-        </div>
+        <SidebarLogo />
 
         <nav className="sidebar-menu">
           {sidebarMenus.map((m) => {
@@ -595,19 +594,19 @@ export default function Riwayat() {
                                                   </span>
                                                   {hasRevisi && (
                                                     <span className="revisi-delta">
-                                                      {disetujui > diajukan ? "▲" : "▼"} {Math.abs(disetujui - diajukan)}
+                                                      {disetujui > diajukan ? "lebih" : "kurang"} {Math.abs(disetujui - diajukan)}
                                                     </span>
                                                   )}
                                                 </div>
                                                 {hasRevisi && (
-                                                  <div className="revisi-badge-changed">✎ Direvisi Admin</div>
+                                                  <div className="revisi-badge-changed">Direvisi Admin</div>
                                                 )}
                                                 {!hasRevisi && (
-                                                  <div className="revisi-badge-unchanged">✓ Sesuai Pengajuan</div>
+                                                  <div className="revisi-badge-unchanged">Sesuai Pengajuan</div>
                                                 )}
                                                 {item.catatan_revisi && (
                                                   <div className="revisi-note">
-                                                    📝 Catatan Admin: {item.catatan_revisi}
+                                                    Catatan Admin: {item.catatan_revisi}
                                                   </div>
                                                 )}
                                               </div>
@@ -641,7 +640,7 @@ export default function Riwayat() {
                                     className="btn-revisi"
                                     onClick={() => openRevisiModal(p)}
                                   >
-                                    ✏️ Edit / Revisi
+                                    Edit / Revisi
                                   </button>
                                 )}
                               </td>
@@ -839,7 +838,6 @@ export default function Riwayat() {
             {/* Header Modal */}
             <div className="modal-header">
               <div className="modal-header-info">
-                <div className="modal-icon-badge">✏️</div>
                 <div>
                   <h3 className="modal-title">Revisi Pengajuan #{selectedPengajuan.id}</h3>
                   <p className="modal-subtitle">
@@ -855,7 +853,6 @@ export default function Riwayat() {
             {/* Toolbar: Search Bar + Tambah Barang Button */}
             <div className="modal-toolbar">
               <div className="search-box">
-                <span className="search-icon">🔍</span>
                 <input
                   type="text"
                   className="search-input"
@@ -878,13 +875,13 @@ export default function Riwayat() {
                 className="btn-add-item"
                 onClick={() => setShowAddBarangModal(true)}
               >
-                ➕ Tambah Barang Baru
+                Tambah Barang Baru
               </button>
             </div>
 
             {/* Formula Hint Banner */}
             <div className="formula-banner">
-              <span className="formula-title">💡 Formula:</span>
+              <span className="formula-title">Formula:</span>
               <div className="formula-box">
                 <span className="formula-chip chip-blue">Kebutuhan Total</span>
                 <span className="formula-op">−</span>
@@ -1018,7 +1015,7 @@ export default function Riwayat() {
                               title="Hapus barang ini"
                               onClick={() => handleRemoveItem(item)}
                             >
-                              🗑️
+                              Hapus
                             </button>
                           </td>
                         </tr>
@@ -1053,7 +1050,7 @@ export default function Riwayat() {
                   onClick={submitRevisi}
                   disabled={savingRevisi}
                 >
-                  {savingRevisi ? "Menyimpan..." : "💾 Simpan Revisi Pengajuan"}
+                  {savingRevisi ? "Menyimpan..." : "Simpan Revisi Pengajuan"}
                 </button>
               </div>
             </div>
@@ -1066,7 +1063,7 @@ export default function Riwayat() {
         <div className="submodal-backdrop" onClick={() => setShowAddBarangModal(false)}>
           <div className="submodal-container" onClick={(e) => e.stopPropagation()}>
             <div className="submodal-header">
-              <h4>➕ Tambah Barang ke Pengajuan</h4>
+              <h4>Tambah Barang ke Pengajuan</h4>
               <button
                 className="modal-close-btn"
                 onClick={() => setShowAddBarangModal(false)}
@@ -1182,7 +1179,7 @@ export default function Riwayat() {
                             <div className="item-primary-name">{namaBarang}</div>
                             {isProcessed && disetujui != null && hasRevisi && item.catatan_revisi && (
                               <div className="revisi-note" style={{ marginTop: 4 }}>
-                                📝 {item.catatan_revisi}
+                                {item.catatan_revisi}
                               </div>
                             )}
                           </td>

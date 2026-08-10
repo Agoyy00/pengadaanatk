@@ -31,6 +31,8 @@ const rupiah = (n) =>
 
 const COLORS = ["#0284c7", "#16a34a", "#8b5cf6", "#ea580c", "#e11d48", "#06b6d4", "#d97706", "#475569"];
 
+import SidebarLogo from "../../components/SidebarLogo";
+
 export default function SuperAdminAnalisisDashboard() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -60,7 +62,6 @@ export default function SuperAdminAnalisisDashboard() {
       { label: "Atur Periode", to: "/periode" },
       { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang" },
       { label: "Stock Opname Barang", to: "/stock-opname" },
-      { label: "Template Dokumen", to: "/template-dokumen" },
     ],
     []
   );
@@ -404,10 +405,7 @@ export default function SuperAdminAnalisisDashboard() {
         />
       )}
       <aside className={`sidebar ${isSidebarOpen ? "open" : ""}`}>
-        <div>
-          <div className="sidebar-logo">Sistem Pengajuan ATK</div>
-          <div className="sidebar-subtitle">Universitas Yarsi</div>
-        </div>
+        <SidebarLogo />
 
         <nav className="sidebar-menu">
           {sidebarMenus.map((m) => {

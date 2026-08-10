@@ -10,6 +10,8 @@ import Swal from "sweetalert2";
 const API_BASE = import.meta.env.VITE_API_BASE;
 const token = localStorage.getItem("token");
 
+import SidebarLogo from "../../components/SidebarLogo";
+
 export default function MonitoringUser() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -36,7 +38,6 @@ export default function MonitoringUser() {
       { label: "Atur Periode", to: "/periode" },
       { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang" },
       { label: "Stock Opname Barang", to: "/stock-opname" },
-      { label: "Template Dokumen", to: "/template-dokumen" },
     ];
   }, []);
 
@@ -206,7 +207,9 @@ export default function MonitoringUser() {
 
   const formatStatus = (status) => {
     if (!status) return "-";
-    return status.replace(/_/g, " ").toUpperCase();
+    return status
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase());
   };
 
   const filteredRequests = useMemo(() => {
@@ -259,10 +262,7 @@ export default function MonitoringUser() {
         />
       )}
       <aside className={`sidebar ${isSidebarOpen ? "open" : ""}`}>
-        <div>
-          <div className="sidebar-logo">Sistem Pengajuan ATK</div>
-          <div className="sidebar-subtitle">Universitas Yarsi</div>
-        </div>
+        <SidebarLogo />
 
         <nav className="sidebar-menu">
           {sidebarMenus.map((m) => {

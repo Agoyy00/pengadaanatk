@@ -34,6 +34,8 @@ const DEFAULT_UNITS = [
   "Fakultas Ekonomi",
 ];
 
+import SidebarLogo from "../../components/SidebarLogo";
+
 export default function GrafikBarangSuperAdmin() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -58,7 +60,6 @@ export default function GrafikBarangSuperAdmin() {
       { label: "Atur Periode", to: "/periode" },
       { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang" },
       { label: "Stock Opname Barang", to: "/stock-opname" },
-      { label: "Template Dokumen", to: "/template-dokumen" },
     ];
   }, []);
 
@@ -274,10 +275,7 @@ export default function GrafikBarangSuperAdmin() {
         />
       )}
       <aside className={`sidebar ${isSidebarOpen ? "open" : ""}`}>
-        <div>
-          <div className="sidebar-logo">Sistem Pengajuan ATK</div>
-          <div className="sidebar-subtitle">Universitas Yarsi</div>
-        </div>
+        <SidebarLogo />
 
         <nav className="sidebar-menu">
           {sidebarMenus.map((m) => {
@@ -717,15 +715,21 @@ export default function GrafikBarangSuperAdmin() {
                           <td style={{ padding: "10px", color: "#475569" }}>{row.pemohon}</td>
                           <td style={{ padding: "10px", textAlign: "center" }}>
                             <span style={{
-                              padding: "3px 8px",
+                              padding: "4px 10px",
                               borderRadius: "12px",
                               fontSize: "11px",
                               fontWeight: "700",
                               textTransform: "capitalize",
-                              backgroundColor: row.status === "disetujui" ? "#dcfce7" : row.status === "ditolak" ? "#fee2e2" : "#fef3c7",
-                              color: row.status === "disetujui" ? "#15803d" : row.status === "ditolak" ? "#b91c1c" : "#b45309"
+                              backgroundColor: 
+                                String(row.status || "").toLowerCase().includes("disetujui") ? "#dcfce7" : 
+                                String(row.status || "").toLowerCase().includes("ditolak") ? "#fee2e2" : 
+                                String(row.status || "").toLowerCase().includes("verifikasi") ? "#e0f2fe" : "#fef3c7",
+                              color: 
+                                String(row.status || "").toLowerCase().includes("disetujui") ? "#15803d" : 
+                                String(row.status || "").toLowerCase().includes("ditolak") ? "#b91c1c" : 
+                                String(row.status || "").toLowerCase().includes("verifikasi") ? "#0369a1" : "#b45309"
                             }}>
-                              {row.status}
+                              {row.status ? String(row.status).replace(/_/g, " ") : "-"}
                             </span>
                           </td>
                         </tr>

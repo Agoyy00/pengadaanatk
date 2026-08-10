@@ -107,16 +107,13 @@ export default function PeriodeTimer() {
 
   let badgeClass = "timer-badge-green";
   let dotClass = "green-dot";
-  let statusIcon = "⏱️";
 
   if (status === "yellow") {
     badgeClass = "timer-badge-yellow";
     dotClass = "yellow-dot";
-    statusIcon = "⏳";
   } else if (status === "red") {
     badgeClass = "timer-badge-red";
     dotClass = "red-dot";
-    statusIcon = "🔥";
   }
 
   const pad = (n) => String(n).padStart(2, "0");
@@ -127,7 +124,6 @@ export default function PeriodeTimer() {
       title={`Periode berakhir: ${new Date(periodeData.selesai).toLocaleString("id-ID")}`}
     >
       <span className={`timer-dot ${dotClass}`}></span>
-      <span className="timer-icon">{statusIcon}</span>
       <span className="timer-text">
         {status === "red" && days === 0 ? "H-1: " : ""}
         {days > 0 ? `${days}h ` : ""}
