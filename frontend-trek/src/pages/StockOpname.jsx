@@ -726,11 +726,37 @@ export default function StockOpname() {
     }
   };
 
+  const [activeUnitView, setActiveUnitView] = useState(null);
+
   // Filter local state list
   const filteredOpnames = useMemo(() => {
     if (statusFilter === "all") return opnames;
     return opnames.filter((o) => o.status === statusFilter);
   }, [opnames, statusFilter]);
+
+  // Unit Summary List (Grouped by Unit)
+  const unitSummaryList = useMemo(() => {
+    const unitMap = {};
+    filteredOpnames.forEach((o) => {
+      const uName = o.unit || o.user?.unit || "Unit Lainnya";
+      if (!unitMap[uName]) {
+        unitMap[uName] = {
+          unit: uName,
+          totalItems: 0,
+          pendingCount: 0,
+          verifiedCount: 0,
+          approvedCount: 0,
+          rejectedCount: 0,
+        };
+      }
+      unitMap[uName].totalItems += 1;
+      if (o.status === "pending") unitMap[uName].pendingCount += 1;
+      if (o.status === "verified") unitMap[uName].verifiedCount += 1;
+      if (o.status === "approved") unitMap[uName].approvedCount += 1;
+      if (o.status === "rejected") unitMap[uName].rejectedCount += 1;
+    });
+    return Object.values(unitMap);
+  }, [filteredOpnames]);
 
   // Status Pill Styling
   const getStatusPill = (status) => {
@@ -856,275 +882,443 @@ export default function StockOpname() {
         {/* CONTENT */}
         <section className="main-content">
           <div className="card">
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                flexWrap: "wrap",
-                gap: 12,
-                marginBottom: 20,
-              }}
-            >
-              <div>
-                <h3 style={{ margin: 0, fontSize: 18 }}>Daftar Laporan Stock Opname</h3>
-                <p style={{ margin: "4px 0 0 0", color: "#6b7280", fontSize: 14 }}>
-                  Menampilkan laporan pencocokan stok fisik dengan sistem.
-                </p>
-              </div>
 
-              {/* Action Buttons */}
-              {role === "user" && (
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-                  <button
-                    onClick={handleDownloadTemplateCSV}
-                    disabled={importLoading}
-                    style={{
-                      padding: "10px 16px",
-                      borderRadius: 10,
-                      border: "1px solid #cbd5e1",
-                      background: "#f8fafc",
-                      color: "#334155",
-                      fontWeight: 600,
-                      cursor: importLoading ? "not-allowed" : "pointer",
-                      fontSize: 13,
-                      opacity: importLoading ? 0.6 : 1,
-                    }}
-                  >
-                    {importLoading ? "Memuat..." : "Download Template"}
-                  </button>
-                  <label
-                    className="btn btn-primary"
-                    style={{
-                      padding: "8px 16px",
-                      fontSize: "13px",
-                      fontWeight: "700",
-                      borderRadius: "8px",
-                      margin: 0,
-                      cursor: importLoading ? "not-allowed" : "pointer",
-                      opacity: importLoading ? 0.6 : 1,
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "6px"
-                    }}
-                  >
-                    Import CSV
-                    <input
-                      type="file"
-                      accept=".csv"
-                      style={{ display: "none" }}
-                      onChange={handleImportCSV}
-                      disabled={importLoading}
-                    />
-                  </label>
-                  <button
-                    type="button"
-                    onClick={openCreate}
-                    style={{
-                      padding: "8px 16px",
-                      fontSize: "13px",
-                      fontWeight: "700",
-                      borderRadius: "8px",
-                      margin: 0,
-                      cursor: "pointer",
-                      background: "linear-gradient(135deg, #10b981, #059669)",
-                      color: "#fff",
-                      border: "none",
-                      boxShadow: "0 2px 6px rgba(16, 185, 129, 0.25)"
-                    }}
-                  >
-                    Buat Laporan Manual
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Filter Tabs */}
-            <div style={{ display: "flex", gap: 10, marginBottom: 16, overflowX: "auto", paddingBottom: 6 }}>
-              {[
-                { value: "all", label: "Semua Laporan" },
-                { value: "pending", label: "Pending" },
-                { value: "verified", label: "Terverifikasi Admin" },
-                { value: "approved", label: "Disetujui Superadmin" },
-                { value: "rejected", label: "Ditolak" },
-              ].map((tab) => (
-                <button
-                  key={tab.value}
-                  onClick={() => setStatusFilter(tab.value)}
+            {/* ========== VIEW 1: DAFTAR UNIT STOCK OPNAME ========== */}
+            {!activeUnitView && (
+              <>
+                <div
                   style={{
-                    padding: "8px 14px",
-                    borderRadius: 8,
-                    border: statusFilter === tab.value ? "none" : "1px solid #ddd",
-                    background: statusFilter === tab.value ? "#2a5385" : "white",
-                    color: statusFilter === tab.value ? "white" : "#4b5563",
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    fontSize: 13,
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                    gap: 12,
+                    marginBottom: 20,
                   }}
                 >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: 18 }}>Daftar Stock Opname per Unit</h3>
+                    <p style={{ margin: "4px 0 0 0", color: "#6b7280", fontSize: 14 }}>
+                      Pilih unit untuk melihat detail laporan pencocokan stok fisik dengan sistem.
+                    </p>
+                  </div>
 
-            {/* Table or Loading */}
-            {loading && <p>Memuat data laporan...</p>}
+                  {/* Action Buttons for User */}
+                  {role === "user" && (
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                      <button
+                        onClick={handleDownloadTemplateCSV}
+                        disabled={importLoading}
+                        style={{
+                          padding: "10px 16px",
+                          borderRadius: 10,
+                          border: "1px solid #cbd5e1",
+                          background: "#f8fafc",
+                          color: "#334155",
+                          fontWeight: 600,
+                          cursor: importLoading ? "not-allowed" : "pointer",
+                          fontSize: 13,
+                          opacity: importLoading ? 0.6 : 1,
+                        }}
+                      >
+                        {importLoading ? "Memuat..." : "Download Template"}
+                      </button>
+                      <label
+                        className="btn btn-primary"
+                        style={{
+                          padding: "8px 16px",
+                          fontSize: "13px",
+                          fontWeight: "700",
+                          borderRadius: "8px",
+                          margin: 0,
+                          cursor: importLoading ? "not-allowed" : "pointer",
+                          opacity: importLoading ? 0.6 : 1,
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "6px"
+                        }}
+                      >
+                        Import CSV
+                        <input
+                          type="file"
+                          accept=".csv"
+                          style={{ display: "none" }}
+                          onChange={handleImportCSV}
+                          disabled={importLoading}
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        onClick={openCreate}
+                        style={{
+                          padding: "8px 16px",
+                          fontSize: "13px",
+                          fontWeight: "700",
+                          borderRadius: "8px",
+                          margin: 0,
+                          cursor: "pointer",
+                          background: "linear-gradient(135deg, #10b981, #059669)",
+                          color: "#fff",
+                          border: "none",
+                          boxShadow: "0 2px 6px rgba(16, 185, 129, 0.25)"
+                        }}
+                      >
+                        Buat Laporan Manual
+                      </button>
+                    </div>
+                  )}
+                </div>
 
-            {!loading && filteredOpnames.length === 0 && (
-              <div style={{ padding: "40px 0", textAlign: "center", color: "#9ca3af" }}>
-                Tidak ada laporan stock opname yang sesuai filter.
-              </div>
-            )}
+                {/* Filter Tabs */}
+                <div style={{ display: "flex", gap: 10, marginBottom: 16, overflowX: "auto", paddingBottom: 6 }}>
+                  {[
+                    { value: "all", label: "Semua Laporan" },
+                    { value: "pending", label: "Pending" },
+                    { value: "verified", label: "Terverifikasi Admin" },
+                    { value: "approved", label: "Disetujui Superadmin" },
+                    { value: "rejected", label: "Ditolak" },
+                  ].map((tab) => (
+                    <button
+                      key={tab.value}
+                      onClick={() => setStatusFilter(tab.value)}
+                      style={{
+                        padding: "8px 14px",
+                        borderRadius: 8,
+                        border: statusFilter === tab.value ? "none" : "1px solid #ddd",
+                        background: statusFilter === tab.value ? "#2563eb" : "white",
+                        color: statusFilter === tab.value ? "white" : "#4b5563",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        fontSize: 13,
+                      }}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
 
-            {!loading && filteredOpnames.length > 0 && (
-              <div style={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
-                  <thead>
-                    <tr style={{ borderBottom: "2px solid #e5e7eb", background: "#f9fafb" }}>
-                      <th style={{ padding: "12px 16px" }}>Tanggal</th>
-                      <th style={{ padding: "12px 16px" }}>Unit / Fakultas</th>
-                       <th style={{ padding: "12px 16px" }}>{role === "admin" ? "Nama Barang" : "Barang"}</th>
-                       <th style={{ padding: "12px 16px" }}>Unit</th>
-                       <th style={{ padding: "12px 16px", textAlign: "center" }}>Jumlah Barang</th>
-                      <th style={{ padding: "12px 16px", textAlign: "center" }}>Hasil Verifikasi</th>
-                      {role !== "user" && <th style={{ padding: "12px 16px", textAlign: "center" }}>Selisih</th>}
-                      <th style={{ padding: "12px 16px" }}>Status</th>
-                      <th style={{ padding: "12px 16px", textAlign: "right" }}>Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredOpnames.map((o) => {
-                      const date = new Date(o.created_at).toLocaleDateString("id-ID", {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric",
-                      });
-                      const hasHasilVerifikasi = o.hasil_verifikasi !== null && o.hasil_verifikasi !== undefined;
-                      const selisihLabel = hasHasilVerifikasi ? Math.abs(o.stok_fisik - o.hasil_verifikasi) : "-";
-                      const selisihColor = !hasHasilVerifikasi || selisihLabel === 0 ? "#374151" : "#dc2626";
+                {loading && <p>Memuat data laporan...</p>}
 
-                      return (
-                        <tr key={o.id} style={{ borderBottom: "1px solid #f3f4f6" }}>
-                          <td style={{ padding: "14px 16px", fontSize: 14 }}>{date}</td>
-                          <td style={{ padding: "14px 16px", fontSize: 14 }}>
-                            <div><b>{o.user?.name}</b></div>
-                            <div style={{ fontSize: 12, color: "#6b7280" }}>{o.user?.fakultas || "Fakultas Yarsi"}</div>
-                          </td>
-                           <td style={{ padding: "14px 16px", fontSize: 14 }}>
-                             <div><b>{o.barang?.nama || "Barang Terhapus"}</b></div>
-                             <div style={{ fontSize: 12, color: "#9ca3af" }}>Kode: {o.barang?.kode}</div>
-                           </td>
-                           <td style={{ padding: "14px 16px", fontSize: 14 }}>
-                             {o.unit || "-"}
-                           </td>
-                           <td style={{ padding: "14px 16px", textAlign: "center", fontSize: 14 }}>
-                             {o.stok_fisik}
-                           </td>
-                          <td style={{ padding: "14px 16px", textAlign: "center", fontSize: 14 }}>
-                            {o.hasil_verifikasi !== null && o.hasil_verifikasi !== undefined ? o.hasil_verifikasi : "-"}
-                          </td>
-                          {role !== "user" && (
-                            <td
-                              style={{
-                                padding: "14px 16px",
-                                textAlign: "center",
-                                fontWeight: 700,
-                                color: selisihColor,
-                                fontSize: 14,
-                              }}
-                            >
-                              {selisihLabel}
+                {!loading && unitSummaryList.length === 0 && (
+                  <div style={{ padding: "40px 0", textAlign: "center", color: "#9ca3af" }}>
+                    Tidak ada laporan stock opname yang sesuai filter.
+                  </div>
+                )}
+
+                {!loading && unitSummaryList.length > 0 && (
+                  <div style={{ overflowX: "auto" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+                      <thead>
+                        <tr style={{ borderBottom: "2px solid #e5e7eb", background: "#f9fafb" }}>
+                          <th style={{ padding: "12px 16px" }}>No</th>
+                          <th style={{ padding: "12px 16px" }}>Nama Unit</th>
+                          <th style={{ padding: "12px 16px", textAlign: "center" }}>Total Barang</th>
+                          <th style={{ padding: "12px 16px", textAlign: "center" }}>Pending</th>
+                          <th style={{ padding: "12px 16px", textAlign: "center" }}>Diverifikasi Admin</th>
+                          <th style={{ padding: "12px 16px", textAlign: "center" }}>Disetujui Superadmin</th>
+                          <th style={{ padding: "12px 16px", textAlign: "center" }}>Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {unitSummaryList.map((u, idx) => (
+                          <tr
+                            key={u.unit}
+                            style={{ borderBottom: "1px solid #f3f4f6", cursor: "pointer", transition: "background 0.2s" }}
+                            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f0f9ff")}
+                            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "")}
+                            onClick={() => setActiveUnitView(u.unit)}
+                          >
+                            <td style={{ padding: "14px 16px", fontWeight: 600, color: "#64748b" }}>{idx + 1}</td>
+                            <td style={{ padding: "14px 16px" }}>
+                              <span style={{ fontWeight: 700, color: "#0f172a", fontSize: "14px" }}>
+                                {u.unit}
+                              </span>
                             </td>
-                          )}
-                          <td style={{ padding: "14px 16px" }}>{getStatusPill(o.status)}</td>
-                          <td style={{ padding: "14px 16px", textAlign: "right" }}>
-                            {/* User actions */}
-                            {role === "user" && o.status === "pending" && (
+                            <td style={{ padding: "14px 16px", textAlign: "center" }}>
+                              <span style={{ background: "#e0f2fe", color: "#0369a1", padding: "4px 10px", borderRadius: "12px", fontWeight: 600, fontSize: "12px" }}>
+                                {u.totalItems} Barang
+                              </span>
+                            </td>
+                            <td style={{ padding: "14px 16px", textAlign: "center" }}>
+                              <span style={{ background: "#fef3c7", color: "#b45309", padding: "4px 10px", borderRadius: "12px", fontWeight: 600, fontSize: "12px" }}>
+                                {u.pendingCount}
+                              </span>
+                            </td>
+                            <td style={{ padding: "14px 16px", textAlign: "center" }}>
+                              <span style={{ background: "#dbeafe", color: "#1d4ed8", padding: "4px 10px", borderRadius: "12px", fontWeight: 600, fontSize: "12px" }}>
+                                {u.verifiedCount}
+                              </span>
+                            </td>
+                            <td style={{ padding: "14px 16px", textAlign: "center" }}>
+                              <span style={{ background: "#d1fae5", color: "#047857", padding: "4px 10px", borderRadius: "12px", fontWeight: 600, fontSize: "12px" }}>
+                                {u.approvedCount}
+                              </span>
+                            </td>
+                            <td style={{ padding: "14px 16px", textAlign: "center" }}>
                               <button
-                                onClick={() => handleDelete(o.id)}
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); setActiveUnitView(u.unit); }}
                                 style={{
-                                  padding: "6px 10px",
-                                  fontSize: 12,
-                                  borderRadius: 8,
-                                  border: "1px solid #dc2626",
-                                  background: "transparent",
-                                  color: "#dc2626",
+                                  background: "linear-gradient(135deg, #0284c7, #0369a1)",
+                                  color: "#ffffff",
+                                  padding: "8px 16px",
+                                  borderRadius: "8px",
+                                  fontSize: "12px",
                                   fontWeight: 600,
                                   cursor: "pointer",
+                                  border: "none",
+                                  boxShadow: "0 2px 6px rgba(2, 132, 199, 0.25)"
                                 }}
                               >
-                                Hapus
+                                Lihat Detail
                               </button>
-                            )}
-
-                            {/* Admin & Superadmin actions */}
-                            {(role === "admin" || role === "superadmin") && o.status === "pending" && (
-                              <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
-                                <button
-                                  onClick={() => openVerifyModal(o)}
-                                  style={{
-                                    padding: "6px 10px",
-                                    fontSize: 12,
-                                    borderRadius: 8,
-                                    border: "none",
-                                    background: "#2563eb",
-                                    color: "white",
-                                    fontWeight: 600,
-                                    cursor: "pointer",
-                                  }}
-                                >
-                                  Verifikasi
-                                </button>
-                              </div>
-                            )}
-
-                            {/* Superadmin actions */}
-                            {role === "superadmin" && (o.status === "verified" || o.status === "pending") && (
-                              <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
-                                <button
-                                  onClick={() => handleApprove(o.id)}
-                                  style={{
-                                    padding: "6px 10px",
-                                    fontSize: 12,
-                                    borderRadius: 8,
-                                    border: "none",
-                                    background: "#16a34a",
-                                    color: "white",
-                                    fontWeight: 600,
-                                    cursor: "pointer",
-                                  }}
-                                >
-                                  Approve
-                                </button>
-                                <button
-                                  onClick={() => handleReject(o.id)}
-                                  style={{
-                                    padding: "6px 10px",
-                                    fontSize: 12,
-                                    borderRadius: 8,
-                                    border: "1px solid #dc2626",
-                                    background: "transparent",
-                                    color: "#dc2626",
-                                    fontWeight: 600,
-                                    cursor: "pointer",
-                                  }}
-                                >
-                                  Tolak
-                                </button>
-                              </div>
-                            )}
-
-                            {o.status !== "pending" && o.status !== "verified" && (
-                              <span style={{ fontSize: 12, color: "#9ca3af" }}>Tidak ada aksi</span>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </>
             )}
+
+            {/* ========== VIEW 2: DETAIL STOCK OPNAME PER UNIT ========== */}
+            {activeUnitView && (() => {
+              const unitOpnames = filteredOpnames.filter(
+                (o) => (o.unit || o.user?.unit || "Unit Lainnya") === activeUnitView
+              );
+
+              return (
+                <>
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px", flexWrap: "wrap" }}>
+                    <button
+                      type="button"
+                      onClick={() => setActiveUnitView(null)}
+                      style={{
+                        background: "linear-gradient(135deg, #64748b, #475569)",
+                        color: "#fff",
+                        padding: "8px 16px",
+                        borderRadius: "8px",
+                        fontSize: "13px",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        border: "none",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px"
+                      }}
+                    >
+                      ← Kembali
+                    </button>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: "18px", fontWeight: 700, color: "#0f172a" }}>{activeUnitView}</div>
+                      <div style={{ fontSize: "12px", color: "#64748b" }}>
+                        Detail laporan stock opname ({unitOpnames.length} barang)
+                      </div>
+                    </div>
+
+                    {role === "user" && (
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                        <button
+                          type="button"
+                          onClick={openCreate}
+                          style={{
+                            padding: "8px 16px",
+                            fontSize: "13px",
+                            fontWeight: "700",
+                            borderRadius: "8px",
+                            margin: 0,
+                            cursor: "pointer",
+                            background: "linear-gradient(135deg, #10b981, #059669)",
+                            color: "#fff",
+                            border: "none",
+                            boxShadow: "0 2px 6px rgba(16, 185, 129, 0.25)"
+                          }}
+                        >
+                          Buat Laporan Manual
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Filter Tabs inside detail view */}
+                  <div style={{ display: "flex", gap: 10, marginBottom: 16, overflowX: "auto", paddingBottom: 6 }}>
+                    {[
+                      { value: "all", label: "Semua Laporan" },
+                      { value: "pending", label: "Pending" },
+                      { value: "verified", label: "Terverifikasi Admin" },
+                      { value: "approved", label: "Disetujui Superadmin" },
+                      { value: "rejected", label: "Ditolak" },
+                    ].map((tab) => (
+                      <button
+                        key={tab.value}
+                        onClick={() => setStatusFilter(tab.value)}
+                        style={{
+                          padding: "8px 14px",
+                          borderRadius: 8,
+                          border: statusFilter === tab.value ? "none" : "1px solid #ddd",
+                          background: statusFilter === tab.value ? "#2563eb" : "white",
+                          color: statusFilter === tab.value ? "white" : "#4b5563",
+                          fontWeight: 600,
+                          cursor: "pointer",
+                          fontSize: 13,
+                        }}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {unitOpnames.length === 0 ? (
+                    <div style={{ padding: "30px 0", textAlign: "center", color: "#9ca3af" }}>
+                      Tidak ada laporan stock opname untuk unit ini pada filter {statusFilter}.
+                    </div>
+                  ) : (
+                    <div style={{ overflowX: "auto" }}>
+                      <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+                        <thead>
+                          <tr style={{ borderBottom: "2px solid #e5e7eb", background: "#f9fafb" }}>
+                            <th style={{ padding: "12px 16px" }}>Tanggal</th>
+                            <th style={{ padding: "12px 16px" }}>Pemohon</th>
+                            <th style={{ padding: "12px 16px" }}>Nama Barang</th>
+                            <th style={{ padding: "12px 16px", textAlign: "center" }}>Jumlah Barang</th>
+                            <th style={{ padding: "12px 16px", textAlign: "center" }}>Hasil Verifikasi</th>
+                            {role !== "user" && <th style={{ padding: "12px 16px", textAlign: "center" }}>Selisih</th>}
+                            <th style={{ padding: "12px 16px" }}>Status</th>
+                            <th style={{ padding: "12px 16px", textAlign: "right" }}>Aksi</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {unitOpnames.map((o) => {
+                            const date = new Date(o.created_at).toLocaleDateString("id-ID", {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                            });
+                            const hasHasilVerifikasi = o.hasil_verifikasi !== null && o.hasil_verifikasi !== undefined;
+                            const selisihLabel = hasHasilVerifikasi ? Math.abs(o.stok_fisik - o.hasil_verifikasi) : "-";
+                            const selisihColor = !hasHasilVerifikasi || selisihLabel === 0 ? "#374151" : "#dc2626";
+
+                            return (
+                              <tr key={o.id} style={{ borderBottom: "1px solid #f3f4f6" }}>
+                                <td style={{ padding: "14px 16px", fontSize: 14 }}>{date}</td>
+                                <td style={{ padding: "14px 16px", fontSize: 14 }}>
+                                  <div><b>{o.user?.name}</b></div>
+                                  <div style={{ fontSize: 12, color: "#6b7280" }}>{o.user?.fakultas || "Fakultas Yarsi"}</div>
+                                </td>
+                                <td style={{ padding: "14px 16px", fontSize: 14 }}>
+                                  <div><b>{o.barang?.nama || "Barang Terhapus"}</b></div>
+                                  <div style={{ fontSize: 12, color: "#9ca3af" }}>Kode: {o.barang?.kode}</div>
+                                </td>
+                                <td style={{ padding: "14px 16px", textAlign: "center", fontSize: 14 }}>
+                                  {o.stok_fisik}
+                                </td>
+                                <td style={{ padding: "14px 16px", textAlign: "center", fontSize: 14 }}>
+                                  {o.hasil_verifikasi !== null && o.hasil_verifikasi !== undefined ? o.hasil_verifikasi : "-"}
+                                </td>
+                                {role !== "user" && (
+                                  <td
+                                    style={{
+                                      padding: "14px 16px",
+                                      textAlign: "center",
+                                      fontWeight: 700,
+                                      color: selisihColor,
+                                      fontSize: 14,
+                                    }}
+                                  >
+                                    {selisihLabel}
+                                  </td>
+                                )}
+                                <td style={{ padding: "14px 16px" }}>{getStatusPill(o.status)}</td>
+                                <td style={{ padding: "14px 16px", textAlign: "right" }}>
+                                  {/* User actions */}
+                                  {role === "user" && o.status === "pending" && (
+                                    <button
+                                      onClick={() => handleDelete(o.id)}
+                                      style={{
+                                        padding: "6px 10px",
+                                        fontSize: 12,
+                                        borderRadius: 8,
+                                        border: "1px solid #dc2626",
+                                        background: "transparent",
+                                        color: "#dc2626",
+                                        fontWeight: 600,
+                                        cursor: "pointer",
+                                      }}
+                                    >
+                                      Hapus
+                                    </button>
+                                  )}
+
+                                  {/* Admin & Superadmin Verifikasi action ONLY (no quick approve/reject) */}
+                                  {(role === "admin" || role === "superadmin") && o.status === "pending" && (
+                                    <button
+                                      onClick={() => openVerifyModal(o)}
+                                      style={{
+                                        padding: "6px 14px",
+                                        fontSize: 12,
+                                        borderRadius: 8,
+                                        border: "none",
+                                        background: "#2563eb",
+                                        color: "white",
+                                        fontWeight: 600,
+                                        cursor: "pointer",
+                                      }}
+                                    >
+                                      Verifikasi
+                                    </button>
+                                  )}
+
+                                  {/* Superadmin Approve/Reject for verified items */}
+                                  {role === "superadmin" && o.status === "verified" && (
+                                    <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
+                                      <button
+                                        onClick={() => handleApprove(o.id)}
+                                        style={{
+                                          padding: "6px 10px",
+                                          fontSize: 12,
+                                          borderRadius: 8,
+                                          border: "none",
+                                          background: "#16a34a",
+                                          color: "white",
+                                          fontWeight: 600,
+                                          cursor: "pointer",
+                                        }}
+                                      >
+                                        Approve
+                                      </button>
+                                      <button
+                                        onClick={() => handleReject(o.id)}
+                                        style={{
+                                          padding: "6px 10px",
+                                          fontSize: 12,
+                                          borderRadius: 8,
+                                          border: "1px solid #dc2626",
+                                          background: "transparent",
+                                          color: "#dc2626",
+                                          fontWeight: 600,
+                                          cursor: "pointer",
+                                        }}
+                                      >
+                                        Tolak
+                                      </button>
+                                    </div>
+                                  )}
+
+                                  {o.status !== "pending" && (role !== "superadmin" || o.status !== "verified") && (
+                                    <span style={{ fontSize: 12, color: "#9ca3af" }}>Selesai</span>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </div>
         </section>
       </main>
