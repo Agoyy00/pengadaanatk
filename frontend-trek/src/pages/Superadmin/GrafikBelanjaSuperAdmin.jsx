@@ -509,7 +509,7 @@ export default function SuperAdminAnalisisDashboard() {
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px", marginBottom: "16px" }}>
               <div>
                 <div className="card-title" style={{ color: "#1d4ed8", display: "flex", alignItems: "center", gap: "8px" }}>
-                  ⚖️ Filter Parameter & Perbandingan Belanja Barang
+                  Filter Parameter & Perbandingan Belanja Barang
                 </div>
                 <p className="card-subtitle" style={{ color: "#3b82f6" }}>
                   Cari nama barang, atur status pengajuan, rentang tahun, periode, dan unit untuk menyaring data grafik dan belanja.
@@ -550,7 +550,7 @@ export default function SuperAdminAnalisisDashboard() {
                 <div style={{ position: "relative" }}>
                   <input
                     type="text"
-                    placeholder="🔍 Cari nama barang"
+                    placeholder="Cari nama barang"
                     value={compareSearch}
                     onChange={(e) => {
                       setCompareSearch(e.target.value);
@@ -625,7 +625,7 @@ export default function SuperAdminAnalisisDashboard() {
                         }}
                         onMouseDown={(e) => e.preventDefault()}
                       >
-                        📦 {sug}
+                        {sug}
                       </div>
                     ))}
                   </div>
@@ -680,7 +680,7 @@ export default function SuperAdminAnalisisDashboard() {
                   <option value="all">Semua Periode</option>
                   {allYearsCombined.map((yr) => (
                     <option key={`cmp-b-yr-${yr}`} value={yr}>
-                      📅 {yr}
+                      {yr}
                     </option>
                   ))}
                 </select>
@@ -708,7 +708,7 @@ export default function SuperAdminAnalisisDashboard() {
                   }}
                 >
                   <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    🏢 {selectedUnits.length === 0 ? "Semua Unit / Fakultas" : `${selectedUnits.length} Unit Terpilih`}
+                    {selectedUnits.length === 0 ? "Semua Unit / Fakultas" : `${selectedUnits.length} Unit Terpilih`}
                   </span>
                   <span style={{ fontSize: "10px", color: "#64748b" }}>{showUnitDropdown ? "▲" : "▼"}</span>
                 </div>
@@ -781,7 +781,7 @@ export default function SuperAdminAnalisisDashboard() {
                             onChange={() => {}}
                             style={{ cursor: "pointer" }}
                           />
-                          🏢 {u}
+                          {u}
                         </label>
                       );
                     })}
@@ -821,13 +821,13 @@ export default function SuperAdminAnalisisDashboard() {
             <div style={{ backgroundColor: "#ffffff", padding: "16px", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
               <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", marginBottom: "12px" }}>
                 <span style={{ fontSize: "12px", fontWeight: "700", color: "#0284c7", backgroundColor: "#e0f2fe", padding: "4px 10px", borderRadius: "20px" }}>
-                  📊 Transaksi Terkait: {comparisonSummary.totalRecords} Items
+                  Transaksi Terkait: {comparisonSummary.totalRecords} Items
                 </span>
                 <span style={{ fontSize: "12px", fontWeight: "700", color: "#16a34a", backgroundColor: "#dcfce7", padding: "4px 10px", borderRadius: "20px" }}>
-                  💰 Est. Total Belanja: {rupiah(comparisonSummary.totalEstBelanja)}
+                  Est. Total Belanja: {rupiah(comparisonSummary.totalEstBelanja)}
                 </span>
                 <span style={{ fontSize: "12px", fontWeight: "700", color: "#8b5cf6", backgroundColor: "#f3e8ff", padding: "4px 10px", borderRadius: "20px" }}>
-                  🏢 Unit Terlibat: {comparisonSummary.uniqueUnits} Unit
+                  Unit Terlibat: {comparisonSummary.uniqueUnits} Unit
                 </span>
               </div>
 
@@ -1061,7 +1061,7 @@ export default function SuperAdminAnalisisDashboard() {
                 <div style={{ marginBottom: "16px" }}>
                   <input
                     type="text"
-                    placeholder="🔍 Cari nama barang ATK..."
+                    placeholder="Cari nama barang ATK..."
                     value={searchTable}
                     onChange={(e) => setSearchTable(e.target.value)}
                     style={{
