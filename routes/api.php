@@ -151,5 +151,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/support-tickets/{id}', [SupportTicketController::class, 'show']);
     Route::patch('/support-tickets/{id}/status', [SupportTicketController::class, 'updateStatus']);
     Route::post('/support-tickets/{id}/reply', [SupportTicketController::class, 'reply']);
+    Route::delete('/support-tickets/{id}', [SupportTicketController::class, 'destroy']);
 
 });

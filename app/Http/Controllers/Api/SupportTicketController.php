@@ -76,6 +76,20 @@ class SupportTicketController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
+        // Auto update status to 'read' if an admin opens an 'open' ticket
+        if (($user->isAdmin() || $user->isSuperAdmin()) && $ticket->status === 'open') {
+            $ticket->status = 'read';
+            $ticket->save();
+
+            Notification::create([
+                'user_id' => $ticket->user_id,
+                'title' => 'Status Tiket Support Diperbarui',
+                'message' => "Tiket '{$ticket->subject}' telah diubah ke status: Sedang Dibaca",
+                'pengajuan_id' => null,
+                'is_read' => false,
+            ]);
+        }
+
         return response()->json([
             'success' => true,
             'ticket' => $ticket,
@@ -158,6 +172,20 @@ class SupportTicketController extends Controller
         ]);
 
         if ($user->isAdmin() || $user->isSuperAdmin()) {
+            // Auto update status to 'process' when admin replies
+            if ($ticket->status !== 'complete' && $ticket->status !== 'process') {
+                $ticket->status = 'process';
+                $ticket->save();
+
+                Notification::create([
+                    'user_id' => $ticket->user_id,
+                    'title' => 'Status Tiket Support Diperbarui',
+                    'message' => "Tiket '{$ticket->subject}' telah diubah ke status: Sedang Diproses",
+                    'pengajuan_id' => null,
+                    'is_read' => false,
+                ]);
+            }
+
             Notification::create([
                 'user_id' => $ticket->user_id,
                 'title' => 'Balasan Baru di Tiket Support',
@@ -172,5 +200,27 @@ class SupportTicketController extends Controller
             'message' => 'Balasan berhasil dikirim.',
             'reply' => $reply->load('user'),
         ], 201);
+    }
+
+    /**
+     * DELETE /api/support-tickets/{id}
+     * Delete ticket
+     */
+    public function destroy($id)
+    {
+        $user = Auth::user();
+        $ticket = SupportTicket::findOrFail($id);
+
+        if (!$user->isAdmin() && !$user->isSuperAdmin() && $ticket->user_id !== $user->id) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $ticket->replies()->delete();
+        $ticket->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Tiket berhasil dihapus.',
+        ]);
     }
 }

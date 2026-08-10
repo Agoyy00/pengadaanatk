@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import Swal from "sweetalert2";
 
 const API_BASE = import.meta.env.VITE_API_BASE;
@@ -32,7 +32,8 @@ export default function TicketDetail() {
   const [sendingReply, setSendingReply] = useState(false);
 
   const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
-  const isAdmin = currentUser?.is_admin || currentUser?.is_superadmin || false;
+  const userRole = String(currentUser?.role || "").toLowerCase();
+  const isAdmin = userRole === "admin" || userRole === "superadmin";
 
   const loadTicket = async () => {
     try {
@@ -250,69 +251,131 @@ export default function TicketDetail() {
           </div>
         </div>
 
-        <div style={{ background: "#f8fafc", padding: 20, borderRadius: 10, border: "1px solid #e2e8f0", marginBottom: 20 }}>
-          <div style={{ fontWeight: 700, fontSize: 13, color: "#475569", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-            Pesan Awal
+        {/* Pesan Awal (User) */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", marginBottom: 24 }}>
+          <div style={{ fontWeight: 700, fontSize: 12, color: "#64748b", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em", marginLeft: 4 }}>
+            Pesan Pengguna
           </div>
-          <p style={{ margin: 0, fontSize: 14, lineHeight: 1.7, color: "#1e293b", whiteSpace: "pre-wrap" }}>{ticket.message}</p>
-          <div style={{ marginTop: 12, fontSize: 12, color: "#94a3b8" }}>
-            {new Date(ticket.created_at).toLocaleString("id-ID")}
+          <div style={{ 
+            background: "#f8fafc", 
+            padding: "16px 20px", 
+            borderRadius: "4px 20px 20px 20px", 
+            border: "1px solid #e2e8f0",
+            maxWidth: "85%",
+            boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
+          }}>
+            <p style={{ margin: 0, fontSize: 15, lineHeight: 1.6, color: "#334155", whiteSpace: "pre-wrap" }}>{ticket.message}</p>
+            <div style={{ marginTop: 10, fontSize: 11, color: "#94a3b8" }}>
+              {new Date(ticket.created_at).toLocaleString("id-ID")}
+            </div>
           </div>
         </div>
 
-        {isAdmin && (
-          <div style={{ background: "#fffbeb", padding: 16, borderRadius: 10, border: "1px solid #fcd34d", marginBottom: 20 }}>
-            <div style={{ fontWeight: 700, fontSize: 13, color: "#92400e", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-              Pesan Admin
+        {/* Pesan Admin / Balasan (Admin) */}
+        {isAdmin ? (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", marginBottom: 24 }}>
+            <div style={{ fontWeight: 700, fontSize: 12, color: "#0284c7", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em", marginRight: 4 }}>
+              Tulis Balasan
             </div>
-            <textarea
-              value={adminMessage}
-              onChange={(e) => setAdminMessage(e.target.value)}
-              placeholder="Tulis pesan untuk user..."
-              rows={3}
-              style={{
-                width: "100%",
-                padding: "10px 14px",
-                borderRadius: 8,
-                border: "1px solid #fcd34d",
-                fontSize: 14,
-                resize: "vertical",
-                fontFamily: "inherit",
-                outline: "none",
-              }}
-            />
+            <div style={{
+              background: "#f0f9ff",
+              padding: "16px 20px",
+              borderRadius: "20px 4px 20px 20px",
+              border: "1px solid #bae6fd",
+              width: "100%",
+              maxWidth: "85%",
+              boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
+            }}>
+              <textarea
+                value={adminMessage}
+                onChange={(e) => setAdminMessage(e.target.value)}
+                placeholder="Ketik balasan untuk user di sini..."
+                rows={4}
+                style={{
+                  width: "100%",
+                  padding: "14px",
+                  borderRadius: 12,
+                  border: "1px solid #7dd3fc",
+                  fontSize: 15,
+                  resize: "vertical",
+                  fontFamily: "inherit",
+                  outline: "none",
+                  background: "#fff",
+                  lineHeight: 1.6,
+                  color: "#0f172a",
+                  boxSizing: "border-box"
+                }}
+                onFocus={(e) => { e.target.style.borderColor = "#0ea5e9"; e.target.style.boxShadow = "0 0 0 3px rgba(14, 165, 233, 0.1)"; }}
+                onBlur={(e) => { e.target.style.borderColor = "#7dd3fc"; e.target.style.boxShadow = "none"; }}
+              />
+            </div>
           </div>
+        ) : (
+          adminMessage && (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", marginBottom: 24 }}>
+              <div style={{ fontWeight: 700, fontSize: 12, color: "#0284c7", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em", marginRight: 4 }}>
+                Balasan Admin
+              </div>
+              <div style={{
+                background: "#f0f9ff",
+                padding: "16px 20px",
+                borderRadius: "20px 4px 20px 20px",
+                border: "1px solid #bae6fd",
+                maxWidth: "85%",
+                boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
+              }}>
+                <p style={{ margin: 0, fontSize: 15, lineHeight: 1.6, color: "#0c4a6e", whiteSpace: "pre-wrap" }}>
+                  {adminMessage}
+                </p>
+              </div>
+            </div>
+          )
         )}
 
-        {isAdmin && (
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 20 }}>
-            {STATUS_FLOW.map((status) => {
-              const statusIndex = STATUS_FLOW.indexOf(status);
-              const isActive = status === ticket.status;
-              const isPast = statusIndex < currentStatusIndex;
-              const config = STATUS_CONFIG[status];
-
-              return (
-                <button
-                  key={status}
-                  onClick={() => !isPast && handleStatusUpdate(status)}
-                  disabled={isPast || updating}
-                  style={{
-                    padding: "8px 16px",
-                    borderRadius: 8,
-                    border: isActive ? "none" : `1.5px solid ${config.color}`,
-                    background: isActive ? config.color : isPast ? "#e2e8f0" : "#fff",
-                    color: isActive ? "#fff" : isPast ? "#94a3b8" : config.color,
-                    cursor: isPast || updating ? "not-allowed" : "pointer",
-                    fontWeight: 700,
-                    fontSize: 13,
-                  }}
-                >
-                  {isActive ? "● " : isPast ? "✓ " : "○ "}
-                  {config.label}
-                </button>
-              );
-            })}
+        {isAdmin && ticket.status !== 'complete' && (
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, flexWrap: "wrap", marginBottom: 10 }}>
+            {ticket.status !== 'process' && (
+              <button
+                onClick={() => handleStatusUpdate('process')}
+                disabled={updating}
+                style={{
+                  padding: "10px 24px",
+                  borderRadius: 8,
+                  border: "none",
+                  background: "#2563eb",
+                  color: "#fff",
+                  cursor: updating ? "not-allowed" : "pointer",
+                  fontWeight: 700,
+                  fontSize: 14,
+                  boxShadow: "0 2px 4px rgba(37, 99, 235, 0.2)",
+                  transition: "all 0.2s ease"
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 4px 6px rgba(37, 99, 235, 0.3)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 4px rgba(37, 99, 235, 0.2)'; }}
+              >
+                Kirim Balasan & Proses
+              </button>
+            )}
+            <button
+              onClick={() => handleStatusUpdate('complete')}
+              disabled={updating}
+              style={{
+                padding: "10px 24px",
+                borderRadius: 8,
+                border: "none",
+                background: "#16a34a",
+                color: "#fff",
+                cursor: updating ? "not-allowed" : "pointer",
+                fontWeight: 700,
+                fontSize: 14,
+                boxShadow: "0 2px 4px rgba(22, 163, 74, 0.2)",
+                transition: "all 0.2s ease"
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 4px 6px rgba(22, 163, 74, 0.3)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 4px rgba(22, 163, 74, 0.2)'; }}
+            >
+              ✅ Tandai Selesai
+            </button>
           </div>
         )}
 
@@ -349,96 +412,6 @@ export default function TicketDetail() {
         )}
       </div>
 
-      <div style={{ background: "#fff", padding: 24, borderRadius: 12, border: "1px solid #e2e8f0", marginBottom: 20, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
-        <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 16, color: "#0f172a" }}>
-          Balasan ({replies.length})
-        </div>
-        {replies.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "40px 0", color: "#94a3b8" }}>
-            <div style={{ fontSize: 32, marginBottom: 8 }}>💬</div>
-            <p style={{ margin: 0, fontSize: 14 }}>Belum ada balasan.</p>
-          </div>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {replies.map((reply) => (
-              <div key={reply.id} style={{
-                padding: 16,
-                borderRadius: 10,
-                background: reply.sender_type === "admin" ? "#f0f9ff" : "#f8fafc",
-                border: `1px solid ${reply.sender_type === "admin" ? "#bae6fd" : "#e2e8f0"}`,
-              }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, flexWrap: "wrap", gap: 4, alignItems: "center" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{
-                      padding: "3px 10px",
-                      borderRadius: 999,
-                      fontSize: 11,
-                      fontWeight: 700,
-                      background: reply.sender_type === "admin" ? "#0ea5e9" : "#64748b",
-                      color: "#fff",
-                    }}>
-                      {reply.sender_type === "admin" ? "Admin / Superadmin" : "User"}
-                    </span>
-                    <span style={{ fontWeight: 700, fontSize: 13, color: reply.sender_type === "admin" ? "#0369a1" : "#475569" }}>
-                      {reply.sender_type === "admin" ? "Tim Support" : reply.user?.name || "User"}
-                    </span>
-                  </div>
-                  <span style={{ fontSize: 11, color: "#94a3b8" }}>
-                    {new Date(reply.created_at).toLocaleString("id-ID")}
-                  </span>
-                </div>
-                <p style={{ margin: 0, fontSize: 14, lineHeight: 1.6, color: "#1e293b", whiteSpace: "pre-wrap" }}>{reply.message}</p>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div style={{ background: "#fff", padding: 24, borderRadius: 12, border: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
-        <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 12, color: "#0f172a" }}>
-          Tulis Balasan
-        </div>
-        <form onSubmit={handleSendReply}>
-          <textarea
-            value={replyMessage}
-            onChange={(e) => setReplyMessage(e.target.value)}
-            placeholder="Tulis balasan Anda..."
-            rows={4}
-            style={{
-              width: "100%",
-              padding: "12px 16px",
-              borderRadius: 8,
-              border: "1px solid #cbd5e1",
-              fontSize: 14,
-              resize: "vertical",
-              marginBottom: 12,
-              outline: "none",
-              fontFamily: "inherit",
-              lineHeight: 1.6,
-            }}
-            onFocus={(e) => e.target.style.borderColor = "#2563eb"}
-            onBlur={(e) => e.target.style.borderColor = "#cbd5e1"}
-          />
-          <div style={{ display: "flex", justifyContent: "flex-end" }}>
-            <button
-              type="submit"
-              disabled={sendingReply}
-              style={{
-                padding: "10px 24px",
-                borderRadius: 8,
-                border: "none",
-                background: sendingReply ? "#94a3b8" : "#2563eb",
-                color: "#fff",
-                cursor: sendingReply ? "not-allowed" : "pointer",
-                fontWeight: 700,
-                fontSize: 14,
-              }}
-            >
-              {sendingReply ? "Mengirim..." : "Kirim Balasan"}
-            </button>
-          </div>
-        </form>
-      </div>
     </div>
   );
 }

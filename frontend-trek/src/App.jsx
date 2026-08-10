@@ -32,6 +32,7 @@ import GrafikBarangSuperAdmin from "./pages/Superadmin/GrafikBarangSuperAdmin";
 import StockOpname from "./pages/StockOpname";
 import TemplateDokumen from "./pages/TemplateDokumen";
 import Support from "./pages/Support/Support";
+import AdminSupport from "./pages/Admin/AdminSupport";
 import SupportRouter from "./pages/Support/SupportRouter";
 import OpenTicket from "./pages/Support/OpenTicket";
 import TicketDetail from "./pages/Support/TicketDetail";

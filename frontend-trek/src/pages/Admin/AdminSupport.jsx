@@ -1,32 +1,23 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import Swal from "sweetalert2";
 import "../../css/layout.css";
 import RoleSwitcher from "../../components/RoleSwitcher";
 import SidebarLogo from "../../components/SidebarLogo";
 import DesktopSidebarToggle from "../../components/DesktopSidebarToggle";
-import TicketList from "./TicketList";
-import OpenTicket from "./OpenTicket";
-import TicketDetail from "./TicketDetail";
+import TicketList from "../Support/TicketList";
+import OpenTicket from "../Support/OpenTicket";
+import TicketDetail from "../Support/TicketDetail";
 
-export default function Support() {
+export default function AdminSupport() {
   const navigate = useNavigate();
   const location = useLocation();
-  const storedUser = localStorage.getItem("user");
-  const currentUser = storedUser ? JSON.parse(storedUser) : null;
-
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768);
 
   const sidebarMenus = [
-    { label: "Dashboard Super Admin", to: "/dashboardsuperadmin" },
-    { label: "Monitoring Admin", to: "/superadmin/monitoring-admin" },
-    { label: "Monitoring User", to: "/superadmin/monitoring-user" },
-    { label: "Grafik Barang", to: "/superadmin/grafik-barang" },
-    { label: "Grafik Belanja", to: "/superadmin/grafik-belanja" },
-    { label: "Approval Pengajuan", to: "/approval" },
-    { label: "Tambah & Kelola User", to: "/tambahuser" },
-    { label: "Atur Periode", to: "/periode" },
-    { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang" },
+    { label: "Dashboard Admin", to: "/dashboardadmin" },
+    { label: "Verifikasi Pengajuan", to: "/verifikasi" },
+    { label: "Kelola Barang ATK", to: "/kelola-barang" },
+    { label: "Grafik Usulan Barang", to: "/grafik-usulan-barang" },
     { label: "Stock Opname Barang", to: "/stock-opname" },
     { label: "Support", to: "/support", active: true },
   ];
@@ -36,8 +27,6 @@ export default function Support() {
     if (location.pathname.match(/\/support\/\d+/)) return "Detail Tiket Support";
     return "Daftar Tiket Support";
   };
-
-  const isAdmin = String(currentUser?.role || "").toLowerCase() === "admin" || String(currentUser?.role || "").toLowerCase() === "superadmin";
 
   return (
     <div className="layout">
@@ -83,7 +72,7 @@ export default function Support() {
             <div>
               <div className="topbar-title">{getPageTitle()}</div>
               <div className="topbar-sub">
-                Selamat datang: {currentUser?.name || "Super Admin"}
+                Selamat datang: {JSON.parse(localStorage.getItem("user") || "{}")?.name || "Admin"}
               </div>
             </div>
           </div>
@@ -94,7 +83,7 @@ export default function Support() {
         </header>
 
         <section className="main-content">
-          {!isAdmin && location.pathname === "/support/open-ticket" && <OpenTicket />}
+          {location.pathname === "/support/open-ticket" && <OpenTicket />}
           {location.pathname.match(/\/support\/\d+/) && <TicketDetail />}
           {location.pathname === "/support" && <TicketList showCreateButton={false} />}
         </section>

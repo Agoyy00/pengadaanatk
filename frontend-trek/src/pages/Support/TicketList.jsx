@@ -22,6 +22,7 @@ export default function TicketList({ showCreateButton = true }) {
   const navigate = useNavigate();
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterPriority, setFilterPriority] = useState("all");
 
@@ -34,12 +35,24 @@ export default function TicketList({ showCreateButton = true }) {
           Accept: "application/json",
         },
       });
-      const data = await res.json();
+      
+      const text = await res.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        console.error("Gagal parse JSON:", text);
+        throw new Error("Respons dari server tidak valid");
+      }
+      
       if (data.success) {
         setTickets(data.tickets || []);
+      } else {
+        throw new Error(data.message || "Gagal memuat tiket");
       }
     } catch (err) {
       console.error("Gagal memuat tiket:", err);
+      setErrorMsg(err.message || "Gagal memuat data tiket");
     } finally {
       setLoading(false);
     }
@@ -151,6 +164,13 @@ export default function TicketList({ showCreateButton = true }) {
           </button>
         )}
       </div>
+
+      {errorMsg && (
+        <div style={{ textAlign: "center", padding: "40px 0", color: "#dc2626", background: "#fef2f2", borderRadius: 12, border: "1px solid #fecaca", marginBottom: 20 }}>
+          <div style={{ fontSize: 24, marginBottom: 8 }}>⚠️</div>
+          <p style={{ margin: 0, fontSize: 14 }}>{errorMsg}</p>
+        </div>
+      )}
 
       {loading ? (
         <div style={{ textAlign: "center", padding: "60px 0", color: "#64748b" }}>

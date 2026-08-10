@@ -30,6 +30,6 @@ class SupportTicket extends Model
 
     public function replies()
     {
-        return $this->hasMany(SupportTicketReply::class);
+        return $this->hasMany(SupportTicketReply::class, 'ticket_id');
     }
 }

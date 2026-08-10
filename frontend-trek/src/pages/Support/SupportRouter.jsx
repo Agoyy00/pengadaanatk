@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import Support from "./Support";
+import AdminSupport from "../Admin/AdminSupport";
 import UserSupport from "../User/UserSupport";
 
 const normalizeRole = (role) =>
@@ -22,6 +23,10 @@ export default function SupportRouter() {
 
   if (role === "user") {
     return <UserSupport />;
+  }
+
+  if (role === "admin") {
+    return <AdminSupport />;
   }
 
   return <Support />;

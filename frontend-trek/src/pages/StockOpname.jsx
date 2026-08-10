@@ -128,6 +128,7 @@ export default function StockOpname() {
         { label: "Atur Periode", to: "/periode" },
         { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang" },
         { label: "Stock Opname Barang", to: "/stock-opname", active: true },
+        { label: "Support", to: "/support" },
       ];
     } else if (role === "admin") {
       return [
@@ -136,6 +137,7 @@ export default function StockOpname() {
         { label: "Kelola Barang ATK", to: "/kelola-barang" },
         { label: "Grafik Usulan Barang", to: "/grafik-usulan-barang" },
         { label: "Stock Opname Barang", to: "/stock-opname", active: true },
+        { label: "Support", to: "/support" },
       ];
     } else {
       return [
