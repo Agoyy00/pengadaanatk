@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import "../../css/layout.css";
 import RoleSwitcher from "../../components/RoleSwitcher";
@@ -7,6 +7,10 @@ import DesktopSidebarToggle from "../../components/DesktopSidebarToggle";
 import TicketList from "../Support/TicketList";
 import OpenTicket from "../Support/OpenTicket";
 import TicketDetail from "../Support/TicketDetail";
+import SupportNotificationDropdown from "../../components/SupportNotificationDropdown";
+
+const API_BASE = import.meta.env.VITE_API_BASE;
+const token = localStorage.getItem("token");
 
 export default function UserSupport() {
   const navigate = useNavigate();
@@ -39,16 +43,23 @@ export default function UserSupport() {
         <nav className="sidebar-menu">
           {sidebarMenus.map((m) => {
             const isActive = m.active || location.pathname === m.to;
+            const isSupport = m.label === "Support";
             return (
               <div
                 key={m.label}
                 className={`menu-item ${isActive ? "active" : ""}`}
                 style={{ cursor: isActive ? "default" : "pointer" }}
                 onClick={() => {
-                  if (!isActive) navigate(m.to);
+                  if (!isActive && !isSupport) navigate(m.to);
                 }}
               >
-                {m.label}
+                {isSupport ? (
+                  <SupportNotificationDropdown>
+                    <span>{m.label}</span>
+                  </SupportNotificationDropdown>
+                ) : (
+                  <span>{m.label}</span>
+                )}
               </div>
             );
           })}

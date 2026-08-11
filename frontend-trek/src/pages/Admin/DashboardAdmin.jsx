@@ -1,8 +1,9 @@
 import DesktopSidebarToggle from '../../components/DesktopSidebarToggle';
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import "../../css/layout.css";
 import RoleSwitcher from "../../components/RoleSwitcher";
+import SupportNotificationDropdown from "../../components/SupportNotificationDropdown";
 import SidebarLogo from "../../components/SidebarLogo";
 
 
@@ -116,7 +117,7 @@ export default function DashboardSuperAdmin() {
   { label: "Grafik Usulan Barang", to: "/grafik-usulan-barang" },
   { label: "Stock Opname Barang", to: "/stock-opname" },
   { label: "Support", to: "/support" },
-];
+  ];
 
   
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768);
@@ -136,16 +137,23 @@ export default function DashboardSuperAdmin() {
         <nav className="sidebar-menu">
           {sidebarMenus.map((m) => {
             const isActive = location.pathname === m.to;
+            const isSupport = m.label === "Support";
             return (
               <div
                 key={m.label}
                 className={`menu-item ${isActive ? "active" : ""}`}
                 style={{ cursor: isActive ? "default" : "pointer" }}
                 onClick={() => {
-                  if (!isActive) navigate(m.to);
+                  if (!isActive && !isSupport) navigate(m.to);
                 }}
               >
-                {m.label}
+                {isSupport ? (
+                  <SupportNotificationDropdown>
+                    <span>{m.label}</span>
+                  </SupportNotificationDropdown>
+                ) : (
+                  <span>{m.label}</span>
+                )}
               </div>
             );
           })}

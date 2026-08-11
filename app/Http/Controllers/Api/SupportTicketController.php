@@ -56,6 +56,21 @@ class SupportTicketController extends Controller
             'status' => 'open',
         ]);
 
+        $adminUsers = \App\Models\User::whereHas('role', function ($q) {
+            $q->whereIn('name', ['admin', 'superadmin']);
+        })->get();
+
+        foreach ($adminUsers as $adminUser) {
+            Notification::create([
+                'user_id' => $adminUser->id,
+                'ticket_id' => $ticket->id,
+                'title' => 'Tiket Support Baru',
+                'message' => "User {$ticket->user->name} membuat tiket support baru: '{$ticket->subject}'.",
+                'pengajuan_id' => null,
+                'is_read' => false,
+            ]);
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Ticket berhasil dibuat.',
@@ -90,6 +105,7 @@ class SupportTicketController extends Controller
 
             Notification::create([
                 'user_id' => $ticket->user_id,
+                'ticket_id' => $ticket->id,
                 'title' => 'Status Tiket Support Diperbarui',
                 'message' => "Tiket '{$ticket->subject}' telah diubah ke status: Sedang Dibaca",
                 'pengajuan_id' => null,
@@ -140,6 +156,7 @@ class SupportTicketController extends Controller
 
             Notification::create([
                 'user_id' => $ticket->user_id,
+                'ticket_id' => $ticket->id,
                 'title' => 'Status Tiket Support Diperbarui',
                 'message' => "Tiket '{$ticket->subject}' telah diubah ke status: " . ($statusLabels[$validated['status']] ?? $validated['status']),
                 'pengajuan_id' => null,
@@ -193,6 +210,7 @@ class SupportTicketController extends Controller
 
                 Notification::create([
                     'user_id' => $ticket->user_id,
+                    'ticket_id' => $ticket->id,
                     'title' => 'Status Tiket Support Diperbarui',
                     'message' => "Tiket '{$ticket->subject}' telah diubah ke status: Sedang Diproses",
                     'pengajuan_id' => null,
@@ -202,11 +220,28 @@ class SupportTicketController extends Controller
 
             Notification::create([
                 'user_id' => $ticket->user_id,
+                'ticket_id' => $ticket->id,
                 'title' => 'Balasan Baru di Tiket Support',
                 'message' => "Ada balasan baru dari tim support untuk tiket '{$ticket->subject}'.",
                 'pengajuan_id' => null,
                 'is_read' => false,
             ]);
+        } else {
+            // User replied, notify all admins/superadmins
+            $adminUsers = \App\Models\User::whereHas('role', function ($q) {
+                $q->whereIn('name', ['admin', 'superadmin']);
+            })->get();
+
+            foreach ($adminUsers as $adminUser) {
+                Notification::create([
+                    'user_id' => $adminUser->id,
+                    'ticket_id' => $ticket->id,
+                    'title' => 'Balasan Baru di Tiket Support',
+                    'message' => "User {$user->name} mengirim balasan baru pada tiket '{$ticket->subject}'.",
+                    'pengajuan_id' => null,
+                    'is_read' => false,
+                ]);
+            }
         }
 
         return response()->json([
@@ -214,6 +249,100 @@ class SupportTicketController extends Controller
             'message' => 'Balasan berhasil dikirim.',
             'reply' => $reply->load('user'),
         ], 201);
+    }
+
+    /**
+     * GET /api/support-tickets/unread-count
+     * Get unread support notifications count for current user
+     */
+    public function unreadCount(Request $request)
+    {
+        $user = Auth::user();
+
+        if ($user->isAdmin() || $user->isSuperAdmin()) {
+            $count = Notification::where('is_read', false)
+                ->where('title', 'like', '%Support%')
+                ->count();
+        } else {
+            $count = Notification::where('user_id', $user->id)
+                ->where('is_read', false)
+                ->where('title', 'like', '%Support%')
+                ->count();
+        }
+
+        return response()->json([
+            'success' => true,
+            'count' => $count,
+        ]);
+    }
+
+    /**
+     * GET /api/support-tickets/unread-counts
+     * Get grouped unread support notifications per ticket
+     */
+    public function unreadCounts(Request $request)
+    {
+        $user = Auth::user();
+        $currentPath = $request->path(); // not used but available
+
+        $query = Notification::where('is_read', false)
+            ->where('title', 'like', '%Support%')
+            ->whereNotNull('ticket_id')
+            ->select('ticket_id')
+            ->selectRaw('MAX(created_at) as last_at')
+            ->groupBy('ticket_id');
+
+        if (!($user->isAdmin() || $user->isSuperAdmin())) {
+            $query->where('user_id', $user->id);
+        }
+
+        $groups = $query->get()->map(function ($row) {
+            $ticket = SupportTicket::find($row->ticket_id);
+            return [
+                'ticket_id' => $row->ticket_id,
+                'subject' => $ticket ? $ticket->subject : 'Tiket Dihapus',
+                'count' => Notification::where('ticket_id', $row->ticket_id)
+                    ->where('is_read', false)
+                    ->where('title', 'like', '%Support%')
+                    ->count(),
+                'last_at' => $row->last_at,
+            ];
+        })->sortByDesc('last_at')->values();
+
+        return response()->json([
+            'success' => true,
+            'groups' => $groups,
+            'total' => $groups->sum('count'),
+        ]);
+    }
+
+    /**
+     * PATCH /api/support-tickets/{id}/mark-read
+     * Mark all support notifications for a specific ticket as read
+     */
+    public function markTicketAsRead(Request $request, $id)
+    {
+        $user = Auth::user();
+        $ticket = SupportTicket::findOrFail($id);
+
+        if (!($user->isAdmin() || $user->isSuperAdmin()) && $ticket->user_id !== $user->id) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $query = Notification::where('ticket_id', $ticket->id)
+            ->where('is_read', false)
+            ->where('title', 'like', '%Support%');
+
+        if (!($user->isAdmin() || $user->isSuperAdmin())) {
+            $query->where('user_id', $user->id);
+        }
+
+        $query->update(['is_read' => true]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Notifikasi tiket berhasil ditandai sudah dibaca.',
+        ]);
     }
 
     /**

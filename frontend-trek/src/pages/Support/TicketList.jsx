@@ -25,7 +25,9 @@ export default function TicketList({ showCreateButton = true }) {
   const [errorMsg, setErrorMsg] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterPriority, setFilterPriority] = useState("all");
-
+  const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+  const userRole = String(currentUser?.role || "").toLowerCase();
+  const activeRoleHeader = userRole || "user";
   const loadTickets = async () => {
     try {
       setLoading(true);
@@ -33,6 +35,7 @@ export default function TicketList({ showCreateButton = true }) {
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: "application/json",
+          "X-Active-Role": activeRoleHeader,
         },
       });
       
@@ -40,7 +43,7 @@ export default function TicketList({ showCreateButton = true }) {
       let data;
       try {
         data = JSON.parse(text);
-      } catch (e) {
+      } catch {
         console.error("Gagal parse JSON:", text);
         throw new Error("Respons dari server tidak valid");
       }
@@ -60,13 +63,23 @@ export default function TicketList({ showCreateButton = true }) {
 
   useEffect(() => {
     loadTickets();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const filteredTickets = tickets.filter((ticket) => {
-    const matchStatus = filterStatus === "all" || ticket.status === filterStatus;
-    const matchPriority = filterPriority === "all" || ticket.priority === filterPriority;
-    return matchStatus && matchPriority;
-  });
+  const STATUS_ORDER = { open: 0, read: 1, process: 2, complete: 3 };
+  const PRIORITY_ORDER = { high: 0, medium: 1, low: 2 };
+
+  const filteredTickets = tickets
+    .filter((ticket) => {
+      const matchStatus = filterStatus === "all" || ticket.status === filterStatus;
+      const matchPriority = filterPriority === "all" || ticket.priority === filterPriority;
+      return matchStatus && matchPriority;
+    })
+    .sort((a, b) => {
+      const statusDiff = (STATUS_ORDER[a.status] ?? 9) - (STATUS_ORDER[b.status] ?? 9);
+      if (statusDiff !== 0) return statusDiff;
+      return (PRIORITY_ORDER[a.priority] ?? 9) - (PRIORITY_ORDER[b.priority] ?? 9);
+    });
 
   const handleDelete = async (ticket) => {
     const result = await Swal.fire({
