@@ -3,7 +3,7 @@ import "../css/PeriodeTimer.css";
 
 const API_BASE = import.meta.env.VITE_API_BASE;
 
-export default function PeriodeTimer() {
+export default function PeriodeTimer({ typeFilter }) {
   const [periodeData, setPeriodeData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [timeLeft, setTimeLeft] = useState({
@@ -17,7 +17,8 @@ export default function PeriodeTimer() {
   useEffect(() => {
     async function fetchPeriode() {
       try {
-        const res = await fetch(`${API_BASE}/periode/active`);
+        const url = `${API_BASE}/periode/active${typeFilter ? `?jenis=${typeFilter}` : ""}`;
+        const res = await fetch(url);
         if (!res.ok) {
           setTimeLeft((prev) => ({ ...prev, status: "closed" }));
           return;
@@ -45,7 +46,7 @@ export default function PeriodeTimer() {
     }
 
     fetchPeriode();
-  }, []);
+  }, [typeFilter]);
 
   useEffect(() => {
     if (!periodeData || !periodeData.selesai) return;
@@ -94,6 +95,24 @@ export default function PeriodeTimer() {
 
   if (loading) return null;
 
+  // 👉 Hanya role "user" (Pemohon) yang dapat melihat timer periode di topbar
+  const storedUser = localStorage.getItem("user");
+  const userObj = storedUser ? JSON.parse(storedUser) : null;
+  const userRole = String(userObj?.role || "").toLowerCase().trim();
+
+  if (userRole !== "user") {
+    return null;
+  }
+
+  const isStockOpnamePeriod = periodeData?.jenis_periode?.toLowerCase()?.includes("stock opname");
+
+  if (typeFilter === "stock_opname" && !isStockOpnamePeriod) {
+    return null;
+  }
+  if (typeFilter === "pengajuan" && isStockOpnamePeriod) {
+    return null;
+  }
+
   if (timeLeft.status === "closed" || !periodeData) {
     return (
       <div className="periode-timer-badge timer-badge-red" title="Periode pengajuan sedang ditutup">
@@ -117,15 +136,22 @@ export default function PeriodeTimer() {
   }
 
   const pad = (n) => String(n).padStart(2, "0");
+  let jenisLabel = periodeData?.jenis_periode || "Periode Pengajuan";
+  if (jenisLabel.toLowerCase().includes("stock opname")) {
+    jenisLabel = "Periode Stock Opname";
+  }
 
   return (
     <div
       className={`periode-timer-badge ${badgeClass}`}
-      title={`Periode berakhir: ${new Date(periodeData.selesai).toLocaleString("id-ID")}`}
+      title={`${jenisLabel} - Berakhir: ${new Date(periodeData.selesai).toLocaleString("id-ID")}`}
     >
       <span className={`timer-dot ${dotClass}`}></span>
       <span className="timer-text">
-        {status === "red" && days === 0 ? "H-1: " : ""}
+        <span style={{ fontFamily: "inherit", fontWeight: 700, marginRight: "5px" }}>
+          {jenisLabel}:
+        </span>
+        {status === "red" && days === 0 ? "H-1 " : ""}
         {days > 0 ? `${days}h ` : ""}
         {pad(hours)}j {pad(minutes)}m {pad(seconds)}s
       </span>

@@ -43,7 +43,7 @@ import UserSupport from "./pages/User/UserSupport";
 
 
 
-const API_BASE = import.meta.env.VITE_API_BASE;
+const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000/api";
 
 // ✅ Normalisasi role: "Super Admin" / "super_admin" -> "superadmin"
 const normalizeRole = (role) =>
@@ -78,39 +78,25 @@ function App() {
   const [periodeInfo, setPeriodeInfo] = useState("");
   const [periodeType, setPeriodeType] = useState("none");
 
-  // 👉 Toast di pojok kanan (auto-hide)
-  const [toastText, setToastText] = useState("");
-  const [toastType, setToastType] = useState("none");
+  // 👉 Multi Toast List (menumpuk ke atas di pojok kanan bawah)
+  const [toastsList, setToastsList] = useState([]);
 
   // ===================================================
-  // 🔹 Ambil informasi periode dari backend
+  // 🔹 Ambil informasi periode dari backend (Pengajuan & Stock Opname)
   // ===================================================
   useEffect(() => {
-    async function loadPeriode() {
+    async function loadPeriodeToasts() {
       try {
-        const res = await fetch(`${API_BASE}/periode/active`, {
-          headers: {
-            "Authorization": `Bearer ${localStorage.getItem("token")}`,
-          },
-        });
-        const data = await res.json();
+        const token = localStorage.getItem("token");
+        const headers = token ? { "Authorization": `Bearer ${token}` } : {};
 
-        if (!data.periode) {
-          const msg =
-            data.message || "Periode pengajuan belum ditetapkan oleh admin.";
+        const [resPengajuan, resStockOpname] = await Promise.all([
+          fetch(`${API_BASE}/periode/active?jenis=pengajuan`, { headers }),
+          fetch(`${API_BASE}/periode/active?jenis=stock_opname`, { headers })
+        ]);
 
-          setPeriodeType("none");
-          setPeriodeInfo(msg);
-
-          setToastType("none");
-          setToastText(msg);
-          return;
-        }
-
-        const p = data.periode;
-        const mulai = new Date(p.mulai);
-        const selesai = new Date(p.selesai);
-        const now = new Date();
+        const dataPengajuan = await resPengajuan.json();
+        const dataStockOpname = await resStockOpname.json();
 
         const formatShortDateTime = (d) => {
           if (!d || isNaN(d.getTime())) return "";
@@ -124,62 +110,76 @@ function App() {
           return `${dateStr}, pukul ${hours}:${minutes} WIB`;
         };
 
-        const strMulai = formatShortDateTime(mulai);
-        const strSelesai = formatShortDateTime(selesai);
+        const buildToast = (data, defaultKey) => {
+          if (!data || !data.periode) return null;
+          const p = data.periode;
+          const mulai = new Date(p.mulai);
+          const selesai = new Date(p.selesai);
+          const now = new Date();
 
-        let type = "none";
-        let msg = "";
+          const strMulai = formatShortDateTime(mulai);
+          const strSelesai = formatShortDateTime(selesai);
 
-        if (now < mulai) {
-          type = "upcoming";
-          msg = `Periode ${p.tahun_akademik} akan dibuka pada ${strMulai} dan ditutup pada ${strSelesai}.`;
-        } else if (now >= mulai && now <= selesai && data.is_open) {
-          type = "open";
-          msg = `Periode ${p.tahun_akademik} sedang DIBUKA hingga ${strSelesai}.`;
-        } else {
-          type = "closed";
-          msg = `Periode ${p.tahun_akademik} sudah DITUTUP pada ${strSelesai}.`;
+          const jenisLabel = p.jenis_periode || (defaultKey === "pengajuan" ? "Periode Pengajuan" : "Periode Stock Opname");
+
+          let type = "none";
+          let msg = "";
+
+          if (now < mulai) {
+            type = "upcoming";
+            msg = `Periode ${p.tahun_akademik} (${jenisLabel}) akan dibuka pada ${strMulai} dan ditutup pada ${strSelesai}.`;
+          } else if (now >= mulai && now <= selesai && data.is_open) {
+            type = "open";
+            msg = `Periode ${p.tahun_akademik} (${jenisLabel}) sedang DIBUKA hingga ${strSelesai}.`;
+          } else {
+            type = "closed";
+            msg = `Periode ${p.tahun_akademik} (${jenisLabel}) sudah DITUTUP pada ${strSelesai}.`;
+          }
+
+          return {
+            id: defaultKey,
+            title: `Informasi ${jenisLabel}`,
+            text: msg,
+            type: type,
+          };
+        };
+
+        const tPengajuan = buildToast(dataPengajuan, "pengajuan");
+        const tStockOpname = buildToast(dataStockOpname, "stock_opname");
+
+        const list = [];
+        if (tPengajuan) list.push(tPengajuan);
+        if (tStockOpname) list.push(tStockOpname);
+
+        setToastsList(list);
+
+        if (tPengajuan) {
+          setPeriodeInfo(tPengajuan.text);
+          setPeriodeType(tPengajuan.type);
+        } else if (tStockOpname) {
+          setPeriodeInfo(tStockOpname.text);
+          setPeriodeType(tStockOpname.type);
         }
-
-        setPeriodeType(type);
-        setPeriodeInfo(msg);
-
-        setToastType(type);
-        setToastText(msg);
       } catch (err) {
-        console.error("Gagal mengambil periode:", err);
-
-        const msg = "Gagal memuat informasi periode.";
-        setPeriodeType("none");
-        setPeriodeInfo(msg);
-
-        setToastType("none");
-        setToastText(msg);
+        console.error("Gagal mengambil periode toasts:", err);
       }
     }
 
-    loadPeriode();
+    loadPeriodeToasts();
   }, []);
 
   // ===================================================
-  // 🔹 Toast Auto-hide (5 detik)
+  // 🔹 Toast Auto-hide (10 detik)
   // ===================================================
   useEffect(() => {
-    if (!toastText) return;
+    if (toastsList.length === 0) return;
 
     const timer = setTimeout(() => {
-      setToastText("");
-    }, 5000);
+      setToastsList([]);
+    }, 10000);
 
     return () => clearTimeout(timer);
-  }, [toastText]);
-
-  const getToastClass = () => {
-    if (toastType === "open") return "periode-toast open";
-    if (toastType === "upcoming") return "periode-toast upcoming";
-    if (toastType === "closed") return "periode-toast closed";
-    return "periode-toast none";
-  };
+  }, [toastsList]);
 
   const renderFormattedToastText = (text) => {
     if (!text) return null;
@@ -195,13 +195,51 @@ function App() {
 
   return (
     <BrowserRouter>
-      {/* TOAST DI POJOK KANAN ATAS */}
-      {toastText && (
-        <div className={getToastClass()}>
-          <div className="periode-toast-title">
-            Informasi Periode Pengajuan
-          </div>
-          <div className="periode-toast-text">{renderFormattedToastText(toastText)}</div>
+      {/* TOAST CONTAINER DI POJOK KANAN BAWAH (MENUMPUK KE ATAS) */}
+      {toastsList.length > 0 && (
+        <div className="periode-toast-container">
+          {toastsList.map((t) => (
+            <div key={t.id} className={`periode-toast ${t.type}`}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                <div className="periode-toast-title">{t.title}</div>
+                <button
+                  type="button"
+                  onClick={() => setToastsList((prev) => prev.filter((item) => item.id !== t.id))}
+                  style={{
+                    border: "none",
+                    background: "#fee2e2",
+                    borderRadius: "50%",
+                    width: "22px",
+                    height: "22px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                    fontSize: "15px",
+                    fontWeight: "bold",
+                    color: "#dc2626",
+                    padding: 0,
+                    marginLeft: 10,
+                    lineHeight: 1,
+                    transition: "all 0.15s ease",
+                    flexShrink: 0,
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = "#ef4444";
+                    e.currentTarget.style.color = "#ffffff";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = "#fee2e2";
+                    e.currentTarget.style.color = "#dc2626";
+                  }}
+                  title="Tutup Notifikasi"
+                >
+                  &times;
+                </button>
+              </div>
+              <div className="periode-toast-text">{renderFormattedToastText(t.text)}</div>
+            </div>
+          ))}
         </div>
       )}
 

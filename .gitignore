@@ -20,6 +20,7 @@
 /storage/framework/views/*
 /storage/pail
 /vendor
+/database/mysqldata
 Homestead.json
 Homestead.yaml
 Thumbs.db

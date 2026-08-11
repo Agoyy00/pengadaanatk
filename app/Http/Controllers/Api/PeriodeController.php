@@ -17,6 +17,7 @@ class PeriodeController extends Controller
     {
         $validated = $request->validate([
             'tahun_akademik' => 'required',
+            'jenis_periode'  => 'nullable|string',
             'mulai'          => 'required|date',
             'selesai'        => 'required|date|after:mulai',
         ], [
@@ -33,18 +34,21 @@ class PeriodeController extends Controller
         $selesai = Carbon::parse($validated['selesai'], 'Asia/Jakarta');
 
         $tahunAkademik = $validated['tahun_akademik'];
+        $jenisPeriode  = $validated['jenis_periode'] ?? 'Periode Pengajuan';
 
         // Hitung apakah SEKARANG sudah masuk range (info saja)
-        $now     = Carbon::now('Asia/Jakarta');
+        $now       = Carbon::now('Asia/Jakarta');
         $isOpenNow = $now->between($mulai, $selesai);
 
-        // 1 row per tahun akademik
+        // Update or create per tahun akademik & jenis_periode
         $periode = Periode::updateOrCreate(
-            ['tahun_akademik' => $tahunAkademik],
+            [
+                'tahun_akademik' => $tahunAkademik,
+                'jenis_periode'  => $jenisPeriode,
+            ],
             [
                 'mulai'   => $mulai,
                 'selesai' => $selesai,
-                // simpan is_open sebagai status saat disimpan (opsional)
                 'is_open' => $isOpenNow,
             ]
         );
@@ -74,21 +78,40 @@ class PeriodeController extends Controller
      * untuk cek periode AKTIF atau YANG AKAN DATANG.
      * Periode yang SUDAH LEWAT tidak dikirim lagi.
      */
-    public function active()
+    public function active(Request $request)
     {
         $now = Carbon::now('Asia/Jakarta');
+        $jenis = $request->query('jenis');
 
         // 1. Prioritaskan mencari periode yang sedang aktif saat ini (mulai <= now dan selesai >= now)
-        $periode = Periode::where('mulai', '<=', $now)
-            ->where('selesai', '>=', $now)
-            ->orderByDesc('mulai') // Ambil yang paling baru mulai jika ada lebih dari satu
-            ->first();
+        $query = Periode::where('mulai', '<=', $now)
+            ->where('selesai', '>=', $now);
+
+        if ($jenis === 'stock_opname') {
+            $query->where('jenis_periode', 'like', '%Stock Opname%');
+        } elseif ($jenis === 'pengajuan') {
+            $query->where(function ($q) {
+                $q->whereNull('jenis_periode')
+                  ->orWhere('jenis_periode', 'Periode Pengajuan')
+                  ->orWhere('jenis_periode', 'not like', '%Stock Opname%');
+            });
+        }
+
+        $periode = $query->orderByDesc('mulai')->first();
 
         // 2. Jika tidak ada yang sedang aktif, cari yang akan datang (belum mulai)
         if (!$periode) {
-            $periode = Periode::where('mulai', '>', $now)
-                ->orderBy('mulai') // Yang paling dekat dimulai
-                ->first();
+            $upcomingQuery = Periode::where('mulai', '>', $now);
+            if ($jenis === 'stock_opname') {
+                $upcomingQuery->where('jenis_periode', 'like', '%Stock Opname%');
+            } elseif ($jenis === 'pengajuan') {
+                $upcomingQuery->where(function ($q) {
+                    $q->whereNull('jenis_periode')
+                      ->orWhere('jenis_periode', 'Periode Pengajuan')
+                      ->orWhere('jenis_periode', 'not like', '%Stock Opname%');
+                });
+            }
+            $periode = $upcomingQuery->orderBy('mulai')->first();
         }
 
         if (!$periode) {

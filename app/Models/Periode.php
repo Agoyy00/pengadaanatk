@@ -8,6 +8,7 @@ class Periode extends Model
 {
     protected $fillable = [
         'tahun_akademik',
+        'jenis_periode',
         'mulai',
         'selesai',
         'is_open',

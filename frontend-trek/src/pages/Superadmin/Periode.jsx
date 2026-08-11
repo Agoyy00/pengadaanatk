@@ -4,8 +4,6 @@ import { useNavigate, useLocation } from "react-router-dom";
 import "../../css/layout.css";
 import RoleSwitcher from "../../components/RoleSwitcher";
 
-
-
 const API_BASE = import.meta.env.VITE_API_BASE;
 const token = localStorage.getItem("token");
 
@@ -15,6 +13,9 @@ export default function Periode() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const [activeTab, setActiveTab] = useState("pengajuan"); // "pengajuan" | "stock_opname"
+
+  // State Periode Pengajuan
   const [tahunAkademik, setTahunAkademik] = useState(getTahunAkademikOtomatis());
   const [mulai, setMulai] = useState("");
   const [selesai, setSelesai] = useState("");
@@ -23,6 +24,14 @@ export default function Periode() {
   const [activePeriodeId, setActivePeriodeId] = useState(null);
   const [periodes, setPeriodes] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  // State Periode Stock Opname
+  const [soSubPeriode, setSoSubPeriode] = useState("Periode 1");
+  const [soTahunAkademik, setSoTahunAkademik] = useState(getTahunAkademikOtomatis());
+  const [soMulai, setSoMulai] = useState("");
+  const [soSelesai, setSoSelesai] = useState("");
+  const [soMessage, setSoMessage] = useState("");
+  const [soErrorMsg, setSoErrorMsg] = useState("");
 
   const storedUser = localStorage.getItem("user");
   const currentUser = storedUser ? JSON.parse(storedUser) : null;
@@ -79,6 +88,14 @@ export default function Periode() {
       const resAll = await fetch(`${API_BASE}/periode`, {
         headers: { Authorization: `Bearer ${freshToken}` },
       });
+
+      if (resAll.status === 401) {
+        alert("Sesi login Anda telah berakhir. Silakan login kembali.");
+        localStorage.removeItem("token");
+        navigate("/");
+        return;
+      }
+
       const dataAll = await resAll.json();
       if (Array.isArray(dataAll.data)) {
         setPeriodes(dataAll.data);
@@ -109,6 +126,7 @@ export default function Periode() {
 
     const payload = {
       tahun_akademik: tahunAkademik,
+      jenis_periode: "Periode Pengajuan",
       mulai,
       selesai,
     };
@@ -123,6 +141,13 @@ export default function Periode() {
         },
         body: JSON.stringify(payload),
       });
+
+      if (res.status === 401) {
+        alert("Sesi login Anda telah berakhir. Silakan login kembali.");
+        localStorage.removeItem("token");
+        navigate("/");
+        return;
+      }
 
       const contentType = res.headers.get("content-type");
       if (contentType && contentType.indexOf("application/json") !== -1) {
@@ -161,6 +186,56 @@ export default function Periode() {
     }
   }
 
+  async function handleSimpanStockOpname(e) {
+    e.preventDefault();
+    setSoMessage("");
+    setSoErrorMsg("");
+    const freshToken = localStorage.getItem("token");
+
+    if (!soMulai || !soSelesai) {
+      setSoErrorMsg("Mulai pencatatan dan batas akhir pencatatan wajib diisi.");
+      return;
+    }
+
+    const payload = {
+      tahun_akademik: soTahunAkademik,
+      jenis_periode: `Stock Opname - ${soSubPeriode}`,
+      mulai: soMulai,
+      selesai: soSelesai,
+    };
+
+    try {
+      const res = await fetch(`${API_BASE}/periode`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          Authorization: `Bearer ${freshToken}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (res.status === 401) {
+        alert("Sesi login Anda telah berakhir. Silakan login kembali.");
+        localStorage.removeItem("token");
+        navigate("/");
+        return;
+      }
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setSoErrorMsg(data.message || "Terjadi kesalahan saat menyimpan periode Stock Opname.");
+        return;
+      }
+
+      setSoMessage(`Periode ${data.periode.jenis_periode || "Stock Opname"} (${data.periode.tahun_akademik}) berhasil disimpan.`);
+      loadData();
+    } catch (err) {
+      console.error("Error simpan Stock Opname:", err);
+      setSoErrorMsg("Terjadi kesalahan jaringan.");
+    }
+  }
+
   async function handleHapusPeriode(id) {
     const yakin = window.confirm("Yakin ingin menghapus periode ini?");
     if (!yakin) return;
@@ -174,6 +249,13 @@ export default function Periode() {
         headers: { Authorization: `Bearer ${freshToken}` },
         method: "DELETE",
       });
+
+      if (res.status === 401) {
+        alert("Sesi login Anda telah berakhir. Silakan login kembali.");
+        localStorage.removeItem("token");
+        navigate("/");
+        return;
+      }
 
       const data = await res.json();
 
@@ -265,7 +347,6 @@ export default function Periode() {
     }
   };
 
-  
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768);
 
   return (
@@ -320,9 +401,9 @@ export default function Periode() {
               <span className="hamburger-line"></span>
             </button>
             <div>
-            <div className="topbar-title">Atur & Kelola Periode Pengajuan</div>
+            <div className="topbar-title">Atur & Kelola Periode</div>
             <div className="topbar-sub">
-              Super Admin dapat menambah, mengubah, dan menghapus periode pengajuan.
+              Super Admin dapat menambah, mengubah, dan menghapus periode pengajuan dan stock opname.
             </div>
           </div>
           </div>
@@ -333,84 +414,209 @@ export default function Periode() {
         </header>
 
         <section className="main-content">
-          {/* CARD FORM ATUR PERIODE */}
+          {/* CARD FORM ATUR PERIODE DENGAN NAVBAR TAB */}
           <div className="card">
-            <div className="card-title">Tambah / Update Periode</div>
-            <div className="card-subtitle">
-              Masukkan tahun akademik, tanggal & jam dimulainya pengajuan hingga batas akhirnya.
-            </div>
-
-            <form onSubmit={handleSimpan}>
-              <div
+            {/* SEGMENTED TAB SWITCH CONTROL */}
+            <div
+              style={{
+                display: "inline-flex",
+                backgroundColor: "#f3f4f6",
+                padding: "4px",
+                borderRadius: "12px",
+                gap: "4px",
+                marginBottom: "24px",
+                border: "1px solid #e5e7eb",
+                width: "fit-content",
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setActiveTab("pengajuan")}
                 style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 20,
-                  maxWidth: 420,
+                  padding: "9px 22px",
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  border: "none",
+                  borderRadius: "9px",
+                  cursor: "pointer",
+                  backgroundColor: activeTab === "pengajuan" ? "#16a34a" : "transparent",
+                  color: activeTab === "pengajuan" ? "#ffffff" : "#000000",
+                  boxShadow: activeTab === "pengajuan" ? "0 2px 8px rgba(22, 163, 74, 0.28)" : "none",
+                  transition: "all 0.2s ease-in-out",
+                  outline: "none",
                 }}
               >
-                <div>
-                  <label className="A">Tahun Akademik</label>
-                  <select
-                    className="input-text"
-                    value={tahunAkademik}
-                    onChange={(e) => setTahunAkademik(e.target.value)}
+                Periode Pengajuan
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab("stock_opname")}
+                style={{
+                  padding: "9px 22px",
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  border: "none",
+                  borderRadius: "9px",
+                  cursor: "pointer",
+                  backgroundColor: activeTab === "stock_opname" ? "#16a34a" : "transparent",
+                  color: activeTab === "stock_opname" ? "#ffffff" : "#000000",
+                  boxShadow: activeTab === "stock_opname" ? "0 2px 8px rgba(22, 163, 74, 0.28)" : "none",
+                  transition: "all 0.2s ease-in-out",
+                  outline: "none",
+                }}
+              >
+                Periode Stock Opname
+              </button>
+            </div>
+
+            {activeTab === "pengajuan" ? (
+              /* TAB 1: PERIODE PENGAJUAN FORM */
+              <>
+                <div className="card-title">Tambah / Update Periode Pengajuan</div>
+                <div className="card-subtitle">
+                  Masukkan tahun akademik, tanggal & jam dimulainya pengajuan hingga batas akhirnya.
+                </div>
+
+                <form onSubmit={handleSimpan}>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 20,
+                      maxWidth: 420,
+                    }}
                   >
-                    {daftarTahunAkademik.map((ta) => (
-                      <option key={ta} value={ta}>
-                        {ta}
-                      </option>
-                    ))}
-                  </select>
+                    <div>
+                      <label className="A">Tahun Akademik</label>
+                      <select
+                        className="input-text"
+                        value={tahunAkademik}
+                        onChange={(e) => setTahunAkademik(e.target.value)}
+                      >
+                        {daftarTahunAkademik.map((ta) => (
+                          <option key={ta} value={ta}>
+                            {ta}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="B">Mulai Pengajuan</label>
+                      <input
+                        type="datetime-local"
+                        value={mulai}
+                        className="input-text"
+                        onChange={(e) => setMulai(e.target.value)}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="C">Berakhir / Deadline</label>
+                      <input
+                        type="datetime-local"
+                        value={selesai}
+                        className="input-text"
+                        onChange={(e) => setSelesai(e.target.value)}
+                      />
+                    </div>
+
+                    <div style={{ display: "flex", gap: 10 }}>
+                      <button type="submit" className="btn btn-primary" style={{ minWidth: "160px" }}>
+                        Simpan Periode
+                      </button>
+                    </div>
+
+                    {message && <p style={{ color: "green", fontWeight: 600 }}>{message}</p>}
+                    {errorMsg && <p className="error-text">{errorMsg}</p>}
+                  </div>
+                </form>
+              </>
+            ) : (
+              /* TAB 2: PERIODE STOCK OPNAME FORM */
+              <>
+                <div className="card-title">Tambah / Update Periode Stock Opname</div>
+                <div className="card-subtitle">
+                  Atur periode pencatatan stock opname barang ATK (Periode 1, Periode 2, Periode 3).
                 </div>
 
-                <div>
-                  <label className="B">Mulai Pengajuan</label>
-                  <input
-                    type="datetime-local"
-                    value={mulai}
-                    className="input-text"
-                    onChange={(e) => setMulai(e.target.value)}
-                  />
-                </div>
+                <form onSubmit={handleSimpanStockOpname}>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 20,
+                      maxWidth: 420,
+                    }}
+                  >
+                    <div>
+                      <label className="A">Pilih Periode Stock Opname</label>
+                      <select
+                        className="input-text"
+                        value={soSubPeriode}
+                        onChange={(e) => setSoSubPeriode(e.target.value)}
+                      >
+                        <option value="Periode 1">Periode 1</option>
+                        <option value="Periode 2">Periode 2</option>
+                        <option value="Periode 3">Periode 3</option>
+                      </select>
+                    </div>
 
-                <div>
-                  <label className="C">Berakhir / Deadline</label>
-                  <input
-                    type="datetime-local"
-                    value={selesai}
-                    className="input-text"
-                    onChange={(e) => setSelesai(e.target.value)}
-                  />
-                </div>
+                    <div>
+                      <label className="A">Tahun Akademik</label>
+                      <select
+                        className="input-text"
+                        value={soTahunAkademik}
+                        onChange={(e) => setSoTahunAkademik(e.target.value)}
+                      >
+                        {daftarTahunAkademik.map((ta) => (
+                          <option key={ta} value={ta}>
+                            {ta}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-                <div style={{ display: "flex", gap: 10 }}>
-                  <button type="submit" className="btn btn-primary">
-                    Simpan Periode
-                  </button>
+                    <div>
+                      <label className="B">Mulai Pencatatan</label>
+                      <input
+                        type="datetime-local"
+                        value={soMulai}
+                        className="input-text"
+                        onChange={(e) => setSoMulai(e.target.value)}
+                      />
+                    </div>
 
-                  {activePeriodeId && (
-                    <button
-                      type="button"
-                      className="btn btn-danger"
-                      onClick={() => handleHapusPeriode(activePeriodeId)}
-                    >
-                      Hapus Periode Aktif
-                    </button>
-                  )}
-                </div>
+                    <div>
+                      <label className="C">Batas Akhir Pencatatan</label>
+                      <input
+                        type="datetime-local"
+                        value={soSelesai}
+                        className="input-text"
+                        onChange={(e) => setSoSelesai(e.target.value)}
+                      />
+                    </div>
 
-                {message && <p style={{ color: "green", fontWeight: 600 }}>{message}</p>}
-                {errorMsg && <p className="error-text">{errorMsg}</p>}
-              </div>
-            </form>
+                    <div style={{ display: "flex", gap: 10 }}>
+                      <button type="submit" className="btn btn-primary" style={{ minWidth: "160px" }}>
+                        Simpan Periode
+                      </button>
+                    </div>
+
+                    {soMessage && <p style={{ color: "green", fontWeight: 600 }}>{soMessage}</p>}
+                    {soErrorMsg && <p className="error-text">{soErrorMsg}</p>}
+                  </div>
+                </form>
+              </>
+            )}
           </div>
 
           {/* CARD DAFTAR PERIODE */}
           <div className="card" style={{ marginTop: 24 }}>
-            <div className="card-title">Daftar Periode Pengajuan</div>
+            <div className="card-title">Daftar Seluruh Periode</div>
             <div className="card-subtitle" style={{ marginBottom: 16 }}>
-              Daftar seluruh periode yang telah dibuat di sistem.
+              Daftar seluruh periode pengajuan dan periode stock opname yang telah dibuat di sistem.
             </div>
 
             {loading ? (
@@ -423,8 +629,9 @@ export default function Periode() {
                   <thead>
                     <tr style={{ borderBottom: "2px solid #e5e7eb", background: "#f9fafb" }}>
                       <th style={{ padding: "12px 16px" }}>Tahun Akademik</th>
-                      <th style={{ padding: "12px 16px" }}>Mulai Pengajuan</th>
-                      <th style={{ padding: "12px 16px" }}>Deadline</th>
+                      <th style={{ padding: "12px 16px" }}>Jenis Periode</th>
+                      <th style={{ padding: "12px 16px" }}>Mulai</th>
+                      <th style={{ padding: "12px 16px" }}>Deadline / Batas Akhir</th>
                       <th style={{ padding: "12px 16px" }}>Status</th>
                       <th style={{ padding: "12px 16px", textAlign: "right" }}>Aksi</th>
                     </tr>
@@ -453,6 +660,20 @@ export default function Periode() {
                       return (
                         <tr key={p.id} style={{ borderBottom: "1px solid #f3f4f6" }}>
                           <td style={{ padding: "14px 16px", fontWeight: 600 }}>{p.tahun_akademik}</td>
+                          <td style={{ padding: "14px 16px", fontSize: 14 }}>
+                            <span
+                              style={{
+                                padding: "4px 10px",
+                                borderRadius: "9999px",
+                                fontSize: "12px",
+                                fontWeight: 600,
+                                backgroundColor: p.jenis_periode?.includes("Stock Opname") ? "#fef3c7" : "#e0f2fe",
+                                color: p.jenis_periode?.includes("Stock Opname") ? "#d97706" : "#0369a1",
+                              }}
+                            >
+                              {p.jenis_periode || "Periode Pengajuan"}
+                            </span>
+                          </td>
                           <td style={{ padding: "14px 16px", fontSize: 14 }}>{dateMulai}</td>
                           <td style={{ padding: "14px 16px", fontSize: 14 }}>{dateSelesai}</td>
                           <td style={{ padding: "14px 16px" }}>{getStatusBadge(p)}</td>

@@ -265,11 +265,12 @@ function Pengajuan() {
       try {
         setPeriodeLoading(true);
 
-        const res = await fetch(`${API_BASE}/periode/active`);
+        const res = await fetch(`${API_BASE}/periode/active?jenis=pengajuan`);
 
         if (!res.ok) {
           setPeriodeOpen(false);
-          setPeriodeMessage("");
+          setPeriodeMessage("Periode Pengajuan saat ini belum dibuka.");
+          setLimitChecked(true);
           return;
         }
 
@@ -284,15 +285,22 @@ function Pengajuan() {
         setPeriodeOpen(isOpen);
         setPeriodeMessage(data.message || "");
 
+        if (!isOpen) {
+          setLimitChecked(true);
+        }
+
         // 🔥 AUTO-SET TAHUN AKADEMIK DARI PERIODE AKTIF
         if (data.periode?.tahun_akademik) {
           setTahunAkademik(data.periode.tahun_akademik);
+        } else {
+          setLimitChecked(true);
         }
 
       } catch (err) {
         console.error("Gagal cek periode:", err);
-        setPeriodeOpen(true);
-        setPeriodeMessage("");
+        setPeriodeOpen(false);
+        setPeriodeMessage("Gagal memuat status Periode Pengajuan.");
+        setLimitChecked(true);
       } finally {
         setPeriodeLoading(false);
       }
@@ -304,6 +312,10 @@ function Pengajuan() {
 
   // ====== CEK: user sudah pernah mengajukan di tahun akademik ini? ======
   useEffect(() => {
+    if (!periodeLoading && !periodeOpen) {
+      setLimitChecked(true);
+      return;
+    }
     if (!tahunAkademik || !userId) {
       return;
     }
@@ -351,7 +363,7 @@ function Pengajuan() {
     }
 
     checkLimit();
-  }, [tahunAkademik, userId]);
+  }, [tahunAkademik, userId, periodeLoading, periodeOpen]);
 
 
   // ====== AUTO-FILL DARI STOCK OPNAME ======
@@ -942,8 +954,9 @@ function Pengajuan() {
             </div>
           </div>
           </div>
-          <div className="topbar-right">
-            <PeriodeTimer />
+          <div className="topbar-right" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <PeriodeTimer typeFilter="pengajuan" />
+            <PeriodeTimer typeFilter="stock_opname" />
             <span>Role: </span>
             <RoleSwitcher />
           </div>
@@ -961,15 +974,18 @@ function Pengajuan() {
             </div>
           ) : !periodeOpen ? (
             // 🚫 PERIODE TUTUP
-            <div className="card periode-closed-card">
-              <div className="card-title">Pengajuan ATK tidak tersedia</div>
-              <p>Saat ini pengajuan belum dibuka atau sudah ditutup.</p>
-              {periodeMessage && <p>{periodeMessage}</p>}
-
+            <div className="card" style={{ textAlign: "center", padding: "50px 20px" }}>
+              <div style={{ fontSize: "54px", marginBottom: "16px" }}>🔒</div>
+              <h3 style={{ fontSize: "22px", fontWeight: "700", color: "#111827", marginBottom: "8px" }}>
+                Periode Pengajuan Belum Dibuka
+              </h3>
+              <p style={{ fontSize: "14px", color: "#4b5563", maxWidth: "520px", margin: "0 auto 24px auto", lineHeight: "1.6" }}>
+                {periodeMessage || "Saat ini Periode Pengajuan ATK belum dibuka oleh Super Admin. Silakan tunggu hingga periode pengajuan dibuka."}
+              </p>
               <button
-                type="button"
-                className="btn btn-back-dashboard"
+                className="btn btn-primary"
                 onClick={() => navigate("/dashboarduser")}
+                style={{ minWidth: "180px", padding: "10px 24px", fontSize: "14px" }}
               >
                 Kembali ke Dashboard
               </button>

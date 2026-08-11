@@ -60,9 +60,9 @@
 }
 
 .timer-text {
-  font-family: monospace;
-  font-size: 0.9rem;
-  letter-spacing: 0.5px;
+  font-family: inherit;
+  font-size: 0.85rem;
+  white-space: nowrap;
 }
 
 @keyframes pulse {

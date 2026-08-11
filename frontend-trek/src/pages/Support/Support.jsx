@@ -8,16 +8,13 @@ import DesktopSidebarToggle from "../../components/DesktopSidebarToggle";
 import TicketList from "./TicketList";
 import OpenTicket from "./OpenTicket";
 import TicketDetail from "./TicketDetail";
-import SupportNotificationDropdown from "../../components/SupportNotificationDropdown";
-
-const API_BASE = import.meta.env.VITE_API_BASE;
-const token = localStorage.getItem("token");
 
 export default function Support() {
   const navigate = useNavigate();
   const location = useLocation();
   const storedUser = localStorage.getItem("user");
   const currentUser = storedUser ? JSON.parse(storedUser) : null;
+
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768);
 
   const sidebarMenus = [
@@ -53,23 +50,16 @@ export default function Support() {
         <nav className="sidebar-menu">
           {sidebarMenus.map((m) => {
             const isActive = m.active || location.pathname === m.to;
-            const isSupport = m.label === "Support";
             return (
               <div
                 key={m.label}
                 className={`menu-item ${isActive ? "active" : ""}`}
                 style={{ cursor: isActive ? "default" : "pointer" }}
                 onClick={() => {
-                  if (!isActive && !isSupport) navigate(m.to);
+                  if (!isActive) navigate(m.to);
                 }}
               >
-                {isSupport ? (
-                  <SupportNotificationDropdown>
-                    <span>{m.label}</span>
-                  </SupportNotificationDropdown>
-                ) : (
-                  <span>{m.label}</span>
-                )}
+                {m.label}
               </div>
             );
           })}

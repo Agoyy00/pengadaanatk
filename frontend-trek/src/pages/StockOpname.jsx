@@ -63,13 +63,31 @@ export default function StockOpname() {
     currentUser.unit_tahun_akademik === activeTahunAkademik
   );
 
-  // Fetch periode aktif untuk menentukan tahun akademik
+  const [isStockOpnameOpen, setIsStockOpnameOpen] = useState(true);
+  const [stockOpnameMessage, setStockOpnameMessage] = useState("");
+
+  // Fetch periode aktif stock opname untuk menentukan tahun akademik & status buka/tutup
   useEffect(() => {
     async function fetchPeriodeAktif() {
       try {
-        const res = await fetch(`${API_BASE}/periode/active`);
-        if (!res.ok) return;
+        const res = await fetch(`${API_BASE}/periode/active?jenis=stock_opname`);
+        if (!res.ok) {
+          setIsStockOpnameOpen(false);
+          setStockOpnameMessage("Periode Stock Opname saat ini belum dibuka.");
+          return;
+        }
         const data = await res.json();
+        const isOpen =
+          data.is_open === true ||
+          data.is_open === 1 ||
+          data.is_open === "1" ||
+          data.is_open === "open";
+
+        setIsStockOpnameOpen(isOpen);
+        if (!isOpen) {
+          setStockOpnameMessage(data.message || "Periode Stock Opname saat ini belum dibuka.");
+        }
+
         if (data.periode?.tahun_akademik) {
           setActiveTahunAkademik(data.periode.tahun_akademik);
 
@@ -81,7 +99,9 @@ export default function StockOpname() {
           }
         }
       } catch (err) {
-        console.error("Gagal cek periode aktif:", err);
+        console.error("Gagal cek periode aktif stock opname:", err);
+        setIsStockOpnameOpen(false);
+        setStockOpnameMessage("Gagal memuat status Periode Stock Opname.");
       }
     }
     fetchPeriodeAktif();
@@ -154,7 +174,6 @@ export default function StockOpname() {
         { label: "Monitoring User", to: "/superadmin/monitoring-user" },
         { label: "Grafik Barang", to: "/superadmin/grafik-barang" },
         { label: "Grafik Belanja", to: "/superadmin/grafik-belanja" },
-        { label: "Verifikasi Pengajuan", to: "/verifikasi" },
         { label: "Approval Pengajuan", to: "/approval" },
         { label: "Tambah & Kelola User", to: "/tambahuser" },
         { label: "Atur Periode", to: "/periode" },
@@ -441,7 +460,7 @@ export default function StockOpname() {
             userObj.unit = importUnit;
             userObj.unit_tahun_akademik = activeTahunAkademik;
             localStorage.setItem("user", JSON.stringify(userObj));
-          } catch {}
+          } catch { }
         }
         setShowImportPreview(false);
         setImportPreviewData([]);
@@ -518,7 +537,7 @@ export default function StockOpname() {
             userObj.unit = unit;
             userObj.unit_tahun_akademik = activeTahunAkademik;
             localStorage.setItem("user", JSON.stringify(userObj));
-          } catch {}
+          } catch { }
         }
         closeModal();
         loadOpnames();
@@ -836,7 +855,7 @@ export default function StockOpname() {
     );
   };
 
-  
+
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768);
 
   return (
@@ -844,9 +863,9 @@ export default function StockOpname() {
       <DesktopSidebarToggle isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
       {/* SIDEBAR */}
       {isSidebarOpen && (
-        <div 
-          className="sidebar-overlay open" 
-          onClick={() => setIsSidebarOpen(false)} 
+        <div
+          className="sidebar-overlay open"
+          onClick={() => setIsSidebarOpen(false)}
         />
       )}
       <aside className={`sidebar ${isSidebarOpen ? "open" : ""}`}>
@@ -888,8 +907,8 @@ export default function StockOpname() {
         {/* TOPBAR */}
         <header className={`topbar ${!isSidebarOpen ? 'expanded' : ''}`}>
           <div className="topbar-left-wrapper">
-            <button 
-              className={`hamburger-menu ${isSidebarOpen ? 'open' : ''}`} 
+            <button
+              className={`hamburger-menu ${isSidebarOpen ? 'open' : ''}`}
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
               aria-label="Toggle Sidebar"
             >
@@ -898,14 +917,15 @@ export default function StockOpname() {
               <span className="hamburger-line"></span>
             </button>
             <div>
-            <div className="topbar-title">Stock Opname Barang</div>
-            <div className="topbar-sub">
-              Sistem pencatatan dan penyesuaian stok fisik ATK
+              <div className="topbar-title">Stock Opname Barang</div>
+              <div className="topbar-sub">
+                Sistem pencatatan dan penyesuaian stok fisik ATK
+              </div>
             </div>
           </div>
-          </div>
-          <div className="topbar-right">
-            <PeriodeTimer />
+          <div className="topbar-right" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <PeriodeTimer typeFilter="pengajuan" />
+            <PeriodeTimer typeFilter="stock_opname" />
             <span style={{ marginRight: 8 }}>Pengguna: <b>{currentUser?.name}</b></span>
             <RoleSwitcher />
           </div>
@@ -913,7 +933,25 @@ export default function StockOpname() {
 
         {/* CONTENT */}
         <section className="main-content">
-          <div className="card">
+          {!isStockOpnameOpen && role === "user" ? (
+            <div className="card" style={{ textAlign: "center", padding: "50px 20px" }}>
+              <div style={{ fontSize: "54px", marginBottom: "16px" }}>🔒</div>
+              <h3 style={{ fontSize: "22px", fontWeight: "700", color: "#111827", marginBottom: "8px" }}>
+                Periode Stock Opname Belum Dibuka
+              </h3>
+              <p style={{ fontSize: "14px", color: "#4b5563", maxWidth: "520px", margin: "0 auto 24px auto", lineHeight: "1.6" }}>
+                {stockOpnameMessage || "Saat ini Periode Stock Opname Barang belum dibuka oleh Super Admin. Silakan tunggu hingga periode pencatatan dibuka."}
+              </p>
+              <button
+                className="btn btn-primary"
+                onClick={() => navigate("/dashboarduser")}
+                style={{ minWidth: "180px", padding: "10px 24px", fontSize: "14px" }}
+              >
+                Kembali ke Dashboard
+              </button>
+            </div>
+          ) : (
+            <div className="card">
 
             {/* ========== VIEW 1: DAFTAR UNIT STOCK OPNAME ========== */}
             {!activeUnitView && (
@@ -1352,6 +1390,7 @@ export default function StockOpname() {
               );
             })()}
           </div>
+          )}
         </section>
       </main>
 
@@ -1369,7 +1408,7 @@ export default function StockOpname() {
               <label style={{ display: "block", marginTop: 10, marginBottom: 6 }}>
                 <b>Nama Barang ATK</b>
               </label>
-              
+
               <div style={{ display: "flex", gap: 8 }}>
                 <input
                   style={{
@@ -1386,7 +1425,7 @@ export default function StockOpname() {
 
               {/* Search Suggestions */}
               {loadingSearch && <p style={{ fontSize: 12, margin: "6px 0" }}>Mencari barang...</p>}
-              
+
               {searchResults.length === 0 && queryBarang.trim() && !loadingSearch && (
                 <p style={{ fontSize: 12, margin: "6px 0", color: "#6b7280" }}>
                   {lockedBarangIds.length > 0 ? "Semua hasil pencarian sudah di-stok opname." : "Barang tidak ditemukan."}
@@ -1520,8 +1559,8 @@ export default function StockOpname() {
                             ? Number(stokFisik) - selectedBarang.stok === 0
                               ? "#374151"
                               : Number(stokFisik) - selectedBarang.stok > 0
-                              ? "#16a34a"
-                              : "#dc2626"
+                                ? "#16a34a"
+                                : "#dc2626"
                             : "#9ca3af",
                       }}
                     >

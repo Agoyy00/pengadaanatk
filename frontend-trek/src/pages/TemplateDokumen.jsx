@@ -232,8 +232,9 @@ export default function TemplateDokumen() {
               </div>
             </div>
           </div>
-          <div className="topbar-right">
-            <PeriodeTimer />
+          <div className="topbar-right" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <PeriodeTimer typeFilter="pengajuan" />
+            <PeriodeTimer typeFilter="stock_opname" />
             <span style={{ marginRight: 8 }}>Pengguna: <b>{currentUser?.name}</b></span>
             <RoleSwitcher />
           </div>

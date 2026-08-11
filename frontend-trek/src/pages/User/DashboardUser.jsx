@@ -6,7 +6,6 @@ import "../../css/layout.css";
 import RoleSwitcher from "../../components/RoleSwitcher";
 import PeriodeTimer from "../../components/PeriodeTimer";
 import Swal from "sweetalert2";
-import SupportNotificationDropdown from "../../components/SupportNotificationDropdown";
 
 const API_BASE = import.meta.env.VITE_API_BASE;
 const token = localStorage.getItem("token");
@@ -188,23 +187,16 @@ export default function DashboardUser() {
         <nav className="sidebar-menu">
           {sidebarMenus.map((m) => {
             const isActive = location.pathname === m.to;
-            const isSupport = m.label === "Support";
             return (
               <div
                 key={m.label}
                 className={`menu-item ${isActive ? "active" : ""}`}
                 style={{ cursor: isActive ? "default" : "pointer" }}
                 onClick={() => {
-                  if (!isActive && !isSupport) navigate(m.to);
+                  if (!isActive) navigate(m.to);
                 }}
               >
-                {isSupport ? (
-                  <SupportNotificationDropdown>
-                    <span>{m.label}</span>
-                  </SupportNotificationDropdown>
-                ) : (
-                  <span>{m.label}</span>
-                )}
+                {m.label}
               </div>
             );
           })}
@@ -236,8 +228,9 @@ export default function DashboardUser() {
               </div>
             </div>
           </div>
-          <div className="topbar-right">
-            <PeriodeTimer />
+          <div className="topbar-right" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <PeriodeTimer typeFilter="pengajuan" />
+            <PeriodeTimer typeFilter="stock_opname" />
             <span>Role: </span>
             <RoleSwitcher />
           </div>
