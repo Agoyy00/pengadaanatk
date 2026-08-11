@@ -47,21 +47,52 @@ export default function StockOpname() {
 
   // Unit options
   const [unitOptions, setUnitOptions] = useState([]);
+  const [activeTahunAkademik, setActiveTahunAkademik] = useState(null);
   const getInitialUnit = () => {
     const userUnit = currentUser?.unit;
     const savedUnit = localStorage.getItem("selectedUnit");
     return userUnit || savedUnit || "";
   };
   const [unit, setUnit] = useState(getInitialUnit);
-  const unitLocked = !!currentUser?.unit || !!localStorage.getItem("selectedUnit");
+
+  // Unit terkunci hanya jika: user sudah punya unit DAN unit_tahun_akademik === periode aktif
+  const unitLocked = !!(
+    currentUser?.unit &&
+    currentUser?.unit_tahun_akademik &&
+    activeTahunAkademik &&
+    currentUser.unit_tahun_akademik === activeTahunAkademik
+  );
+
+  // Fetch periode aktif untuk menentukan tahun akademik
+  useEffect(() => {
+    async function fetchPeriodeAktif() {
+      try {
+        const res = await fetch(`${API_BASE}/periode/active`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.periode?.tahun_akademik) {
+          setActiveTahunAkademik(data.periode.tahun_akademik);
+
+          // Jika periode berbeda dari unit_tahun_akademik user → reset unit di local
+          if (currentUser?.unit_tahun_akademik !== data.periode.tahun_akademik) {
+            setUnit("");
+            setImportUnit("");
+            localStorage.removeItem("selectedUnit");
+          }
+        }
+      } catch (err) {
+        console.error("Gagal cek periode aktif:", err);
+      }
+    }
+    fetchPeriodeAktif();
+  }, []);
 
   const loadUserUnit = async () => {
     if (!userId) return;
-    const userUnit = currentUser?.unit;
-    if (userUnit) {
-      setUnit(userUnit);
-      setImportUnit(userUnit);
-      localStorage.setItem("selectedUnit", userUnit);
+    // Jangan auto-load unit lama kalau periode sudah berbeda
+    if (currentUser?.unit && currentUser?.unit_tahun_akademik === activeTahunAkademik) {
+      setUnit(currentUser.unit);
+      setImportUnit(currentUser.unit);
       return;
     }
     try {
@@ -74,7 +105,6 @@ export default function StockOpname() {
         if (latestUnit) {
           setUnit(latestUnit);
           setImportUnit(latestUnit);
-          localStorage.setItem("selectedUnit", latestUnit);
         }
       }
     } catch (err) {
@@ -84,8 +114,10 @@ export default function StockOpname() {
 
   useEffect(() => {
     loadUnitOptions();
-    loadUserUnit();
-  }, []);
+    if (activeTahunAkademik !== null) {
+      loadUserUnit();
+    }
+  }, [activeTahunAkademik]);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedBarang, setSelectedBarang] = useState(null);
   const [stokFisik, setStokFisik] = useState("");
@@ -406,10 +438,9 @@ export default function StockOpname() {
         if (stored) {
           try {
             const userObj = JSON.parse(stored);
-            if (!userObj.unit) {
-              userObj.unit = importUnit;
-              localStorage.setItem("user", JSON.stringify(userObj));
-            }
+            userObj.unit = importUnit;
+            userObj.unit_tahun_akademik = activeTahunAkademik;
+            localStorage.setItem("user", JSON.stringify(userObj));
           } catch {}
         }
         setShowImportPreview(false);
@@ -484,10 +515,9 @@ export default function StockOpname() {
         if (stored) {
           try {
             const userObj = JSON.parse(stored);
-            if (!userObj.unit) {
-              userObj.unit = unit;
-              localStorage.setItem("user", JSON.stringify(userObj));
-            }
+            userObj.unit = unit;
+            userObj.unit_tahun_akademik = activeTahunAkademik;
+            localStorage.setItem("user", JSON.stringify(userObj));
           } catch {}
         }
         closeModal();

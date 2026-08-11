@@ -141,16 +141,25 @@ class PengajuanController extends Controller
             ], 422);
         }
 
-        // 1.6. CEK & SET UNIT USER (SATU UNIT PER USER)
+        // 1.6. CEK & SET UNIT USER (1 UNIT PER PERIODE, RESET SAAT GANTI PERIODE)
         $user = User::findOrFail($userId);
-        if (empty($user->unit)) {
+
+        if ($user->unit_tahun_akademik !== $tahunAkademik) {
+            // Periode berbeda → reset, user boleh pilih unit baru
             $user->unit = $validated['unit'];
+            $user->unit_tahun_akademik = $tahunAkademik;
             $user->save();
-        } elseif ($user->unit !== $validated['unit']) {
+        } elseif (!empty($user->unit) && $user->unit !== $validated['unit']) {
+            // Periode sama tapi unit beda → tolak
             return response()->json([
                 'success' => false,
-                'message' => 'Unit Anda sudah terdaftar sebagai "' . $user->unit . '". Anda hanya diperbolehkan menggunakan satu unit.',
+                'message' => 'Pada periode ini Anda sudah terdaftar di unit "' . $user->unit . '". Unit hanya bisa diganti saat periode baru.',
             ], 422);
+        } elseif (empty($user->unit)) {
+            // Belum pernah set unit
+            $user->unit = $validated['unit'];
+            $user->unit_tahun_akademik = $tahunAkademik;
+            $user->save();
         }
 
         // 2. CEK: USER SUDAH PERNAH MENGAJUKAN DI TAHUN INI?

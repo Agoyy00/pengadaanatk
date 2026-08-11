@@ -67,7 +67,7 @@ class SupportTicketController extends Controller
      * GET /api/support-tickets/{id}
      * Get ticket detail with replies
      */
-    public function show($id)
+    public function show(Request $request, $id)
     {
         $user = Auth::user();
         $ticket = SupportTicket::with(['user', 'replies.user'])->findOrFail($id);
@@ -76,8 +76,15 @@ class SupportTicketController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
-        // Auto update status to 'read' if an admin opens an 'open' ticket
-        if (($user->isAdmin() || $user->isSuperAdmin()) && $ticket->status === 'open') {
+        // Auto update status to 'read' only when admin/superadmin views another user's ticket
+        $activeRole = strtolower($request->header('X-Active-Role', ''));
+        $isViewingAsAdmin = $activeRole === 'admin' || $activeRole === 'superadmin';
+
+        if (!$isViewingAsAdmin && !$request->hasHeader('X-Active-Role')) {
+            $isViewingAsAdmin = $user->isAdmin() || $user->isSuperAdmin();
+        }
+
+        if ($isViewingAsAdmin && $ticket->status === 'open') {
             $ticket->status = 'read';
             $ticket->save();
 
@@ -164,14 +171,21 @@ class SupportTicketController extends Controller
             'message' => 'required|string',
         ]);
 
+        $activeRole = strtolower($request->header('X-Active-Role', ''));
+        $isViewingAsAdmin = $activeRole === 'admin' || $activeRole === 'superadmin';
+
+        if (!$isViewingAsAdmin && !$request->hasHeader('X-Active-Role')) {
+            $isViewingAsAdmin = $user->isAdmin() || $user->isSuperAdmin();
+        }
+
         $reply = SupportTicketReply::create([
             'ticket_id' => $ticket->id,
             'user_id' => $user->id,
             'message' => $validated['message'],
-            'sender_type' => $user->isAdmin() || $user->isSuperAdmin() ? 'admin' : 'user',
+            'sender_type' => $isViewingAsAdmin ? 'admin' : 'user',
         ]);
 
-        if ($user->isAdmin() || $user->isSuperAdmin()) {
+        if ($isViewingAsAdmin) {
             // Auto update status to 'process' when admin replies
             if ($ticket->status !== 'complete' && $ticket->status !== 'process') {
                 $ticket->status = 'process';

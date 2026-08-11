@@ -16,6 +16,19 @@ function Pengajuan() {
   const STORAGE_URL = `${import.meta.env.VITE_BACKEND_BASE}/storage/barang`;
   const token = localStorage.getItem("token");
 
+  // ambil user login dari localStorage
+  const storedUser = localStorage.getItem("user");
+  const currentUser = storedUser ? JSON.parse(storedUser) : null;
+  const userId = currentUser?.id;
+  const normalizeRole = (r) => String(r || "").toLowerCase().replace(/[\s_]+/g, "");
+  const activeRole = normalizeRole(currentUser?.role);
+  const baseRole = normalizeRole(currentUser?.baseRole);
+  const userEmail = (currentUser?.email || "").toLowerCase();
+  const isSuperAdmin =
+    baseRole === "superadmin" ||
+    activeRole === "superadmin" ||
+    currentUser?.role_id === 1 ||
+    userEmail.startsWith("superadmin");
 
   // STEP 1 – data pengajuan
   const [tahunAkademik, setTahunAkademik] = useState("");
@@ -24,9 +37,14 @@ function Pengajuan() {
   const [unit, setUnit] = useState(() => {
     const userUnit = currentUser?.unit;
     const savedUnit = localStorage.getItem("selectedUnit");
-    return userUnit || savedUnit || "Direktorat";
+    return userUnit || savedUnit || "";
   });
-  const unitLocked = !!currentUser?.unit || !!localStorage.getItem("selectedUnit");
+  const unitLocked = !!(
+    currentUser?.unit &&
+    currentUser?.unit_tahun_akademik &&
+    tahunAkademik &&
+    currentUser.unit_tahun_akademik === tahunAkademik
+  );
   const [limitChecked, setLimitChecked] = useState(false);
 
   // Dynamic Options (Jabatan & Unit)
@@ -229,19 +247,6 @@ function Pengajuan() {
   const API_BASE = import.meta.env.VITE_API_BASE;
   const BACKEND_BASE = import.meta.env.VITE_API_BASE;
 
-  // ambil user login dari localStorage
-  const storedUser = localStorage.getItem("user");
-  const currentUser = storedUser ? JSON.parse(storedUser) : null;
-  const userId = currentUser?.id;
-  const normalizeRole = (r) => String(r || "").toLowerCase().replace(/[\s_]+/g, "");
-  const activeRole = normalizeRole(currentUser?.role);
-  const baseRole = normalizeRole(currentUser?.baseRole);
-  const userEmail = (currentUser?.email || "").toLowerCase();
-  const isSuperAdmin =
-    baseRole === "superadmin" ||
-    activeRole === "superadmin" ||
-    currentUser?.role_id === 1 ||
-    userEmail.startsWith("superadmin");
   const [confirmId, setConfirmId] = useState(null);
   const formatRole = (role) => {
     if (!role) return "-";
@@ -263,7 +268,7 @@ function Pengajuan() {
         const res = await fetch(`${API_BASE}/periode/active`);
 
         if (!res.ok) {
-          setPeriodeOpen(isOpen === true);
+          setPeriodeOpen(false);
           setPeriodeMessage("");
           return;
         }

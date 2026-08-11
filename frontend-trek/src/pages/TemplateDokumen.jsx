@@ -1,6 +1,7 @@
 import DesktopSidebarToggle from '../components/DesktopSidebarToggle';
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import Swal from "sweetalert2";
 import "../css/layout.css";
 import RoleSwitcher from "../components/RoleSwitcher";
 import PeriodeTimer from "../components/PeriodeTimer";
@@ -20,6 +21,10 @@ export default function TemplateDokumen() {
   const storedUser = localStorage.getItem("user");
   const currentUser = storedUser ? JSON.parse(storedUser) : null;
   const role = normalizeRole(currentUser?.role);
+
+  const token = localStorage.getItem("token");
+  const API_BASE = import.meta.env.VITE_API_BASE;
+  const [importLoading, setImportLoading] = useState(false);
 
   // Safety Redirect
   useEffect(() => {
@@ -77,6 +82,90 @@ export default function TemplateDokumen() {
 
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768);
+
+  const handleDownloadStockOpnameTemplate = async () => {
+    try {
+      setImportLoading(true);
+      const res = await fetch(`${API_BASE}/barang`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const masterDataRes = await res.json();
+      const masterData = Array.isArray(masterDataRes) ? masterDataRes : (masterDataRes.data || []);
+
+      if (masterData.length === 0) {
+        Swal.fire("Info", "Belum ada data barang di sistem.", "info");
+        return;
+      }
+
+      const header = "kode_barang;nama_barang;stok_sistem;stok_fisik";
+      const rows = masterData.map((b) =>
+        `${b.kode};${b.nama};${b.stok};`
+      );
+      const csvContent = [header, ...rows].join("\n");
+
+      const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "Template_Stock_Opname.csv";
+      link.click();
+      URL.revokeObjectURL(url);
+
+      Swal.fire({
+        icon: "success",
+        title: "Template Diunduh",
+        text: `Template berisi ${masterData.length} barang. Isi kolom Stok Fisik, lalu import kembali.`,
+        confirmButtonColor: "#2563eb",
+      });
+    } catch (err) {
+      console.error("Gagal download template:", err);
+      Swal.fire("Error", "Gagal mengambil data barang dari server", "error");
+    } finally {
+      setImportLoading(false);
+    }
+  };
+
+  const handleDownloadPengajuanTemplate = async () => {
+    try {
+      setImportLoading(true);
+      const res = await fetch(`${API_BASE}/barang`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const masterDataRes = await res.json();
+      const masterData = Array.isArray(masterDataRes) ? masterDataRes : (masterDataRes.data || []);
+
+      if (masterData.length === 0) {
+        Swal.fire("Info", "Belum ada data barang di sistem.", "info");
+        return;
+      }
+
+      const header = "nama_barang;satuan;harga;kebutuhan total;sisa stock saat ini";
+      const rows = masterData.map((b) =>
+        `${b.nama};${b.satuan};${b.harga_satuan};;`
+      );
+      const csvContent = [header, ...rows].join("\n");
+
+      const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "Template_Pengajuan_ATK.csv";
+      link.click();
+      URL.revokeObjectURL(url);
+
+      Swal.fire({
+        icon: "success",
+        title: "Template Diunduh",
+        text: `Template berisi ${masterData.length} barang. Isi kolom Kebutuhan Total dan Sisa Stok Saat Ini, lalu import kembali.`,
+        confirmButtonColor: "#2563eb",
+      });
+    } catch (err) {
+      console.error("Gagal download template:", err);
+      Swal.fire("Error", "Gagal mengambil data barang dari server", "error");
+    } finally {
+      setImportLoading(false);
+    }
+  };
 
   return (
     <div className="layout">
@@ -187,9 +276,9 @@ export default function TemplateDokumen() {
                     <br /><em style={{ color: "#6b7280" }}>Untuk template lengkap dengan data barang terkini, gunakan tombol "Download Template" di halaman Stock Opname.</em>
                   </p>
                 </div>
-                <a
-                  href="/template_stock_opname.csv"
-                  download="Template_Stock_Opname.csv"
+                <button
+                  onClick={handleDownloadStockOpnameTemplate}
+                  disabled={importLoading}
                   style={{
                     display: "inline-block",
                     padding: "10px 14px",
@@ -197,14 +286,16 @@ export default function TemplateDokumen() {
                     background: "#2a5385",
                     color: "white",
                     textAlign: "center",
-                    textDecoration: "none",
+                    border: "none",
                     fontWeight: 600,
                     fontSize: 13,
                     boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
+                    cursor: importLoading ? "not-allowed" : "pointer",
+                    opacity: importLoading ? 0.6 : 1,
                   }}
                 >
-                  Unduh Template Contoh
-                </a>
+                  {importLoading ? "Memuat..." : "Unduh Template Contoh"}
+                </button>
               </div>
 
               {/* CARD 2: Pengajuan ATK */}
@@ -230,9 +321,9 @@ export default function TemplateDokumen() {
                     <br /><em style={{ color: "#6b7280" }}>Untuk template lengkap dengan semua barang terkini, gunakan tombol "Download Template" di halaman Buat Pengajuan (Step 2).</em>
                   </p>
                 </div>
-                <a
-                  href="/template_pengajuan_atk.csv"
-                  download="Template_Pengajuan_ATK.csv"
+                <button
+                  onClick={handleDownloadPengajuanTemplate}
+                  disabled={importLoading}
                   style={{
                     display: "inline-block",
                     padding: "10px 14px",
@@ -240,14 +331,16 @@ export default function TemplateDokumen() {
                     background: "#2a5385",
                     color: "white",
                     textAlign: "center",
-                    textDecoration: "none",
+                    border: "none",
                     fontWeight: 600,
                     fontSize: 13,
                     boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
+                    cursor: importLoading ? "not-allowed" : "pointer",
+                    opacity: importLoading ? 0.6 : 1,
                   }}
                 >
-                  Unduh Template CSV
-                </a>
+                  {importLoading ? "Memuat..." : "Unduh Template CSV"}
+                </button>
               </div>
             </div>
           </div>

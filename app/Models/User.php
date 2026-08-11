@@ -21,6 +21,7 @@ class User extends Authenticatable
         'is_ldap',
         'role_id',
         'unit',
+        'unit_tahun_akademik',
     ];
 
     /**

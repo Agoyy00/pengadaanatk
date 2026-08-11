@@ -101,15 +101,29 @@ class StockOpnameController extends Controller
             ], 422);
         }
 
+        // Cek periode aktif untuk menentukan apakah user boleh ganti unit
+        $now = Carbon::now('Asia/Jakarta');
+        $periodeAktif = Periode::where('mulai', '<=', $now)->where('selesai', '>=', $now)->first();
+        $tahunAktif = $periodeAktif ? $periodeAktif->tahun_akademik : null;
+
         $user = $request->user();
-        if (empty($user->unit)) {
+
+        // Jika periode berbeda dari terakhir kali user set unit → reset, boleh pilih baru
+        if ($tahunAktif && $user->unit_tahun_akademik !== $tahunAktif) {
             $user->unit = $validated['unit'];
+            $user->unit_tahun_akademik = $tahunAktif;
             $user->save();
-        } elseif ($user->unit !== $validated['unit']) {
+        } elseif (!empty($user->unit) && $user->unit !== $validated['unit']) {
+            // Periode sama tapi unit beda → tolak
             return response()->json([
                 'success' => false,
-                'message' => 'Unit Anda sudah terdaftar sebagai "' . $user->unit . '". Anda hanya diperbolehkan menggunakan satu unit.',
+                'message' => 'Pada periode ini Anda sudah terdaftar di unit "' . $user->unit . '". Unit hanya bisa diganti saat periode baru.',
             ], 422);
+        } elseif (empty($user->unit)) {
+            // Belum pernah set unit sama sekali
+            $user->unit = $validated['unit'];
+            $user->unit_tahun_akademik = $tahunAktif;
+            $user->save();
         }
 
         $barang = Barang::findOrFail($validated['barang_id']);
@@ -169,15 +183,26 @@ class StockOpnameController extends Controller
             ], 422);
         }
 
+        // Cek periode aktif untuk menentukan apakah user boleh ganti unit
+        $now = Carbon::now('Asia/Jakarta');
+        $periodeAktif = Periode::where('mulai', '<=', $now)->where('selesai', '>=', $now)->first();
+        $tahunAktif = $periodeAktif ? $periodeAktif->tahun_akademik : null;
+
         $user = $request->user();
-        if (empty($user->unit)) {
+
+        if ($tahunAktif && $user->unit_tahun_akademik !== $tahunAktif) {
             $user->unit = $bulkUnit;
+            $user->unit_tahun_akademik = $tahunAktif;
             $user->save();
-        } elseif ($user->unit !== $bulkUnit) {
+        } elseif (!empty($user->unit) && $user->unit !== $bulkUnit) {
             return response()->json([
                 'success' => false,
-                'message' => 'Unit Anda sudah terdaftar sebagai "' . $user->unit . '". Anda hanya diperbolehkan menggunakan satu unit.',
+                'message' => 'Pada periode ini Anda sudah terdaftar di unit "' . $user->unit . '". Unit hanya bisa diganti saat periode baru.',
             ], 422);
+        } elseif (empty($user->unit)) {
+            $user->unit = $bulkUnit;
+            $user->unit_tahun_akademik = $tahunAktif;
+            $user->save();
         }
 
         $created = [];

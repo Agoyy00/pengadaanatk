@@ -99,6 +99,8 @@ class AuthController extends Controller
                     'name'  => $user->name,
                     'email' => $user->email,
                     'role'  => $user->role ? $user->role->name : 'User',
+                    'unit'  => $user->unit,
+                    'unit_tahun_akademik' => $user->unit_tahun_akademik,
                 ],
             ]);
         }
@@ -116,6 +118,8 @@ class AuthController extends Controller
                     'name'  => $user->name,
                     'email' => $user->email,
                     'role'  => $user->role ? $user->role->name : 'User',
+                    'unit'  => $user->unit,
+                    'unit_tahun_akademik' => $user->unit_tahun_akademik,
                 ],
             ]);
         }
