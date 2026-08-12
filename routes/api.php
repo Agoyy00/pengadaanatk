@@ -114,6 +114,7 @@ Route::middleware('auth:sanctum')->group(function () {
     | Notification
     */
     Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::patch('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead']);
     Route::patch('/notifications/{notification}/read', [NotificationController::class, 'markAsRead']);
 
     /*
@@ -146,8 +147,11 @@ Route::middleware('auth:sanctum')->group(function () {
     /*
     | Support Ticket
     */
+    Route::get('/support-tickets/unread-count', [SupportTicketController::class, 'unreadCount']);
+    Route::get('/support-tickets/unread-counts', [SupportTicketController::class, 'unreadCounts']);
     Route::get('/support-tickets', [SupportTicketController::class, 'index']);
     Route::post('/support-tickets', [SupportTicketController::class, 'store']);
+    Route::patch('/support-tickets/{id}/mark-read', [SupportTicketController::class, 'markTicketAsRead']);
     Route::get('/support-tickets/{id}', [SupportTicketController::class, 'show']);
     Route::patch('/support-tickets/{id}/status', [SupportTicketController::class, 'updateStatus']);
     Route::post('/support-tickets/{id}/reply', [SupportTicketController::class, 'reply']);

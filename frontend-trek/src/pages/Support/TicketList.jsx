@@ -25,6 +25,23 @@ export default function TicketList({ showCreateButton = true }) {
   const [errorMsg, setErrorMsg] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterPriority, setFilterPriority] = useState("all");
+  const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+  const userRole = String(currentUser?.role || "").toLowerCase();
+  const activeRoleHeader = userRole || "user";
+
+  const markSupportNotificationsAsRead = async () => {
+    try {
+      await fetch(`${API_BASE}/notifications/mark-all-read?user_id=${currentUser?.id}`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+        },
+      });
+    } catch (err) {
+      console.error("Gagal menandai notifikasi sebagai dibaca:", err);
+    }
+  };
 
   const loadTickets = async () => {
     try {
@@ -33,6 +50,7 @@ export default function TicketList({ showCreateButton = true }) {
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: "application/json",
+          "X-Active-Role": activeRoleHeader,
         },
       });
       
@@ -40,7 +58,7 @@ export default function TicketList({ showCreateButton = true }) {
       let data;
       try {
         data = JSON.parse(text);
-      } catch (e) {
+      } catch {
         console.error("Gagal parse JSON:", text);
         throw new Error("Respons dari server tidak valid");
       }
@@ -60,13 +78,23 @@ export default function TicketList({ showCreateButton = true }) {
 
   useEffect(() => {
     loadTickets();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const filteredTickets = tickets.filter((ticket) => {
-    const matchStatus = filterStatus === "all" || ticket.status === filterStatus;
-    const matchPriority = filterPriority === "all" || ticket.priority === filterPriority;
-    return matchStatus && matchPriority;
-  });
+  const STATUS_ORDER = { open: 0, read: 1, process: 2, complete: 3 };
+  const PRIORITY_ORDER = { high: 0, medium: 1, low: 2 };
+
+  const filteredTickets = tickets
+    .filter((ticket) => {
+      const matchStatus = filterStatus === "all" || ticket.status === filterStatus;
+      const matchPriority = filterPriority === "all" || ticket.priority === filterPriority;
+      return matchStatus && matchPriority;
+    })
+    .sort((a, b) => {
+      const statusDiff = (STATUS_ORDER[a.status] ?? 9) - (STATUS_ORDER[b.status] ?? 9);
+      if (statusDiff !== 0) return statusDiff;
+      return (PRIORITY_ORDER[a.priority] ?? 9) - (PRIORITY_ORDER[b.priority] ?? 9);
+    });
 
   const handleDelete = async (ticket) => {
     const result = await Swal.fire({
@@ -261,12 +289,29 @@ export default function TicketList({ showCreateButton = true }) {
                   {filteredTickets.map((ticket, index) => {
                     const priorityConfig = PRIORITY_CONFIG[ticket.priority] || PRIORITY_CONFIG.medium;
                     const statusConfig = STATUS_CONFIG[ticket.status] || STATUS_CONFIG.open;
-
                     return (
                       <tr key={ticket.id} style={{ borderBottom: "1px solid #f1f5f9", transition: "background 0.15s" }} onMouseEnter={(e) => e.currentTarget.style.background = "#f8fafc"} onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
                         <td style={{ padding: "16px", fontSize: 13, color: "#64748b", fontWeight: 600 }}>{index + 1}</td>
                         <td style={{ padding: "16px", maxWidth: 300 }}>
-                          <div style={{ fontWeight: 600, fontSize: 14, color: "#0f172a", marginBottom: 4 }}>{ticket.subject}</div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                            <span style={{ fontWeight: 600, fontSize: 14, color: "#0f172a" }}>{ticket.subject}</span>
+                            {ticket.unread_count > 0 && (
+                              <span style={{
+                                background: "#ef4444",
+                                color: "#ffffff",
+                                fontSize: 11,
+                                fontWeight: 800,
+                                padding: "2px 8px",
+                                borderRadius: 999,
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 4,
+                                boxShadow: "0 2px 6px rgba(239, 68, 68, 0.3)",
+                              }}>
+                                ✉️ {ticket.unread_count} pesan baru
+                              </span>
+                            )}
+                          </div>
                           <div style={{ fontSize: 12, color: "#64748b", lineHeight: 1.5, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
                             {ticket.message}
                           </div>

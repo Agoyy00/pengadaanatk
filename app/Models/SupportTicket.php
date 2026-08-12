@@ -11,6 +11,7 @@ class SupportTicket extends Model
 
     protected $fillable = [
         'user_id',
+        'target_role',
         'subject',
         'priority',
         'message',

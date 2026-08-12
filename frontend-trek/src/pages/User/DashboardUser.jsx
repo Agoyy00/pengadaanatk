@@ -28,6 +28,7 @@ export default function DashboardUser() {
   const [periodeOpen, setPeriodeOpen] = useState(false);
   const [periodeMessage, setPeriodeMessage] = useState("");
   const [hasStockOpname, setHasStockOpname] = useState(false);
+  const [supportUnreadCount, setSupportUnreadCount] = useState(0);
 
   useEffect(() => {
     async function checkAllStatus() {
@@ -172,6 +173,30 @@ export default function DashboardUser() {
     }
   };
 
+  const loadSupportUnread = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/support-tickets/unread-count`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+          "X-Active-Role": "user",
+        },
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSupportUnreadCount(data.count || 0);
+      }
+    } catch (err) {
+      console.error("Gagal memuat support unread count:", err);
+    }
+  };
+
+  useEffect(() => {
+    loadSupportUnread();
+    const interval = setInterval(loadSupportUnread, 15000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <div className="layout">
       <DesktopSidebarToggle isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
@@ -187,6 +212,7 @@ export default function DashboardUser() {
         <nav className="sidebar-menu">
           {sidebarMenus.map((m) => {
             const isActive = location.pathname === m.to;
+            const isSupport = m.label === "Support";
             return (
               <div
                 key={m.label}
@@ -196,7 +222,10 @@ export default function DashboardUser() {
                   if (!isActive) navigate(m.to);
                 }}
               >
-                {m.label}
+                <span>{m.label}</span>
+                {isSupport && supportUnreadCount > 0 && (
+                  <span className="support-badge">{supportUnreadCount}</span>
+                )}
               </div>
             );
           })}
@@ -228,9 +257,8 @@ export default function DashboardUser() {
               </div>
             </div>
           </div>
-          <div className="topbar-right" style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <PeriodeTimer typeFilter="pengajuan" />
-            <PeriodeTimer typeFilter="stock_opname" />
+          <div className="topbar-right">
+            <PeriodeTimer />
             <span>Role: </span>
             <RoleSwitcher />
           </div>

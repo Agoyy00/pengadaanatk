@@ -3,13 +3,11 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import "../../css/layout.css";
 import RoleSwitcher from "../../components/RoleSwitcher";
-
+import SidebarLogo from "../../components/SidebarLogo";
 
 
 const API_BASE = import.meta.env.VITE_API_BASE;
 const token = localStorage.getItem("token");
-
-import SidebarLogo from "../../components/SidebarLogo";
 
 export default function DashboardSuperAdmin() {
   const navigate = useNavigate();
@@ -49,6 +47,7 @@ export default function DashboardSuperAdmin() {
   const [notifications, setNotifications] = useState([]);
   const [loadingNotif, setLoadingNotif] = useState(false);
   const [errorNotif, setErrorNotif] = useState("");
+  const [supportUnreadCount, setSupportUnreadCount] = useState(0);
 
   // =========================
   // LOAD NOTIFIKASI
@@ -127,13 +126,38 @@ export default function DashboardSuperAdmin() {
   // Hitung jumlah unread
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
+  const loadSupportUnread = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/support-tickets/unread-count`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+          "X-Active-Role": "superadmin",
+        },
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSupportUnreadCount(data.count || 0);
+      }
+    } catch (err) {
+      console.error("Gagal memuat support unread count:", err);
+    }
+  };
+
+  useEffect(() => {
+    loadSupportUnread();
+    const interval = setInterval(loadSupportUnread, 15000);
+    return () => clearInterval(interval);
+  }, []);
+
   // =========================
   // MENU SIDEBAR (RAPI)
   // =========================
   const sidebarMenus = useMemo(() => {
     return [
       { label: "Dashboard Super Admin", to: "/dashboardsuperadmin", active: true },
-      { label: "Monitoring Admin & User", to: "/superadmin/monitoring" },
+      { label: "Monitoring Admin", to: "/superadmin/monitoring-admin" },
+      { label: "Monitoring User", to: "/superadmin/monitoring-user" },
       { label: "Grafik Barang", to: "/superadmin/grafik-barang" },
       { label: "Grafik Belanja", to: "/superadmin/grafik-belanja" },
       { label: "Verifikasi Pengajuan", to: "/verifikasi" },
@@ -174,6 +198,7 @@ export default function DashboardSuperAdmin() {
         <nav className="sidebar-menu">
           {sidebarMenus.map((m) => {
             const isActive = location.pathname === m.to;
+            const isSupport = m.label === "Support";
             return (
               <div
                 key={m.label}
@@ -183,7 +208,10 @@ export default function DashboardSuperAdmin() {
                   if (!isActive) navigate(m.to);
                 }}
               >
-                {m.label}
+                <span>{m.label}</span>
+                {isSupport && supportUnreadCount > 0 && (
+                  <span className="support-badge">{supportUnreadCount}</span>
+                )}
               </div>
             );
           })}

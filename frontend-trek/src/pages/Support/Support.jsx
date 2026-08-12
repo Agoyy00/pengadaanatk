@@ -9,17 +9,46 @@ import TicketList from "./TicketList";
 import OpenTicket from "./OpenTicket";
 import TicketDetail from "./TicketDetail";
 
+const API_BASE = import.meta.env.VITE_API_BASE;
+const token = localStorage.getItem("token");
+
 export default function Support() {
   const navigate = useNavigate();
   const location = useLocation();
   const storedUser = localStorage.getItem("user");
   const currentUser = storedUser ? JSON.parse(storedUser) : null;
-
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768);
+  const [supportUnreadCount, setSupportUnreadCount] = useState(0);
+
+  const loadSupportUnread = async () => {
+    try {
+      const activeRole = String(currentUser?.role || "superadmin").toLowerCase();
+      const res = await fetch(`${API_BASE}/support-tickets/unread-count`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+          "X-Active-Role": activeRole,
+        },
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSupportUnreadCount(data.count || 0);
+      }
+    } catch (err) {
+      console.error("Gagal memuat support unread count:", err);
+    }
+  };
+
+  useEffect(() => {
+    loadSupportUnread();
+    const interval = setInterval(loadSupportUnread, 15000);
+    return () => clearInterval(interval);
+  }, []);
 
   const sidebarMenus = [
     { label: "Dashboard Super Admin", to: "/dashboardsuperadmin" },
-    { label: "Monitoring Admin & User", to: "/superadmin/monitoring" },
+    { label: "Monitoring Admin", to: "/superadmin/monitoring-admin" },
+    { label: "Monitoring User", to: "/superadmin/monitoring-user" },
     { label: "Grafik Barang", to: "/superadmin/grafik-barang" },
     { label: "Grafik Belanja", to: "/superadmin/grafik-belanja" },
     { label: "Approval Pengajuan", to: "/approval" },
@@ -49,6 +78,7 @@ export default function Support() {
         <nav className="sidebar-menu">
           {sidebarMenus.map((m) => {
             const isActive = m.active || location.pathname === m.to;
+            const isSupport = m.label === "Support";
             return (
               <div
                 key={m.label}
@@ -58,7 +88,10 @@ export default function Support() {
                   if (!isActive) navigate(m.to);
                 }}
               >
-                {m.label}
+                <span>{m.label}</span>
+                {isSupport && supportUnreadCount > 0 && (
+                  <span className="support-badge">{supportUnreadCount}</span>
+                )}
               </div>
             );
           })}

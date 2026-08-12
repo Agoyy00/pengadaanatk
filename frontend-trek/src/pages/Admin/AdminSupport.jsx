@@ -8,10 +8,38 @@ import TicketList from "../Support/TicketList";
 import OpenTicket from "../Support/OpenTicket";
 import TicketDetail from "../Support/TicketDetail";
 
+const API_BASE = import.meta.env.VITE_API_BASE;
+const token = localStorage.getItem("token");
+
 export default function AdminSupport() {
   const navigate = useNavigate();
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768);
+  const [supportUnreadCount, setSupportUnreadCount] = useState(0);
+
+  const loadSupportUnread = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/support-tickets/unread-count`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+          "X-Active-Role": "admin",
+        },
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSupportUnreadCount(data.count || 0);
+      }
+    } catch (err) {
+      console.error("Gagal memuat support unread count:", err);
+    }
+  };
+
+  useEffect(() => {
+    loadSupportUnread();
+    const interval = setInterval(loadSupportUnread, 15000);
+    return () => clearInterval(interval);
+  }, []);
 
   const sidebarMenus = [
     { label: "Dashboard Admin", to: "/dashboardadmin" },
@@ -39,6 +67,7 @@ export default function AdminSupport() {
         <nav className="sidebar-menu">
           {sidebarMenus.map((m) => {
             const isActive = m.active || location.pathname === m.to;
+            const isSupport = m.label === "Support";
             return (
               <div
                 key={m.label}
@@ -48,7 +77,10 @@ export default function AdminSupport() {
                   if (!isActive) navigate(m.to);
                 }}
               >
-                {m.label}
+                <span>{m.label}</span>
+                {isSupport && supportUnreadCount > 0 && (
+                  <span className="support-badge">{supportUnreadCount}</span>
+                )}
               </div>
             );
           })}

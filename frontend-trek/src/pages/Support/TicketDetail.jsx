@@ -60,8 +60,28 @@ export default function TicketDetail() {
     }
   };
 
+  const markTicketAsRead = async () => {
+    try {
+      await fetch(`${API_BASE}/support-tickets/${id}/mark-read`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+          "X-Active-Role": activeRoleHeader,
+        },
+      });
+    } catch (err) {
+      console.error("Gagal menandai notifikasi tiket sebagai dibaca:", err);
+    }
+  };
+
   useEffect(() => {
-    loadTicket();
+    const init = async () => {
+      await loadTicket();
+      await markTicketAsRead();
+    };
+    init();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   useEffect(() => {
@@ -151,7 +171,6 @@ export default function TicketDetail() {
         throw new Error(data.message || "Gagal mengirim balasan");
       }
 
-      setReplies((prev) => [...prev, data.reply]);
       setReplyMessage("");
       await loadTicket();
       Swal.fire({
@@ -385,6 +404,11 @@ export default function TicketDetail() {
               🗑️ Hapus
             </button>
           )}
+          {ticket.status === 'complete' && (
+            <span style={{ padding: "8px 16px", borderRadius: 8, background: "#dcfce7", color: "#16a34a", fontWeight: 700, fontSize: 12 }}>
+              ✅ Percakapan Ditutup
+            </span>
+          )}
         </div>
       </div>
 
@@ -404,7 +428,6 @@ export default function TicketDetail() {
       }}>
         {allMessages.map((msg, idx) => {
           const isUser = msg.type === "user";
-          const isFirst = idx === 0;
           return (
             <div key={msg.id || idx} style={{
               display: "flex",
@@ -456,13 +479,21 @@ export default function TicketDetail() {
         borderRadius: 16,
         border: "1px solid #e2e8f0",
         boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+        opacity: ticket.status === 'complete' ? 0.6 : 1,
+        pointerEvents: ticket.status === 'complete' ? 'none' : 'auto',
       }}>
+        {ticket.status === 'complete' && (
+          <div style={{ marginBottom: 12, color: "#16a34a", fontWeight: 600, fontSize: 13, textAlign: 'center' }}>
+            ✅ Tiket ini sudah selesai. Percakapan ditutup.
+          </div>
+        )}
         <form onSubmit={handleSendReply} style={{ display: "flex", gap: 12, alignItems: "flex-end" }}>
           <textarea
             value={replyMessage}
             onChange={(e) => setReplyMessage(e.target.value)}
-            placeholder={isAdmin ? "Ketik balasan untuk user..." : "Tulis balasan Anda..."}
+            placeholder={ticket.status === 'complete' ? "Percakapan ini sudah ditutup." : (isAdmin ? "Ketik balasan untuk user..." : "Tulis balasan Anda...")}
             rows={1}
+            disabled={ticket.status === 'complete'}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
@@ -482,20 +513,22 @@ export default function TicketDetail() {
               minHeight: 48,
               maxHeight: 120,
               transition: "border-color 0.2s ease",
+              background: ticket.status === 'complete' ? '#f1f5f9' : '#fff',
+              cursor: ticket.status === 'complete' ? 'not-allowed' : 'text',
             }}
             onFocus={(e) => e.target.style.borderColor = "#2563eb"}
             onBlur={(e) => e.target.style.borderColor = "#cbd5e1"}
           />
           <button
             type="submit"
-            disabled={sendingReply}
+            disabled={sendingReply || ticket.status === 'complete'}
             style={{
               padding: "12px 24px",
               borderRadius: 10,
               border: "none",
-              background: sendingReply ? "#94a3b8" : "#2563eb",
+              background: (sendingReply || ticket.status === 'complete') ? "#94a3b8" : "#2563eb",
               color: "#fff",
-              cursor: sendingReply ? "not-allowed" : "pointer",
+              cursor: (sendingReply || ticket.status === 'complete') ? "not-allowed" : "pointer",
               fontWeight: 700,
               fontSize: 14,
               boxShadow: "0 2px 6px rgba(37, 99, 235, 0.25)",
@@ -505,7 +538,7 @@ export default function TicketDetail() {
               gap: 6,
               whiteSpace: "nowrap",
             }}
-            onMouseEnter={(e) => { if (!sendingReply) { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 10px rgba(37, 99, 235, 0.35)'; } }}
+            onMouseEnter={(e) => { if (!sendingReply && ticket.status !== 'complete') { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 10px rgba(37, 99, 235, 0.35)'; } }}
             onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 6px rgba(37, 99, 235, 0.25)'; }}
           >
             {sendingReply ? "..." : "Kirim"}

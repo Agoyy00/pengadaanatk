@@ -397,6 +397,25 @@ button.success:hover, .btn-success:hover {
     color: #ffffff !important;
 }
 
+/* ===== SUPPORT BADGE (WhatsApp-style) ===== */
+.menu-item .support-badge {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: #dc2626 !important;
+    color: #fff !important;
+    border-radius: 9999px !important;
+    padding: 2px 8px !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    min-width: 20px !important;
+    text-align: center !important;
+    line-height: 1.2 !important;
+    margin-left: auto !important;
+    flex-shrink: 0 !important;
+    box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.25) !important;
+}
+
 .status-diajukan {
     background-color: #3b82f6;
 }

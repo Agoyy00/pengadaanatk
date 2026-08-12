@@ -1,5 +1,5 @@
 import DesktopSidebarToggle from '../../components/DesktopSidebarToggle';
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import "../../css/layout.css";
 import RoleSwitcher from "../../components/RoleSwitcher";
@@ -20,6 +20,7 @@ export default function DashboardSuperAdmin() {
   const [notifications, setNotifications] = useState([]);
   const [loadingNotif, setLoadingNotif] = useState(false);
   const [errorNotif, setErrorNotif] = useState("");
+  const [supportUnreadCount, setSupportUnreadCount] = useState(0);
 
   const storedUser = localStorage.getItem("user");
   const currentUser = storedUser ? JSON.parse(storedUser) : null;
@@ -109,6 +110,30 @@ export default function DashboardSuperAdmin() {
   // Hitung jumlah unread
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
+  const loadSupportUnread = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/support-tickets/unread-count`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+          "X-Active-Role": "admin",
+        },
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSupportUnreadCount(data.count || 0);
+      }
+    } catch (err) {
+      console.error("Gagal memuat support unread count:", err);
+    }
+  };
+
+  useEffect(() => {
+    loadSupportUnread();
+    const interval = setInterval(loadSupportUnread, 15000);
+    return () => clearInterval(interval);
+  }, []);
+
   const sidebarMenus = [
   { label: "Dashboard Admin", to: "/dashboardadmin", active: true },
   { label: "Verifikasi Pengajuan", to: "/verifikasi" },
@@ -116,7 +141,7 @@ export default function DashboardSuperAdmin() {
   { label: "Grafik Usulan Barang", to: "/grafik-usulan-barang" },
   { label: "Stock Opname Barang", to: "/stock-opname" },
   { label: "Support", to: "/support" },
-];
+  ];
 
   
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768);
@@ -136,6 +161,7 @@ export default function DashboardSuperAdmin() {
         <nav className="sidebar-menu">
           {sidebarMenus.map((m) => {
             const isActive = location.pathname === m.to;
+            const isSupport = m.label === "Support";
             return (
               <div
                 key={m.label}
@@ -145,7 +171,10 @@ export default function DashboardSuperAdmin() {
                   if (!isActive) navigate(m.to);
                 }}
               >
-                {m.label}
+                <span>{m.label}</span>
+                {isSupport && supportUnreadCount > 0 && (
+                  <span className="support-badge">{supportUnreadCount}</span>
+                )}
               </div>
             );
           })}
