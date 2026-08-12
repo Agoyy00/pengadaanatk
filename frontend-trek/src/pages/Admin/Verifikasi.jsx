@@ -180,8 +180,7 @@ const downloadPdfAdmin = async (id, status) => {
     if (role === "superadmin") {
       return [
         { label: "Dashboard Super Admin", to: "/dashboardsuperadmin" },
-        { label: "Monitoring Admin", to: "/superadmin/monitoring-admin" },
-        { label: "Monitoring User", to: "/superadmin/monitoring-user" },
+        { label: "Monitoring Admin & User", to: "/superadmin/monitoring" },
         { label: "Grafik Barang", to: "/superadmin/grafik-barang" },
         { label: "Grafik Belanja", to: "/superadmin/grafik-belanja" },
         { label: "Verifikasi Pengajuan", to: "/verifikasi", active: location.pathname === "/verifikasi" },

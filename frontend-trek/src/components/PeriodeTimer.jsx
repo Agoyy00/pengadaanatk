@@ -107,17 +107,36 @@ export default function PeriodeTimer({ typeFilter }) {
   const isStockOpnamePeriod = periodeData?.jenis_periode?.toLowerCase()?.includes("stock opname");
 
   if (typeFilter === "stock_opname" && !isStockOpnamePeriod) {
-    return null;
+    return (
+      <div className="periode-timer-badge timer-badge-red" title="Periode Stock Opname sedang ditutup">
+        <span className="timer-dot red-dot"></span>
+        <span className="timer-text">Periode Stock Opname: Ditutup</span>
+      </div>
+    );
   }
   if (typeFilter === "pengajuan" && isStockOpnamePeriod) {
-    return null;
+    return (
+      <div className="periode-timer-badge timer-badge-red" title="Periode Pengajuan sedang ditutup">
+        <span className="timer-dot red-dot"></span>
+        <span className="timer-text">Periode Pengajuan: Ditutup</span>
+      </div>
+    );
+  }
+
+  let jenisLabel = typeFilter === "stock_opname" ? "Periode Stock Opname" : "Periode Pengajuan";
+  if (periodeData?.jenis_periode) {
+    if (periodeData.jenis_periode.toLowerCase().includes("stock opname")) {
+      jenisLabel = "Periode Stock Opname";
+    } else {
+      jenisLabel = "Periode Pengajuan";
+    }
   }
 
   if (timeLeft.status === "closed" || !periodeData) {
     return (
-      <div className="periode-timer-badge timer-badge-red" title="Periode pengajuan sedang ditutup">
+      <div className="periode-timer-badge timer-badge-red" title={`${jenisLabel} sedang ditutup`}>
         <span className="timer-dot red-dot"></span>
-        <span className="timer-text">Periode Ditutup</span>
+        <span className="timer-text">{jenisLabel}: Ditutup</span>
       </div>
     );
   }
@@ -136,10 +155,6 @@ export default function PeriodeTimer({ typeFilter }) {
   }
 
   const pad = (n) => String(n).padStart(2, "0");
-  let jenisLabel = periodeData?.jenis_periode || "Periode Pengajuan";
-  if (jenisLabel.toLowerCase().includes("stock opname")) {
-    jenisLabel = "Periode Stock Opname";
-  }
 
   return (
     <div
@@ -151,9 +166,8 @@ export default function PeriodeTimer({ typeFilter }) {
         <span style={{ fontFamily: "inherit", fontWeight: 700, marginRight: "5px" }}>
           {jenisLabel}:
         </span>
-        {status === "red" && days === 0 ? "H-1 " : ""}
         {days > 0 ? `${days}h ` : ""}
-        {pad(hours)}j {pad(minutes)}m {pad(seconds)}s
+        {pad(hours)}j {pad(minutes)}m {pad(seconds)}d
       </span>
     </div>
   );

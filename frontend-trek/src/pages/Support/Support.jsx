@@ -19,8 +19,7 @@ export default function Support() {
 
   const sidebarMenus = [
     { label: "Dashboard Super Admin", to: "/dashboardsuperadmin" },
-    { label: "Monitoring Admin", to: "/superadmin/monitoring-admin" },
-    { label: "Monitoring User", to: "/superadmin/monitoring-user" },
+    { label: "Monitoring Admin & User", to: "/superadmin/monitoring" },
     { label: "Grafik Barang", to: "/superadmin/grafik-barang" },
     { label: "Grafik Belanja", to: "/superadmin/grafik-belanja" },
     { label: "Approval Pengajuan", to: "/approval" },

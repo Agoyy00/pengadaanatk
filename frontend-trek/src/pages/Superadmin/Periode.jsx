@@ -281,8 +281,7 @@ export default function Periode() {
   const sidebarMenus = useMemo(() => {
     return [
       { label: "Dashboard Super Admin", to: "/dashboardsuperadmin" },
-      { label: "Monitoring Admin", to: "/superadmin/monitoring-admin" },
-      { label: "Monitoring User", to: "/superadmin/monitoring-user" },
+      { label: "Monitoring Admin & User", to: "/superadmin/monitoring" },
       { label: "Grafik Barang", to: "/superadmin/grafik-barang" },
       { label: "Grafik Belanja", to: "/superadmin/grafik-belanja" },
       { label: "Approval Pengajuan", to: "/approval" },
@@ -435,13 +434,14 @@ export default function Periode() {
                 style={{
                   padding: "9px 22px",
                   fontSize: "14px",
-                  fontWeight: 600,
+                  fontWeight: activeTab === "pengajuan" ? 700 : 600,
                   border: "none",
                   borderRadius: "9px",
                   cursor: "pointer",
-                  backgroundColor: activeTab === "pengajuan" ? "#16a34a" : "transparent",
-                  color: activeTab === "pengajuan" ? "#ffffff" : "#000000",
-                  boxShadow: activeTab === "pengajuan" ? "0 2px 8px rgba(22, 163, 74, 0.28)" : "none",
+                  background: activeTab === "pengajuan" ? "linear-gradient(135deg, #0284c7 0%, #0369a1 100%)" : "transparent",
+                  color: activeTab === "pengajuan" ? "#ffffff" : "#64748b",
+                  boxShadow: activeTab === "pengajuan" ? "0 4px 14px rgba(2, 132, 199, 0.35)" : "none",
+                  borderLeft: activeTab === "pengajuan" ? "3.5px solid #d4af37" : "3.5px solid transparent",
                   transition: "all 0.2s ease-in-out",
                   outline: "none",
                 }}
@@ -455,13 +455,14 @@ export default function Periode() {
                 style={{
                   padding: "9px 22px",
                   fontSize: "14px",
-                  fontWeight: 600,
+                  fontWeight: activeTab === "stock_opname" ? 700 : 600,
                   border: "none",
                   borderRadius: "9px",
                   cursor: "pointer",
-                  backgroundColor: activeTab === "stock_opname" ? "#16a34a" : "transparent",
-                  color: activeTab === "stock_opname" ? "#ffffff" : "#000000",
-                  boxShadow: activeTab === "stock_opname" ? "0 2px 8px rgba(22, 163, 74, 0.28)" : "none",
+                  background: activeTab === "stock_opname" ? "linear-gradient(135deg, #0284c7 0%, #0369a1 100%)" : "transparent",
+                  color: activeTab === "stock_opname" ? "#ffffff" : "#64748b",
+                  boxShadow: activeTab === "stock_opname" ? "0 4px 14px rgba(2, 132, 199, 0.35)" : "none",
+                  borderLeft: activeTab === "stock_opname" ? "3.5px solid #d4af37" : "3.5px solid transparent",
                   transition: "all 0.2s ease-in-out",
                   outline: "none",
                 }}

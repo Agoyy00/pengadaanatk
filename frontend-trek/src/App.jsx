@@ -28,6 +28,7 @@ import DaftarBarangATKSuperAdmin from "./pages/Superadmin/DaftarBarangATKSuperAd
 import GrafikBelanjaSuperAdmin from "./pages/Superadmin/GrafikBelanjaSuperAdmin";
 import MonitoringAdmin from "./pages/Superadmin/MonitoringAdmin";
 import MonitoringUser from "./pages/Superadmin/MonitoringUser";
+import MonitoringAdminUser from "./pages/Superadmin/MonitoringAdminUser";
 import GrafikBarangSuperAdmin from "./pages/Superadmin/GrafikBarangSuperAdmin";
 import StockOpname from "./pages/StockOpname";
 import TemplateDokumen from "./pages/TemplateDokumen";
@@ -364,6 +365,14 @@ function App() {
           }
         />
 
+        <Route
+          path="/superadmin/monitoring"
+          element={
+            <RequireAuth allowRoles={["superadmin"]}>
+              <MonitoringAdminUser />
+            </RequireAuth>
+          }
+        />
         <Route
           path="/superadmin/monitoring-admin"
           element={
