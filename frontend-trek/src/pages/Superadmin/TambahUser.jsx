@@ -174,16 +174,16 @@ export default function TambahUser() {
 
   const sidebarMenus = useMemo(() => {
     return [
-      { label: "Dashboard Super Admin", to: "/dashboardsuperadmin" },
-      { label: "Monitoring Admin & User", to: "/superadmin/monitoring" },
-      { label: "Grafik Barang", to: "/superadmin/grafik-barang" },
-      { label: "Grafik Belanja", to: "/superadmin/grafik-belanja" },
-      { label: "Approval Pengajuan", to: "/approval" },
+      { label: "Dashboard Super Admin", to: "/dashboardsuperadmin"},
+      { label: "Monitoring Admin & User", to: "/superadmin/monitoring"},
+      { label: "Grafik Barang", to: "/superadmin/grafik-barang"},
+      { label: "Grafik Belanja", to: "/superadmin/grafik-belanja"},
+      { label: "Approval Pengajuan", to: "/approval"},
       { label: "Tambah & Kelola User", to: "/tambahuser", active: true },
-      { label: "Atur Periode", to: "/periode" },
-      { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang" },
-      { label: "Stock Opname Barang", to: "/stock-opname" },
-      { label: "Support", to: "/support" },
+      { label: "Atur Periode", to: "/periode"},
+      { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang"},
+      { label: "Stock Opname Barang", to: "/stock-opname"},
+      { label: "Support", to: "/support"},
     ];
   }, []);
 

@@ -51,8 +51,8 @@ export default function GrafikBarangSuperAdmin() {
   const sidebarMenus = useMemo(() => {
     return [
       { label: "Dashboard Super Admin", to: "/dashboardsuperadmin" },
-      { label: "Monitoring Admin & User", to: "/superadmin/monitoring" },
-      { label: "Grafik Barang", to: "/superadmin/grafik-barang", active: true },
+      { label: "Monitoring Admin & User", to: "/superadmin/monitoring"},
+      { label: "Grafik Barang", to: "/superadmin/grafik-barang", active: true},
       { label: "Grafik Belanja", to: "/superadmin/grafik-belanja" },
       { label: "Approval Pengajuan", to: "/approval" },
       { label: "Tambah & Kelola User", to: "/tambahuser" },

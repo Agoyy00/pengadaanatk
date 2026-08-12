@@ -13,9 +13,8 @@ const PRIORITY_CONFIG = {
 
 const STATUS_CONFIG = {
   open: { label: "Open", bg: "#dbeafe", color: "#2563eb", border: "#bfdbfe", icon: "📋" },
-  read: { label: "Read", bg: "#cffafe", color: "#0891b2", border: "#a5f3fc", icon: "👁️" },
-  process: { label: "Process", bg: "#fef3c7", color: "#d97706", border: "#fde68a", icon: "⚙️" },
-  complete: { label: "Complete", bg: "#dcfce7", color: "#16a34a", border: "#bbf7d0", icon: "✅" },
+  process: { label: "Di Proses", bg: "#fef3c7", color: "#d97706", border: "#fde68a", icon: "⚙️" },
+  complete: { label: "Selesai", bg: "#dcfce7", color: "#16a34a", border: "#bbf7d0", icon: "✅" },
 };
 
 export default function TicketList({ showCreateButton = true }) {
@@ -249,9 +248,8 @@ export default function TicketList({ showCreateButton = true }) {
             >
               <option value="all">Semua Status</option>
               <option value="open">Open</option>
-              <option value="read">Read</option>
-              <option value="process">Process</option>
-              <option value="complete">Complete</option>
+              <option value="process">Di Proses</option>
+              <option value="complete">Selesai</option>
             </select>
             <select
               value={filterPriority}

@@ -40,10 +40,19 @@ class SupportTicketController extends Controller
         }
 
         $tickets = $query->get()->map(function ($ticket) use ($user) {
-            $ticket->unread_count = Notification::where('ticket_id', $ticket->id)
+            $notifCount = Notification::where('ticket_id', $ticket->id)
                 ->where('user_id', $user->id)
                 ->where('is_read', false)
                 ->count();
+
+            $initialUnread = ($ticket->user_id !== $user->id && !$ticket->is_read) ? 1 : 0;
+
+            $replyUnread = SupportTicketReply::where('ticket_id', $ticket->id)
+                ->where('user_id', '!=', $user->id)
+                ->where('is_read', false)
+                ->count();
+
+            $ticket->unread_count = max($notifCount, $initialUnread + $replyUnread);
             return $ticket;
         });
 
@@ -122,11 +131,20 @@ class SupportTicketController extends Controller
             ->where('is_read', false)
             ->update(['is_read' => true]);
 
-        if ($isViewingAsAdmin && $ticket->status === 'open') {
-            $ticket->status = 'read';
+        // Auto mark initial ticket message as read if viewed by recipient (non-author)
+        if ($ticket->user_id !== $user->id && !$ticket->is_read) {
+            $ticket->is_read = true;
             $ticket->save();
-            // Tidak perlu kirim notifikasi khusus hanya karena admin melihat tiket (mengurangi spam)
         }
+
+        // Auto mark all replies from other users in this ticket as read when opened
+        SupportTicketReply::where('ticket_id', $ticket->id)
+            ->where('user_id', '!=', $user->id)
+            ->where('is_read', false)
+            ->update(['is_read' => true]);
+
+        // Re-load ticket with updated replies
+        $ticket = SupportTicket::with(['user', 'replies.user'])->findOrFail($id);
 
         return response()->json([
             'success' => true,
@@ -147,7 +165,7 @@ class SupportTicketController extends Controller
         }
 
         $validated = $request->validate([
-            'status' => 'required|in:open,read,process,complete',
+            'status' => 'required|in:open,process,complete',
             'admin_message' => 'nullable|string',
         ]);
 
@@ -164,7 +182,6 @@ class SupportTicketController extends Controller
         if ($oldStatus !== $validated['status']) {
             $statusLabels = [
                 'open' => 'Dibuka',
-                'read' => 'Sedang Dibaca',
                 'process' => 'Sedang Diproses',
                 'complete' => 'Selesai',
             ];
@@ -289,47 +306,83 @@ class SupportTicketController extends Controller
 
     /**
      * GET /api/support-tickets/unread-count
-     * Get count of unread support notifications for current user
+     * Get count of unread support notifications & unread messages for current user
      */
     public function unreadCount(Request $request)
     {
         $user = Auth::user();
+        $isViewingAsAdmin = $user->isAdmin() || $user->isSuperAdmin();
 
-        $count = Notification::where('user_id', $user->id)
+        $notifCount = Notification::where('user_id', $user->id)
             ->where('is_read', false)
             ->whereNotNull('ticket_id')
             ->count();
 
+        if ($isViewingAsAdmin) {
+            $unreadInitialCount = SupportTicket::where('user_id', '!=', $user->id)
+                ->where('is_read', false)
+                ->count();
+
+            $unreadReplyCount = SupportTicketReply::where('user_id', '!=', $user->id)
+                ->where('is_read', false)
+                ->count();
+        } else {
+            $unreadInitialCount = 0;
+
+            $unreadReplyCount = SupportTicketReply::whereHas('ticket', function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            })
+            ->where('user_id', '!=', $user->id)
+            ->where('is_read', false)
+            ->count();
+        }
+
+        $totalCount = max($notifCount, $unreadInitialCount + $unreadReplyCount);
+
         return response()->json([
             'success' => true,
-            'count' => $count,
+            'count' => $totalCount,
         ]);
     }
 
     /**
      * GET /api/support-tickets/unread-counts
-     * Get grouped unread support notifications per ticket for current user
+     * Get grouped unread support notifications & messages per ticket for current user
      */
     public function unreadCounts(Request $request)
     {
         $user = Auth::user();
+        $isViewingAsAdmin = $user->isAdmin() || $user->isSuperAdmin();
 
-        $groups = Notification::where('user_id', $user->id)
-            ->where('is_read', false)
-            ->whereNotNull('ticket_id')
-            ->select('ticket_id')
-            ->selectRaw('COUNT(*) as count, MAX(created_at) as last_at')
-            ->groupBy('ticket_id')
-            ->get()
-            ->map(function ($row) {
-                $ticket = SupportTicket::find($row->ticket_id);
-                return [
-                    'ticket_id' => $row->ticket_id,
-                    'subject' => $ticket ? $ticket->subject : 'Tiket Dihapus',
-                    'count' => $row->count,
-                    'last_at' => $row->last_at,
-                ];
-            })->sortByDesc('last_at')->values();
+        $query = SupportTicket::with(['user', 'replies']);
+        if (!$isViewingAsAdmin) {
+            $query->where('user_id', $user->id);
+        }
+
+        $groups = $query->get()->map(function ($ticket) use ($user) {
+            $notifCount = Notification::where('ticket_id', $ticket->id)
+                ->where('user_id', $user->id)
+                ->where('is_read', false)
+                ->count();
+
+            $initialUnread = ($ticket->user_id !== $user->id && !$ticket->is_read) ? 1 : 0;
+
+            $replyUnread = SupportTicketReply::where('ticket_id', $ticket->id)
+                ->where('user_id', '!=', $user->id)
+                ->where('is_read', false)
+                ->count();
+
+            $count = max($notifCount, $initialUnread + $replyUnread);
+
+            return [
+                'ticket_id' => $ticket->id,
+                'subject' => $ticket->subject,
+                'count' => $count,
+                'last_at' => $ticket->updated_at,
+            ];
+        })->filter(function ($g) {
+            return $g['count'] > 0;
+        })->values();
 
         return response()->json([
             'success' => true,

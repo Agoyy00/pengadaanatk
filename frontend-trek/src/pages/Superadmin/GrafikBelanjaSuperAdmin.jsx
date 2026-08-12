@@ -50,21 +50,20 @@ export default function SuperAdminAnalisisDashboard() {
   /* =========================
      SIDEBAR
   ========================= */
-  const sidebarMenus = useMemo(
-    () => [
+  const sidebarMenus = useMemo(() => {
+    return [
       { label: "Dashboard Super Admin", to: "/dashboardsuperadmin" },
-      { label: "Monitoring Admin & User", to: "/superadmin/monitoring" },
+      { label: "Monitoring Admin & User", to: "/superadmin/monitoring"},
       { label: "Grafik Barang", to: "/superadmin/grafik-barang" },
-      { label: "Grafik Belanja", to: "/superadmin/grafik-belanja", active: true },
+      { label: "Grafik Belanja", to: "/superadmin/grafik-belanja", active: true},
       { label: "Approval Pengajuan", to: "/approval" },
       { label: "Tambah & Kelola User", to: "/tambahuser" },
       { label: "Atur Periode", to: "/periode" },
       { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang" },
       { label: "Stock Opname Barang", to: "/stock-opname" },
       { label: "Support", to: "/support" },
-    ],
-    []
-  );
+    ];
+  }, []);
 
   /* =========================
      STATE ANALISIS BARANG

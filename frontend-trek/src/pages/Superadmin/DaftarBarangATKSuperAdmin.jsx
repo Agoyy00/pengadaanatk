@@ -257,7 +257,7 @@ export default function DaftarBarangATKSuperAdmin() {
   const sidebarMenus = useMemo(() => {
     return [
       { label: "Dashboard Super Admin", to: "/dashboardsuperadmin" },
-      { label: "Monitoring Admin & User", to: "/superadmin/monitoring" },
+      { label: "Monitoring Admin & User", to: "/superadmin/monitoring"},
       { label: "Grafik Barang", to: "/superadmin/grafik-barang" },
       { label: "Grafik Belanja", to: "/superadmin/grafik-belanja" },
       { label: "Approval Pengajuan", to: "/approval" },

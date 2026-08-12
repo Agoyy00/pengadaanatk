@@ -13,12 +13,11 @@ const PRIORITY_CONFIG = {
 
 const STATUS_CONFIG = {
   open: { label: "Open", bg: "#dbeafe", color: "#2563eb", border: "#bfdbfe" },
-  read: { label: "Read", bg: "#cffafe", color: "#0891b2", border: "#a5f3fc" },
-  process: { label: "Process", bg: "#fef3c7", color: "#d97706", border: "#fde68a" },
-  complete: { label: "Complete", bg: "#dcfce7", color: "#16a34a", border: "#bbf7d0" },
+  process: { label: "Di Proses", bg: "#fef3c7", color: "#d97706", border: "#fde68a" },
+  complete: { label: "Selesai", bg: "#dcfce7", color: "#16a34a", border: "#bbf7d0" },
 };
 
-const STATUS_FLOW = ["open", "read", "process", "complete"];
+const STATUS_FLOW = ["open", "process", "complete"];
 
 export default function TicketDetail() {
   const { id } = useParams();
@@ -261,20 +260,50 @@ export default function TicketDetail() {
   const currentStatusIndex = getCurrentStatusIndex();
   const priorityConfig = PRIORITY_CONFIG[ticket.priority] || PRIORITY_CONFIG.medium;
 
+  const getInitials = (name) => {
+    if (!name) return "?";
+    const clean = name.replace(/\([^)]*\)/g, "").trim();
+    const parts = clean.split(" ").filter(Boolean);
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return clean.slice(0, 2).toUpperCase();
+  };
+
+  const currentUserId = currentUser?.id ? Number(currentUser.id) : null;
+  const isMessageFromMe = (msg) => {
+    if (currentUserId && msg.userId) {
+      if (Number(msg.userId) === currentUserId) return true;
+    }
+    if (isAdmin) {
+      return msg.type === "admin";
+    }
+    if (ticket && Number(ticket.user_id) === currentUserId) {
+      return msg.type === "user";
+    }
+    return false;
+  };
+
   const allMessages = [
     {
-      id: ticket.id,
+      id: `ticket-${ticket.id}`,
+      userId: ticket.user_id,
       type: "user",
       message: ticket.message,
       createdAt: ticket.created_at,
       userName: ticket.user?.name || "User",
+      isRead: !!ticket.is_read,
     },
     ...replies.map((reply) => ({
-      id: reply.id,
+      id: `reply-${reply.id}`,
+      userId: reply.user_id,
       type: reply.sender_type === "admin" ? "admin" : "user",
       message: reply.message,
       createdAt: reply.created_at,
-      userName: reply.sender_type === "admin" ? "Tim Support" : reply.user?.name || "User",
+      userName: reply.sender_type === "admin"
+        ? (reply.user?.name ? `Tim Support (${reply.user.name})` : "Tim Support")
+        : (reply.user?.name || "User"),
+      isRead: !!reply.is_read,
     })),
   ];
 
@@ -361,6 +390,28 @@ export default function TicketDetail() {
         </div>
 
         <div style={{ display: "flex", gap: 8 }}>
+          {isAdmin && ticket.status === 'open' && (
+            <button
+              onClick={() => handleStatusUpdate('process')}
+              disabled={updating}
+              style={{
+                padding: "8px 18px",
+                borderRadius: 8,
+                border: "none",
+                background: "#d97706",
+                color: "#fff",
+                cursor: updating ? "not-allowed" : "pointer",
+                fontWeight: 700,
+                fontSize: 13,
+                boxShadow: "0 2px 4px rgba(217, 119, 6, 0.2)",
+                transition: "all 0.2s ease",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 4px 6px rgba(217, 119, 6, 0.3)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 4px rgba(217, 119, 6, 0.2)'; }}
+            >
+              ⚙️ Di Proses
+            </button>
+          )}
           {isAdmin && ticket.status !== 'complete' && (
             <button
               onClick={() => handleStatusUpdate('complete')}
@@ -415,11 +466,11 @@ export default function TicketDetail() {
       {/* Chat Area */}
       <div style={{
         flex: 1,
-        background: "#f8fafc",
+        background: "#f0f2f5",
         borderRadius: 16,
-        border: "1px solid #e2e8f0",
+        border: "1px solid #cbd5e1",
         marginBottom: 16,
-        boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+        boxShadow: "inset 0 1px 3px rgba(0,0,0,0.04)",
         overflowY: "auto",
         padding: "20px 24px",
         display: "flex",
@@ -427,43 +478,110 @@ export default function TicketDetail() {
         gap: 12,
       }}>
         {allMessages.map((msg, idx) => {
-          const isUser = msg.type === "user";
+          const sentByMe = isMessageFromMe(msg);
+          const initials = getInitials(msg.userName);
           return (
             <div key={msg.id || idx} style={{
               display: "flex",
-              flexDirection: isUser ? "row" : "row-reverse",
+              flexDirection: sentByMe ? "row-reverse" : "row",
               alignItems: "flex-end",
               gap: 10,
+              margin: "2px 0",
             }}>
+              {/* Avatar */}
               <div style={{
-                width: 32,
-                height: 32,
+                width: 34,
+                height: 34,
                 borderRadius: "50%",
-                background: isUser ? "#64748b" : "#0ea5e9",
+                background: sentByMe ? "#16a34a" : "#0284c7",
                 color: "#fff",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 fontWeight: 700,
-                fontSize: 13,
+                fontSize: 12,
                 flexShrink: 0,
+                boxShadow: "0 1px 2px rgba(0,0,0,0.1)",
               }}>
-                {isUser ? "U" : "A"}
+                {initials}
               </div>
+
+              {/* Message Bubble */}
               <div style={{
                 maxWidth: "75%",
-                background: isUser ? "#fff" : "#f0f9ff",
-                padding: "14px 18px",
-                borderRadius: isUser ? "4px 18px 18px 18px" : "18px 4px 18px 18px",
-                border: `1px solid ${isUser ? "#e2e8f0" : "#bae6fd"}`,
-                boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+                minWidth: 160,
+                background: sentByMe ? "#dcf8c6" : "#ffffff",
+                padding: "10px 14px 8px 14px",
+                borderRadius: sentByMe ? "16px 16px 2px 16px" : "16px 16px 16px 2px",
+                border: `1px solid ${sentByMe ? "#bbf7d0" : "#e2e8f0"}`,
+                boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
               }}>
-                <div style={{ fontWeight: 700, fontSize: 12, color: isUser ? "#475569" : "#0369a1", marginBottom: 4 }}>
-                  {msg.userName}
+                {/* Header Name */}
+                <div style={{
+                  fontWeight: 700,
+                  fontSize: 12,
+                  color: sentByMe ? "#15803d" : "#0284c7",
+                  marginBottom: 4,
+                }}>
+                  {sentByMe ? `${msg.userName} (Anda)` : msg.userName}
                 </div>
-                <p style={{ margin: 0, fontSize: 14, lineHeight: 1.7, color: "#1e293b", whiteSpace: "pre-wrap" }}>{msg.message}</p>
-                <div style={{ marginTop: 8, fontSize: 11, color: "#94a3b8", textAlign: isUser ? "left" : "right" }}>
-                  {new Date(msg.createdAt).toLocaleString("id-ID")}
+
+                {/* Message Text */}
+                <p style={{
+                  margin: 0,
+                  fontSize: 14,
+                  lineHeight: 1.6,
+                  color: "#0f172a",
+                  whiteSpace: "pre-wrap",
+                  wordBreak: "break-word",
+                }}>
+                  {msg.message}
+                </p>
+
+                {/* Timestamp & Double Checkmarks */}
+                <div style={{
+                  marginTop: 6,
+                  fontSize: 10,
+                  color: sentByMe ? "#15803d" : "#94a3b8",
+                  textAlign: "right",
+                  fontWeight: 500,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "flex-end",
+                  gap: 4,
+                }}>
+                  <span>
+                    {new Date(msg.createdAt).toLocaleString("id-ID", {
+                      dateStyle: "short",
+                      timeStyle: "short",
+                    })}
+                  </span>
+                  {sentByMe && (
+                    <svg
+                      width="16"
+                      height="11"
+                      viewBox="0 0 16 11"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                      style={{ display: "inline-block", verticalAlign: "middle" }}
+                      title={msg.isRead ? "Dibaca oleh penerima" : "Terkirim"}
+                    >
+                      <path
+                        d="M1.5 5.5L4.5 8.5L10.5 1.5"
+                        stroke={msg.isRead ? "#0284c7" : "#64748b"}
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      <path
+                        d="M5.5 5.5L8.5 8.5L14.5 1.5"
+                        stroke={msg.isRead ? "#0284c7" : "#64748b"}
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  )}
                 </div>
               </div>
             </div>

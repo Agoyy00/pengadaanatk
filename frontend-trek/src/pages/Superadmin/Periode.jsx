@@ -286,7 +286,7 @@ export default function Periode() {
       { label: "Grafik Belanja", to: "/superadmin/grafik-belanja" },
       { label: "Approval Pengajuan", to: "/approval" },
       { label: "Tambah & Kelola User", to: "/tambahuser" },
-      { label: "Atur Periode", to: "/periode", active: true },
+      { label: "Atur Periode", to: "/periode", active: true},
       { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang" },
       { label: "Stock Opname Barang", to: "/stock-opname" },
       { label: "Support", to: "/support" },
