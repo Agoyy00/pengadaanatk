@@ -118,32 +118,28 @@ export default function MonitoringAdminUser({ defaultTab }) {
     try {
       setLoadingAdmin(true);
       const freshToken = localStorage.getItem("token");
+      const headers = { "Authorization": `Bearer ${freshToken}`, "Accept": "application/json" };
 
-      const resUsers = await fetch(`${API_BASE}/users`, {
-        headers: { "Authorization": `Bearer ${freshToken}`, "Accept": "application/json" }
-      });
-      const dataUsers = await resUsers.json();
+      const [resUsers, resLogs, resUserReqs, resSO] = await Promise.all([
+        fetch(`${API_BASE}/users`, { headers }),
+        fetch(`${API_BASE}/monitoring/admin`, { headers }),
+        fetch(`${API_BASE}/monitoring/user`, { headers }),
+        fetch(`${API_BASE}/stock-opname`, { headers }),
+      ]);
+
+      const [dataUsers, dataLogs, dataUserReqs, dataSO] = await Promise.all([
+        resUsers.json(),
+        resLogs.json(),
+        resUserReqs.json(),
+        resSO.json(),
+      ]);
+
       const adminUsers = Array.isArray(dataUsers)
         ? dataUsers.filter((u) => u.role_id === 2 || (u.role && u.role.name === "admin"))
         : [];
-
-      const resLogs = await fetch(`${API_BASE}/monitoring/admin`, {
-        headers: { "Authorization": `Bearer ${freshToken}`, "Accept": "application/json" }
-      });
-      const dataLogs = await resLogs.json();
       const logsList = dataLogs.success ? dataLogs.logs || [] : [];
-
-      const resUserReqs = await fetch(`${API_BASE}/monitoring/user`, {
-        headers: { "Authorization": `Bearer ${freshToken}`, "Accept": "application/json" }
-      });
-      const dataUserReqs = await resUserReqs.json();
       const reqList = dataUserReqs.success ? dataUserReqs.requests || [] : [];
       setAllRequestsAdmin(reqList);
-
-      const resSO = await fetch(`${API_BASE}/stock-opname`, {
-        headers: { "Authorization": `Bearer ${freshToken}`, "Accept": "application/json" }
-      });
-      const dataSO = await resSO.json();
       const soList = dataSO.success ? dataSO.data || [] : [];
       setAllStockOpnamesAdmin(soList);
 
@@ -234,17 +230,19 @@ export default function MonitoringAdminUser({ defaultTab }) {
     try {
       setLoadingUser(true);
       const freshToken = localStorage.getItem("token");
+      const headers = { "Authorization": `Bearer ${freshToken}`, "Accept": "application/json" };
 
-      const res = await fetch(`${API_BASE}/monitoring/user`, {
-        headers: { "Authorization": `Bearer ${freshToken}`, "Accept": "application/json" }
-      });
-      const data = await res.json();
+      const [res, resSO] = await Promise.all([
+        fetch(`${API_BASE}/monitoring/user`, { headers }),
+        fetch(`${API_BASE}/stock-opname`, { headers }),
+      ]);
+
+      const [data, dataSO] = await Promise.all([
+        res.json(),
+        resSO.json(),
+      ]);
+
       if (data.success) setUserRequests(data.requests || []);
-
-      const resSO = await fetch(`${API_BASE}/stock-opname`, {
-        headers: { "Authorization": `Bearer ${freshToken}`, "Accept": "application/json" }
-      });
-      const dataSO = await resSO.json();
       if (dataSO.success) setUserStockOpnames(dataSO.data || []);
     } catch (err) {
       console.error("Gagal memuat data monitoring user:", err);
@@ -552,9 +550,9 @@ export default function MonitoringAdminUser({ defaultTab }) {
                 cursor: "pointer",
                 display: "inline-block",
                 transition: "all 0.2s ease",
-                background: activeTab === "admin" ? "linear-gradient(135deg, #0284c7 0%, #0369a1 100%)" : "transparent",
+                background: activeTab === "admin" ? "#005826" : "transparent",
                 color: activeTab === "admin" ? "#ffffff" : "#64748b",
-                boxShadow: activeTab === "admin" ? "0 4px 14px rgba(2, 132, 199, 0.35)" : "none",
+                boxShadow: activeTab === "admin" ? "0 4px 14px rgba(0, 88, 38, 0.35)" : "none",
                 borderLeft: activeTab === "admin" ? "3.5px solid #d4af37" : "3.5px solid transparent"
               }}
             >
@@ -572,9 +570,9 @@ export default function MonitoringAdminUser({ defaultTab }) {
                 cursor: "pointer",
                 display: "inline-block",
                 transition: "all 0.2s ease",
-                background: activeTab === "user" ? "linear-gradient(135deg, #0284c7 0%, #0369a1 100%)" : "transparent",
+                background: activeTab === "user" ? "#005826" : "transparent",
                 color: activeTab === "user" ? "#ffffff" : "#64748b",
-                boxShadow: activeTab === "user" ? "0 4px 14px rgba(2, 132, 199, 0.35)" : "none",
+                boxShadow: activeTab === "user" ? "0 4px 14px rgba(0, 88, 38, 0.35)" : "none",
                 borderLeft: activeTab === "user" ? "3.5px solid #d4af37" : "3.5px solid transparent"
               }}
             >

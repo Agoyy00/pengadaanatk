@@ -279,13 +279,14 @@ console.log(token); // harus ada
                               <button
                                 disabled={processingId === p.id}
                                 onClick={() => handleStatusUpdate(p.id, "disetujui")}
+                                style={{ backgroundColor: "#005826", color: "#ffffff", border: "none" }}
                               >
                                 {processingId === p.id ? "Memproses..." : "Approve"}
                               </button>
                               <button
                                 disabled={processingId === p.id}
                                 onClick={() => handleStatusUpdate(p.id, "ditolak_admin")}
-                                style={{ marginLeft: 6 }}
+                                style={{ backgroundColor: "#dc2626", color: "#ffffff", border: "none", marginLeft: 6 }}
                               >
                                 {processingId === p.id ? "Memproses..." : "Tolak"}
                               </button>
@@ -299,7 +300,10 @@ console.log(token); // harus ada
                           <button
                             onClick={() => handleDownloadPdf(p.id)}
                             style={{
-                              padding: "6px 10px",
+                              backgroundColor: "#005826",
+                              color: "#ffffff",
+                              border: "none",
+                              padding: "6px 12px",
                               fontSize: "13px",
                               cursor: "pointer",
                             }}

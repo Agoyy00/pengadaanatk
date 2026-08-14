@@ -112,9 +112,7 @@ export default function DaftarBarangATKSuperAdmin() {
     }
   };
 
-  useEffect(() => {
-    loadSatuanOptions();
-  }, []);
+
 
   const handleTambahSatuan = async () => {
     const { value: inputSatuan } = await Swal.fire({
@@ -274,9 +272,7 @@ export default function DaftarBarangATKSuperAdmin() {
     try {
       const freshToken = localStorage.getItem("token");
       const res = await fetch(`${API_BASE}/barang?q=${encodeURIComponent(q)}`, {
-        headers: {
-          "Authorization": `Bearer ${freshToken}`,
-        },
+        headers: { "Authorization": `Bearer ${freshToken}` },
       });
       const data = await res.json();
       setBarangs(Array.isArray(data) ? data : []);
@@ -289,7 +285,34 @@ export default function DaftarBarangATKSuperAdmin() {
   };
 
   useEffect(() => {
-    loadBarang();
+    async function initData() {
+      setLoading(true);
+      try {
+        const freshToken = localStorage.getItem("token");
+        const headers = { Authorization: `Bearer ${freshToken}` };
+
+        const [resSatuan, resBarang] = await Promise.all([
+          fetch(`${API_BASE}/options/satuan`, { headers }),
+          fetch(`${API_BASE}/barang?q=${encodeURIComponent(q)}`, { headers })
+        ]);
+
+        const [dataSatuan, dataBarang] = await Promise.all([
+          resSatuan.json(),
+          resBarang.json()
+        ]);
+
+        if (dataSatuan.success && Array.isArray(dataSatuan.data)) {
+          setSatuanList(dataSatuan.data);
+        }
+        setBarangs(Array.isArray(dataBarang) ? dataBarang : []);
+      } catch (e) {
+        console.error("Gagal load data awal:", e);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    initData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

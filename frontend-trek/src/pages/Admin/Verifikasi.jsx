@@ -700,7 +700,7 @@ const [selectedPengajuan, setSelectedPengajuan] = useState(null);
                                     type="button"
                                     onClick={(e) => { e.stopPropagation(); setActiveUnitView(u.unit); }}
                                     style={{
-                                      background: "linear-gradient(135deg, #0284c7, #0369a1)",
+                                      background: "#005826",
                                       color: "#ffffff",
                                       padding: "8px 16px",
                                       borderRadius: "8px",

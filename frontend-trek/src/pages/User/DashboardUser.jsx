@@ -31,43 +31,7 @@ export default function DashboardUser() {
   const [supportUnreadCount, setSupportUnreadCount] = useState(0);
 
   useEffect(() => {
-    async function checkAllStatus() {
-      if (!userId) return;
-      try {
-        const resPeriode = await fetch(`${API_BASE}/periode/active`);
-        if (!resPeriode.ok) return;
-        const pData = await resPeriode.json();
-
-        const isOpen =
-          pData.is_open === true ||
-          pData.is_open === 1 ||
-          pData.is_open === "1" ||
-          pData.is_open === "open";
-
-        setPeriodeOpen(isOpen);
-        setPeriodeMessage(pData.message || "");
-
-        if (isOpen) {
-          const tahun = pData.periode?.tahun_akademik || "";
-          const resCheck = await fetch(
-            `${API_BASE}/pengajuan/check/${userId}?tahun=${encodeURIComponent(tahun)}`,
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
-          if (resCheck.ok) {
-            const checkData = await resCheck.json();
-            setHasStockOpname(checkData.has_stock_opname === true);
-          }
-        }
-      } catch (err) {
-        console.error("Gagal cek status:", err);
-      }
-    }
-
-    checkAllStatus();
-  }, [userId]);
-
-  useEffect(() => {
-    async function fetchLatestPengajuan(showNotification = true) {
+    async function loadDashboardData(showNotification = false) {
       if (!userId) {
         setErrorMsg("User belum login.");
         setLoading(false);
@@ -75,68 +39,81 @@ export default function DashboardUser() {
       }
 
       try {
-        const res = await fetch(`${API_BASE}/pengajuan?user_id=${userId}`, {
-          headers: {
-            "Authorization": `Bearer ${token}`,
-          },
-        });
-        if (!res.ok) {
-          setErrorMsg("Gagal mengambil data pengajuan.");
-          setLoading(false);
-          return;
+        const [resPeriode, resPengajuan] = await Promise.all([
+          fetch(`${API_BASE}/periode/active`),
+          fetch(`${API_BASE}/pengajuan?user_id=${userId}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+        ]);
+
+        if (resPeriode.ok) {
+          const pData = await resPeriode.json();
+          const isOpen = pData.is_open === true || pData.is_open === 1 || pData.is_open === "1" || pData.is_open === "open";
+          setPeriodeOpen(isOpen);
+          setPeriodeMessage(pData.message || "");
+
+          if (isOpen) {
+            const tahun = pData.periode?.tahun_akademik || "";
+            fetch(`${API_BASE}/pengajuan/check/${userId}?tahun=${encodeURIComponent(tahun)}`, {
+              headers: { Authorization: `Bearer ${token}` }
+            })
+              .then((res) => (res.ok ? res.json() : null))
+              .then((checkData) => {
+                if (checkData) setHasStockOpname(checkData.has_stock_opname === true);
+              })
+              .catch(console.error);
+          }
         }
 
-        const data = await res.json();
-        if (!Array.isArray(data) || data.length === 0) {
-          setLatestPengajuan(null);
-          setStatusText("Anda belum pernah mengajukan ATK pada periode ini.");
-          setLoading(false);
-          return;
+        if (resPengajuan.ok) {
+          const data = await resPengajuan.json();
+          if (!Array.isArray(data) || data.length === 0) {
+            setLatestPengajuan(null);
+            setStatusText("Anda belum pernah mengajukan ATK pada periode ini.");
+          } else {
+            const latest = data[0];
+            setLatestPengajuan(latest);
+
+            let statusLabel = "";
+            switch (latest.status) {
+              case "pending":
+                statusLabel = "Pengajuan Anda sudah dikirim dan menunggu verifikasi admin.";
+                break;
+              case "diverifikasi":
+                statusLabel = "Pengajuan Anda telah diverifikasi oleh admin dan menunggu persetujuan super admin.";
+                break;
+              case "ditolak":
+                statusLabel = "Pengajuan Anda DITOLAK. Silakan hubungi admin untuk informasi lebih lanjut.";
+                break;
+              case "disetujui":
+                statusLabel = "Pengajuan Anda DISETUJUI. Proses pengadaan akan dilanjutkan.";
+                break;
+              default:
+                statusLabel = `Status pengajuan Anda: ${latest.status}`;
+            }
+            setStatusText(statusLabel);
+
+            const storageKey = `pengajuan_status_${latest.id}`;
+            const prevStatus = localStorage.getItem(storageKey);
+
+            if (showNotification && prevStatus && prevStatus !== latest.status) {
+              setNotifText(`Status pengajuan Anda telah berubah menjadi "${latest.status.toUpperCase()}".`);
+            }
+
+            localStorage.setItem(storageKey, latest.status);
+          }
         }
-
-        const latest = data[0];
-        setLatestPengajuan(latest);
-
-        let statusLabel = "";
-        switch (latest.status) {
-          case "diajukan":
-            statusLabel = "Pengajuan Anda sudah dikirim dan menunggu verifikasi admin.";
-            break;
-          case "diverifikasi":
-            statusLabel = "Pengajuan Anda telah diverifikasi oleh admin dan menunggu persetujuan super admin.";
-            break;
-          case "ditolak":
-            statusLabel = "Pengajuan Anda DITOLAK. Silakan hubungi admin untuk informasi lebih lanjut.";
-            break;
-          case "disetujui":
-            statusLabel = "Pengajuan Anda DISETUJUI. Proses pengadaan akan dilanjutkan.";
-            break;
-          default:
-            statusLabel = `Status pengajuan Anda: ${latest.status}`;
-        }
-        setStatusText(statusLabel);
-
-        const storageKey = `pengajuan_status_${latest.id}`;
-        const prevStatus = localStorage.getItem(storageKey);
-
-        if (showNotification && prevStatus && prevStatus !== latest.status) {
-          setNotifText(
-            `Status pengajuan Anda telah berubah menjadi "${latest.status.toUpperCase()}".`
-          );
-        }
-
-        localStorage.setItem(storageKey, latest.status);
       } catch (err) {
-        console.error("Gagal mengambil pengajuan:", err);
+        console.error("Gagal mengambil dashboard data:", err);
         setErrorMsg("Terjadi kesalahan jaringan.");
       } finally {
         setLoading(false);
       }
     }
 
-    fetchLatestPengajuan(false);
+    loadDashboardData(false);
     const intervalId = setInterval(() => {
-      fetchLatestPengajuan(true);
+      loadDashboardData(true);
     }, 30000);
     return () => clearInterval(intervalId);
   }, [userId]);
@@ -258,7 +235,8 @@ export default function DashboardUser() {
             </div>
           </div>
           <div className="topbar-right">
-            <PeriodeTimer />
+            <PeriodeTimer typeFilter="pengajuan" />
+            <PeriodeTimer typeFilter="stock_opname" />
             <span>Role: </span>
             <RoleSwitcher />
           </div>

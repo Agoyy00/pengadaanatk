@@ -24,14 +24,14 @@ table {
 
 table thead th {
     font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
-    background: linear-gradient(135deg, #0f172a 0%, #164e63 100%);
+    background: #005826 !important;
     color: #ffffff !important;
     font-weight: 700;
     font-size: 12.5px;
     text-transform: uppercase;
     letter-spacing: 0.06em;
     padding: 14px 16px;
-    border-bottom: 2px solid #06b6d4;
+    border-bottom: 2.5px solid #d4af37;
     border-top: none;
 }
 

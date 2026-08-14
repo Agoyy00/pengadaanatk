@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import "../css/Login.css";
 
 import atk from "../gambar/Logo.png";
-import logo from "../gambar/LogoYarsi.jpeg";
+import logo from "../gambar/LogoYarsi(Tab).png";
 
 function Login({ onClose }) {
   const [ingatSaya, setIngatSaya] = useState(false);
@@ -90,7 +90,7 @@ function Login({ onClose }) {
               fontWeight: '400'
             }}>
               Silakan login menggunakan akun YARSI yang <br /> 
-              <span style={{ color: '#3b82f6', fontWeight: '600' }}>Sudah Terdaftar</span>
+              <span style={{ color: '#005826', fontWeight: '600' }}>Sudah Terdaftar</span>
             </p>
 
             {errorMsg && (

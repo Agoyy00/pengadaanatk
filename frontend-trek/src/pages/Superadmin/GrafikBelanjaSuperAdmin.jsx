@@ -459,16 +459,19 @@ export default function SuperAdminAnalisisDashboard() {
           {/* TOMBOL TAMPILKAN ANALISIS */}
           <button
             onClick={() => setShowAnalisisModal(true)}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#16a34a")}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#005826")}
             style={{
               padding: "10px 18px",
-              backgroundColor: "#16a34a",
+              backgroundColor: "#005826",
               color: "#fff",
               border: "none",
               borderRadius: "8px",
               fontWeight: 700,
               cursor: "pointer",
               marginBottom: "20px",
-              boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
+              boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+              transition: "all 0.2s ease",
             }}
           >
             Tampilkan Analisis
@@ -502,13 +505,13 @@ export default function SuperAdminAnalisisDashboard() {
           {/* =========================================================
               🔥 FILTER UNIFIKASI PARAMETER & PERBANDINGAN BELANJA BARANG
           ========================================================= */}
-          <div className="card" style={{ marginBottom: "24px", border: "1px solid #3b82f6", backgroundColor: "#f0f9ff" }}>
+          <div className="card" style={{ marginBottom: "24px", border: "1.5px solid #005826", backgroundColor: "#f0fdf4" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px", marginBottom: "16px" }}>
               <div>
-                <div className="card-title" style={{ color: "#1d4ed8", display: "flex", alignItems: "center", gap: "8px" }}>
+                <div className="card-title" style={{ color: "#005826", display: "flex", alignItems: "center", gap: "8px" }}>
                   Filter Parameter & Perbandingan Belanja Barang
                 </div>
-                <p className="card-subtitle" style={{ color: "#3b82f6" }}>
+                <p className="card-subtitle" style={{ color: "#15803d" }}>
                   Cari nama barang, atur status pengajuan, rentang tahun, periode, dan unit untuk menyaring data grafik dan belanja.
                 </p>
               </div>
@@ -817,10 +820,10 @@ export default function SuperAdminAnalisisDashboard() {
             {/* HASIL RINGKASAN & TABEL PERBANDINGAN BELANJA */}
             <div style={{ backgroundColor: "#ffffff", padding: "16px", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
               <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", marginBottom: "12px" }}>
-                <span style={{ fontSize: "12px", fontWeight: "700", color: "#0284c7", backgroundColor: "#e0f2fe", padding: "4px 10px", borderRadius: "20px" }}>
+                <span style={{ fontSize: "12px", fontWeight: "700", color: "#005826", backgroundColor: "#dcfce7", padding: "4px 10px", borderRadius: "20px" }}>
                   Transaksi Terkait: {comparisonSummary.totalRecords} Items
                 </span>
-                <span style={{ fontSize: "12px", fontWeight: "700", color: "#16a34a", backgroundColor: "#dcfce7", padding: "4px 10px", borderRadius: "20px" }}>
+                <span style={{ fontSize: "12px", fontWeight: "700", color: "#005826", backgroundColor: "#dcfce7", padding: "4px 10px", borderRadius: "20px" }}>
                   Est. Total Belanja: {rupiah(comparisonSummary.totalEstBelanja)}
                 </span>
                 <span style={{ fontSize: "12px", fontWeight: "700", color: "#8b5cf6", backgroundColor: "#f3e8ff", padding: "4px 10px", borderRadius: "20px" }}>

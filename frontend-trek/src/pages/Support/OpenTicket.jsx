@@ -746,17 +746,17 @@ export default function OpenTicket() {
           <div
             style={{
               marginTop: 10,
-              padding: "10px 14px",
-              borderRadius: 8,
-              background: "#f0f9ff",
-              border: "1px solid #bae6fd",
+              padding: "14px 16px",
+              borderRadius: 10,
+              background: "#f0fdf4",
+              border: "1px solid #bbf7d0",
               display: "flex",
-              alignItems: "center",
-              gap: 8,
+              gap: 12,
+              alignItems: "flex-start",
             }}
           >
             <span style={{ fontSize: 16 }}>💡</span>
-            <p style={{ margin: 0, fontSize: 12.5, color: "#0369a1", lineHeight: 1.4, fontWeight: 500 }}>
+            <p style={{ margin: 0, fontSize: 12.5, color: "#005826", lineHeight: 1.4, fontWeight: 500 }}>
               Jelaskan kronologi masalah, error yang muncul, dan langkah yang sudah Anda coba.
             </p>
           </div>

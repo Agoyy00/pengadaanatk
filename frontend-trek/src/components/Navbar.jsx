@@ -9,7 +9,7 @@ export default function Navbar({ onLoginClick }) {
         top: 0,
         left: 0,
         width: "100%",
-        padding: "0 64px", // Padding disesuaikan untuk keseimbangan vertikal
+        padding: "0 64px",
         height: "85px",
         display: "flex",
         alignItems: "center",
@@ -17,8 +17,8 @@ export default function Navbar({ onLoginClick }) {
         zIndex: 1000,
         boxSizing: "border-box",
 
-        /* PREMIUM FROSTED GLASS */
-        background: "rgba(10, 47, 82, 0.75)",
+        /* PREMIUM FROSTED GLASS - YARSI GREEN */
+        background: "rgba(0, 88, 38, 0.85)",
         backdropFilter: "blur(20px) saturate(160%)",
         WebkitBackdropFilter: "blur(20px) saturate(160%)",
 

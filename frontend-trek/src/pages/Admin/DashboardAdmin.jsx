@@ -246,9 +246,12 @@ export default function DashboardSuperAdmin() {
               <button
                 onClick={refreshNotif}
                 style={{
-                  padding: "8px 12px",
+                  padding: "8px 16px",
                   borderRadius: 8,
-                  border: "1px solid #ccc",
+                  border: "none",
+                  backgroundColor: "#005826",
+                  color: "#ffffff",
+                  fontWeight: 600,
                   cursor: "pointer",
                 }}
               >

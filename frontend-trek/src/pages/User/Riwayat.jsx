@@ -138,12 +138,49 @@ export default function Riwayat() {
   }
 
   useEffect(() => {
-    loadRiwayat();
-    loadMasterBarang();
-  }, [userId]);
+    if (!userId) return;
+    async function loadAllRiwayatData() {
+      setLoading(true);
+      setChartLoading(true);
+      try {
+        const params = new URLSearchParams({ user_id: userId });
+        if (tahunFilter && tahunFilter !== 'all') params.append('tahun_akademik', tahunFilter);
+        if (statusFilter && statusFilter !== 'all') params.append('status', statusFilter);
 
-  useEffect(() => {
-    loadChartData();
+        const headers = { Authorization: `Bearer ${token}` };
+
+        const [resRiwayat, resMaster, resChart] = await Promise.all([
+          fetch(`${API_BASE}/pengajuan?user_id=${userId}`, { headers }),
+          fetch(`${API_BASE}/barang`, { headers }),
+          fetch(`${API_BASE}/pengajuan/user-statistik?${params}`, { headers }),
+        ]);
+
+        const [jsonRiwayat, jsonMaster, jsonChart] = await Promise.all([
+          resRiwayat.json(),
+          resMaster.json(),
+          resChart.json(),
+        ]);
+
+        setData(Array.isArray(jsonRiwayat) ? jsonRiwayat : []);
+
+        if (Array.isArray(jsonMaster)) {
+          setMasterBarang(jsonMaster);
+        } else if (jsonMaster?.data && Array.isArray(jsonMaster.data)) {
+          setMasterBarang(jsonMaster.data);
+        }
+
+        if (jsonChart?.success) {
+          setChartData(jsonChart);
+        }
+      } catch (err) {
+        console.error("Gagal load data riwayat:", err);
+      } finally {
+        setLoading(false);
+        setChartLoading(false);
+      }
+    }
+
+    loadAllRiwayatData();
   }, [userId, tahunFilter, statusFilter]);
 
   const renderStatus = (status) => {

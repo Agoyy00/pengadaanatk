@@ -1050,15 +1050,22 @@ export default function StockOpname() {
                     <button
                       key={tab.value}
                       onClick={() => setStatusFilter(tab.value)}
+                      onMouseEnter={(e) => {
+                        if (statusFilter === tab.value) e.currentTarget.style.background = "#16a34a";
+                      }}
+                      onMouseLeave={(e) => {
+                        if (statusFilter === tab.value) e.currentTarget.style.background = "#005826";
+                      }}
                       style={{
                         padding: "8px 14px",
                         borderRadius: 8,
                         border: statusFilter === tab.value ? "none" : "1px solid #ddd",
-                        background: statusFilter === tab.value ? "#2563eb" : "white",
+                        background: statusFilter === tab.value ? "#005826" : "white",
                         color: statusFilter === tab.value ? "white" : "#4b5563",
                         fontWeight: 600,
                         cursor: "pointer",
                         fontSize: 13,
+                        transition: "all 0.2s ease",
                       }}
                     >
                       {tab.label}
@@ -1128,7 +1135,7 @@ export default function StockOpname() {
                                 type="button"
                                 onClick={(e) => { e.stopPropagation(); setActiveUnitView(u.unit); }}
                                 style={{
-                                  background: "linear-gradient(135deg, #0284c7, #0369a1)",
+                                  background: "#005826",
                                   color: "#ffffff",
                                   padding: "8px 16px",
                                   borderRadius: "8px",
@@ -1222,15 +1229,22 @@ export default function StockOpname() {
                       <button
                         key={tab.value}
                         onClick={() => setStatusFilter(tab.value)}
+                        onMouseEnter={(e) => {
+                          if (statusFilter === tab.value) e.currentTarget.style.background = "#16a34a";
+                        }}
+                        onMouseLeave={(e) => {
+                          if (statusFilter === tab.value) e.currentTarget.style.background = "#005826";
+                        }}
                         style={{
                           padding: "8px 14px",
                           borderRadius: 8,
                           border: statusFilter === tab.value ? "none" : "1px solid #ddd",
-                          background: statusFilter === tab.value ? "#2563eb" : "white",
+                          background: statusFilter === tab.value ? "#005826" : "white",
                           color: statusFilter === tab.value ? "white" : "#4b5563",
                           fontWeight: 600,
                           cursor: "pointer",
                           fontSize: 13,
+                          transition: "all 0.2s ease",
                         }}
                       >
                         {tab.label}

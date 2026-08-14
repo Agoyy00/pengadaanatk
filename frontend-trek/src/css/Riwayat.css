@@ -191,7 +191,7 @@
 }
 
 .table-wrapper th {
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  background-color: #005826;
   color: #f8fafc;
   text-align: left;
   padding: 14px 16px;
@@ -199,7 +199,7 @@
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  border-bottom: 3px solid #38bdf8;
+  border-bottom: 2.5px solid #d4af37;
 }
 
 .table-wrapper td {
@@ -837,7 +837,7 @@
 
 .btn-select-barang {
   padding: 5px 10px;
-  background: #2563eb;
+  background: #005826;
   color: #ffffff;
   border: none;
   border-radius: 5px;

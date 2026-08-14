@@ -337,16 +337,19 @@ export default function GrafikBarangSuperAdmin() {
           {/* TOMBOL TAMPILKAN ANALISIS */}
           <button
             onClick={() => setShowAnalisisModal(true)}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#16a34a")}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#005826")}
             style={{
               padding: "10px 18px",
-              backgroundColor: "#16a34a",
+              backgroundColor: "#005826",
               color: "#fff",
               border: "none",
               borderRadius: "8px",
               fontWeight: 700,
               cursor: "pointer",
               marginBottom: "20px",
-              boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
+              boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+              transition: "all 0.2s ease",
             }}
           >
             Tampilkan Analisis
@@ -382,13 +385,13 @@ export default function GrafikBarangSuperAdmin() {
           {/* =========================================================
               🔥 FILTER UNIFIKASI PARAMETER & PERBANDINGAN DATA BARANG
           ========================================================= */}
-          <div className="card" style={{ marginBottom: "24px", border: "1px solid #3b82f6", backgroundColor: "#f0f9ff" }}>
+          <div className="card" style={{ marginBottom: "24px", border: "1.5px solid #005826", backgroundColor: "#f0fdf4" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px", marginBottom: "16px" }}>
               <div>
-                <div className="card-title" style={{ color: "#1d4ed8", display: "flex", alignItems: "center", gap: "8px" }}>
+                <div className="card-title" style={{ color: "#005826", display: "flex", alignItems: "center", gap: "8px" }}>
                   Filter Parameter & Perbandingan Data Barang
                 </div>
-                <p className="card-subtitle" style={{ color: "#3b82f6" }}>
+                <p className="card-subtitle" style={{ color: "#15803d" }}>
                   Cari nama barang, pilih rentang tahun, periode, dan unit untuk menyaring data grafik dan laporan perbandingan.
                 </p>
               </div>
@@ -420,7 +423,7 @@ export default function GrafikBarangSuperAdmin() {
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px", marginBottom: "16px" }}>
               {/* Kolom 1: Nama Barang */}
               <div style={{ position: "relative" }}>
-                <label style={{ fontSize: "12px", color: "#1e3a8a", fontWeight: "700", display: "block", marginBottom: "4px" }}>
+                <label style={{ fontSize: "12px", color: "#005826", fontWeight: "700", display: "block", marginBottom: "4px" }}>
                   Nama Barang:
                 </label>
                 <div style={{ position: "relative" }}>
@@ -437,7 +440,7 @@ export default function GrafikBarangSuperAdmin() {
                       width: "100%",
                       padding: "9px 32px 9px 12px",
                       borderRadius: "8px",
-                      border: "1px solid #93c5fd",
+                      border: "1px solid #a7f3d0",
                       fontSize: "13.5px",
                       outline: "none",
                       backgroundColor: "#ffffff"
@@ -673,10 +676,10 @@ export default function GrafikBarangSuperAdmin() {
             {/* HASIL RINGKASAN & TABEL PERBANDINGAN */}
             <div style={{ backgroundColor: "#ffffff", padding: "16px", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
               <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", marginBottom: "12px" }}>
-                <span style={{ fontSize: "12px", fontWeight: "700", color: "#0284c7", backgroundColor: "#e0f2fe", padding: "4px 10px", borderRadius: "20px" }}>
+                <span style={{ fontSize: "12px", fontWeight: "700", color: "#005826", backgroundColor: "#dcfce7", padding: "4px 10px", borderRadius: "20px" }}>
                   Total Usulan Ditemukan: {comparisonSummary.totalRecords} Transaksi
                 </span>
-                <span style={{ fontSize: "12px", fontWeight: "700", color: "#16a34a", backgroundColor: "#dcfce7", padding: "4px 10px", borderRadius: "20px" }}>
+                <span style={{ fontSize: "12px", fontWeight: "700", color: "#005826", backgroundColor: "#dcfce7", padding: "4px 10px", borderRadius: "20px" }}>
                   Total Volume Requested: {comparisonSummary.totalQty} Item
                 </span>
                 <span style={{ fontSize: "12px", fontWeight: "700", color: "#8b5cf6", backgroundColor: "#f3e8ff", padding: "4px 10px", borderRadius: "20px" }}>

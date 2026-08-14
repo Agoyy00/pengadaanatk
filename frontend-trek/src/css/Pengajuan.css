@@ -233,14 +233,14 @@
 }
 
 table thead th {
-  background: linear-gradient(135deg, #0f172a 0%, #164e63 100%);
+  background-color: #005826;
   color: #ffffff;
   font-weight: 700;
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   padding: 12px 14px;
-  border-bottom: 2px solid #06b6d4;
+  border-bottom: 2.5px solid #d4af37;
 }
 
 /* ===== FORM PROFESSIONAL ===== */
@@ -461,9 +461,9 @@ table {
 
 th {
     padding: 12px 14px;
-    border-bottom: 2px solid #06b6d4;
+    border-bottom: 2.5px solid #d4af37;
     text-align: left;
-    background: linear-gradient(135deg, #0f172a 0%, #164e63 100%);
+    background-color: #005826;
     color: #ffffff;
     font-weight: 700;
     font-size: 12px;
@@ -1330,14 +1330,14 @@ td {
 }
 
 .detail-table thead th {
-  background: linear-gradient(135deg, #0f172a 0%, #164e63 100%);
+  background-color: #005826;
   color: #ffffff;
   font-weight: 600;
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   padding: 10px 12px;
-  border-bottom: 2px solid #06b6d4;
+  border-bottom: 2.5px solid #d4af37;
   white-space: nowrap;
 }
 
