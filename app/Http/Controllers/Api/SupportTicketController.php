@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Notification;
 use App\Models\SupportTicket;
 use App\Models\SupportTicketReply;
-use App\Models\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -20,7 +20,7 @@ class SupportTicketController extends Controller
         $user = Auth::user();
         $activeRole = strtolower($request->header('X-Active-Role', ''));
 
-        if (!$activeRole) {
+        if (! $activeRole) {
             if ($user->isSuperAdmin()) {
                 $activeRole = 'superadmin';
             } elseif ($user->isAdmin()) {
@@ -45,14 +45,8 @@ class SupportTicketController extends Controller
                 ->where('is_read', false)
                 ->count();
 
-            $initialUnread = ($ticket->user_id !== $user->id && !$ticket->is_read) ? 1 : 0;
+            $ticket->unread_count = $notifCount;
 
-            $replyUnread = SupportTicketReply::where('ticket_id', $ticket->id)
-                ->where('user_id', '!=', $user->id)
-                ->where('is_read', false)
-                ->count();
-
-            $ticket->unread_count = max($notifCount, $initialUnread + $replyUnread);
             return $ticket;
         });
 
@@ -114,14 +108,14 @@ class SupportTicketController extends Controller
         $user = Auth::user();
         $ticket = SupportTicket::with(['user', 'replies.user'])->findOrFail($id);
 
-        if (!$user->isAdmin() && !$user->isSuperAdmin() && $ticket->user_id !== $user->id) {
+        if (! $user->isAdmin() && ! $user->isSuperAdmin() && $ticket->user_id !== $user->id) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
         $activeRole = strtolower($request->header('X-Active-Role', ''));
         $isViewingAsAdmin = $activeRole === 'admin' || $activeRole === 'superadmin';
 
-        if (!$isViewingAsAdmin && !$request->hasHeader('X-Active-Role')) {
+        if (! $isViewingAsAdmin && ! $request->hasHeader('X-Active-Role')) {
             $isViewingAsAdmin = $user->isAdmin() || $user->isSuperAdmin();
         }
 
@@ -132,7 +126,7 @@ class SupportTicketController extends Controller
             ->update(['is_read' => true]);
 
         // Auto mark initial ticket message as read if viewed by recipient (non-author)
-        if ($ticket->user_id !== $user->id && !$ticket->is_read) {
+        if ($ticket->user_id !== $user->id && ! $ticket->is_read) {
             $ticket->is_read = true;
             $ticket->save();
         }
@@ -160,7 +154,7 @@ class SupportTicketController extends Controller
     {
         $user = Auth::user();
 
-        if (!$user->isAdmin() && !$user->isSuperAdmin()) {
+        if (! $user->isAdmin() && ! $user->isSuperAdmin()) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
@@ -193,7 +187,7 @@ class SupportTicketController extends Controller
                     'user_id' => $participantId,
                     'ticket_id' => $ticket->id,
                     'title' => 'Status Tiket Support Diperbarui',
-                    'message' => "Tiket '{$ticket->subject}' telah diubah ke status: " . ($statusLabels[$validated['status']] ?? $validated['status']),
+                    'message' => "Tiket '{$ticket->subject}' telah diubah ke status: ".($statusLabels[$validated['status']] ?? $validated['status']),
                     'pengajuan_id' => null,
                     'is_read' => false,
                 ]);
@@ -217,7 +211,7 @@ class SupportTicketController extends Controller
         $user = Auth::user();
         $ticket = SupportTicket::findOrFail($id);
 
-        if (!$user->isAdmin() && !$user->isSuperAdmin() && $ticket->user_id !== $user->id) {
+        if (! $user->isAdmin() && ! $user->isSuperAdmin() && $ticket->user_id !== $user->id) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
@@ -228,7 +222,7 @@ class SupportTicketController extends Controller
         $activeRole = strtolower($request->header('X-Active-Role', ''));
         $isViewingAsAdmin = $activeRole === 'admin' || $activeRole === 'superadmin';
 
-        if (!$isViewingAsAdmin && !$request->hasHeader('X-Active-Role')) {
+        if (! $isViewingAsAdmin && ! $request->hasHeader('X-Active-Role')) {
             $isViewingAsAdmin = $user->isAdmin() || $user->isSuperAdmin();
         }
 
@@ -292,11 +286,11 @@ class SupportTicketController extends Controller
 
         // Tambahkan semua admin dan superadmin ke daftar partisipan yang diberitahu
         $targetRoleUserIds = \App\Models\User::whereIn('role_id', [1, 2])->pluck('id');
-        
+
         $participantIds = $participantIds->merge($targetRoleUserIds)
             ->unique()
             ->reject(function ($id) use ($excludeUserId) {
-                return (int)$id === (int)$excludeUserId;
+                return (int) $id === (int) $excludeUserId;
             })
             ->values()
             ->toArray();
@@ -306,83 +300,48 @@ class SupportTicketController extends Controller
 
     /**
      * GET /api/support-tickets/unread-count
-     * Get count of unread support notifications & unread messages for current user
+     * Get count of unread support notifications for current user
      */
     public function unreadCount(Request $request)
     {
         $user = Auth::user();
-        $isViewingAsAdmin = $user->isAdmin() || $user->isSuperAdmin();
 
-        $notifCount = Notification::where('user_id', $user->id)
+        $count = Notification::where('user_id', $user->id)
             ->where('is_read', false)
             ->whereNotNull('ticket_id')
             ->count();
 
-        if ($isViewingAsAdmin) {
-            $unreadInitialCount = SupportTicket::where('user_id', '!=', $user->id)
-                ->where('is_read', false)
-                ->count();
-
-            $unreadReplyCount = SupportTicketReply::where('user_id', '!=', $user->id)
-                ->where('is_read', false)
-                ->count();
-        } else {
-            $unreadInitialCount = 0;
-
-            $unreadReplyCount = SupportTicketReply::whereHas('ticket', function ($q) use ($user) {
-                $q->where('user_id', $user->id);
-            })
-            ->where('user_id', '!=', $user->id)
-            ->where('is_read', false)
-            ->count();
-        }
-
-        $totalCount = max($notifCount, $unreadInitialCount + $unreadReplyCount);
-
         return response()->json([
             'success' => true,
-            'count' => $totalCount,
+            'count' => $count,
         ]);
     }
 
     /**
      * GET /api/support-tickets/unread-counts
-     * Get grouped unread support notifications & messages per ticket for current user
+     * Get grouped unread support notifications per ticket for current user
      */
     public function unreadCounts(Request $request)
     {
         $user = Auth::user();
-        $isViewingAsAdmin = $user->isAdmin() || $user->isSuperAdmin();
 
-        $query = SupportTicket::with(['user', 'replies']);
-        if (!$isViewingAsAdmin) {
-            $query->where('user_id', $user->id);
-        }
+        $groups = Notification::where('user_id', $user->id)
+            ->where('is_read', false)
+            ->whereNotNull('ticket_id')
+            ->select('ticket_id')
+            ->selectRaw('COUNT(*) as count, MAX(created_at) as last_at')
+            ->groupBy('ticket_id')
+            ->get()
+            ->map(function ($row) {
+                $ticket = SupportTicket::find($row->ticket_id);
 
-        $groups = $query->get()->map(function ($ticket) use ($user) {
-            $notifCount = Notification::where('ticket_id', $ticket->id)
-                ->where('user_id', $user->id)
-                ->where('is_read', false)
-                ->count();
-
-            $initialUnread = ($ticket->user_id !== $user->id && !$ticket->is_read) ? 1 : 0;
-
-            $replyUnread = SupportTicketReply::where('ticket_id', $ticket->id)
-                ->where('user_id', '!=', $user->id)
-                ->where('is_read', false)
-                ->count();
-
-            $count = max($notifCount, $initialUnread + $replyUnread);
-
-            return [
-                'ticket_id' => $ticket->id,
-                'subject' => $ticket->subject,
-                'count' => $count,
-                'last_at' => $ticket->updated_at,
-            ];
-        })->filter(function ($g) {
-            return $g['count'] > 0;
-        })->values();
+                return [
+                    'ticket_id' => $row->ticket_id,
+                    'subject' => $ticket ? $ticket->subject : 'Tiket Dihapus',
+                    'count' => $row->count,
+                    'last_at' => $row->last_at,
+                ];
+            })->sortByDesc('last_at')->values();
 
         return response()->json([
             'success' => true,
@@ -400,7 +359,7 @@ class SupportTicketController extends Controller
         $user = Auth::user();
         $ticket = SupportTicket::findOrFail($id);
 
-        if (!($user->isAdmin() || $user->isSuperAdmin()) && $ticket->user_id !== $user->id) {
+        if (! ($user->isAdmin() || $user->isSuperAdmin()) && $ticket->user_id !== $user->id) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
@@ -424,7 +383,7 @@ class SupportTicketController extends Controller
         $user = Auth::user();
         $ticket = SupportTicket::findOrFail($id);
 
-        if (!$user->isAdmin() && !$user->isSuperAdmin() && $ticket->user_id !== $user->id) {
+        if (! $user->isAdmin() && ! $user->isSuperAdmin() && $ticket->user_id !== $user->id) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 

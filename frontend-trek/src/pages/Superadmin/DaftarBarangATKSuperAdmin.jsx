@@ -44,10 +44,12 @@ const DEFAULT_SATUAN_LIST = [
 ];
 
 import SidebarLogo from "../../components/SidebarLogo";
+import useSupportUnread from "../../hooks/useSupportUnread";
 
 export default function DaftarBarangATKSuperAdmin() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { supportUnreadCount } = useSupportUnread("superadmin");
 
   const storedUser = localStorage.getItem("user");
   const currentUser = storedUser ? JSON.parse(storedUser) : null;
@@ -587,6 +589,7 @@ const onDeleteSelected = async () => {
         <nav className="sidebar-menu">
           {sidebarMenus.map((m) => {
             const isActive = location.pathname === m.to;
+            const isSupport = m.label === "Support";
             return (
               <div
                 key={m.label}
@@ -595,6 +598,9 @@ const onDeleteSelected = async () => {
                 onClick={() => !isActive && navigate(m.to)}
               >
                 {m.label}
+                {isSupport && supportUnreadCount > 0 && (
+                  <span className="support-badge">{supportUnreadCount}</span>
+                )}
               </div>
             );
           })}

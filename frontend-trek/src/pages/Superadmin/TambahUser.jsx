@@ -11,10 +11,12 @@ import RoleSwitcher from "../../components/RoleSwitcher";
 const API_BASE = import.meta.env.VITE_API_BASE;
 
 import SidebarLogo from "../../components/SidebarLogo";
+import useSupportUnread from "../../hooks/useSupportUnread";
 
 export default function TambahUser() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { supportUnreadCount } = useSupportUnread("superadmin");
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -206,6 +208,7 @@ export default function TambahUser() {
         <nav className="sidebar-menu">
           {sidebarMenus.map((m) => {
             const isActive = location.pathname === m.to;
+            const isSupport = m.label === "Support";
             return (
               <div
                 key={m.label}
@@ -218,6 +221,9 @@ export default function TambahUser() {
                 }}
               >
                 {m.label}
+                {isSupport && supportUnreadCount > 0 && (
+                  <span className="support-badge">{supportUnreadCount}</span>
+                )}
               </div>
             );
           })}

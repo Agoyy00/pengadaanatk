@@ -7,6 +7,7 @@ import "../../css/layout.css";
 import RoleSwitcher from "../../components/RoleSwitcher";
 import PeriodeTimer from "../../components/PeriodeTimer";
 import SidebarLogo from "../../components/SidebarLogo";
+import useSupportUnread from "../../hooks/useSupportUnread";
 
 function Pengajuan() {
   const navigate = useNavigate();
@@ -16,13 +17,13 @@ function Pengajuan() {
   const STORAGE_URL = `${import.meta.env.VITE_BACKEND_BASE}/storage/barang`;
   const token = localStorage.getItem("token");
 
-  // ambil user login dari localStorage
   const storedUser = localStorage.getItem("user");
   const currentUser = storedUser ? JSON.parse(storedUser) : null;
-  const userId = currentUser?.id;
   const normalizeRole = (r) => String(r || "").toLowerCase().replace(/[\s_]+/g, "");
   const activeRole = normalizeRole(currentUser?.role);
+  const userId = currentUser?.id;
   const baseRole = normalizeRole(currentUser?.baseRole);
+  const { supportUnreadCount } = useSupportUnread(activeRole);
   const userEmail = (currentUser?.email || "").toLowerCase();
   const isSuperAdmin =
     baseRole === "superadmin" ||
@@ -913,6 +914,7 @@ function Pengajuan() {
         <nav className="sidebar-menu">
           {sidebarMenus.map((m) => {
             const isActive = location.pathname === m.to;
+            const isSupport = m.label === "Support";
             return (
               <div
                 key={m.label}
@@ -923,6 +925,9 @@ function Pengajuan() {
                 }}
               >
                 {m.label}
+                {isSupport && supportUnreadCount > 0 && (
+                  <span className="support-badge">{supportUnreadCount}</span>
+                )}
               </div>
             );
           })}

@@ -61,7 +61,7 @@ export default function TicketDetail() {
 
   const markTicketAsRead = async () => {
     try {
-      await fetch(`${API_BASE}/support-tickets/${id}/mark-read`, {
+      const res = await fetch(`${API_BASE}/support-tickets/${id}/mark-read`, {
         method: "PATCH",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -69,6 +69,9 @@ export default function TicketDetail() {
           "X-Active-Role": activeRoleHeader,
         },
       });
+      if (res.ok) {
+        window.dispatchEvent(new Event("support-unread-refresh"));
+      }
     } catch (err) {
       console.error("Gagal menandai notifikasi tiket sebagai dibaca:", err);
     }
@@ -172,6 +175,7 @@ export default function TicketDetail() {
 
       setReplyMessage("");
       await loadTicket();
+      window.dispatchEvent(new Event("support-unread-refresh"));
       Swal.fire({
         icon: "success",
         title: "Balasan Dikirim",
@@ -434,7 +438,7 @@ export default function TicketDetail() {
               ✅ Selesai
             </button>
           )}
-          {(isAdmin || ticket.user_id === (currentUser?.id)) && (
+          {isAdmin && (
             <button
               onClick={handleDeleteTicket}
               style={{
@@ -556,32 +560,37 @@ export default function TicketDetail() {
                       timeStyle: "short",
                     })}
                   </span>
-                  {sentByMe && (
-                    <svg
-                      width="16"
-                      height="11"
-                      viewBox="0 0 16 11"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                      style={{ display: "inline-block", verticalAlign: "middle" }}
-                      title={msg.isRead ? "Dibaca oleh penerima" : "Terkirim"}
-                    >
-                      <path
-                        d="M1.5 5.5L4.5 8.5L10.5 1.5"
-                        stroke={msg.isRead ? "#0284c7" : "#64748b"}
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                      <path
-                        d="M5.5 5.5L8.5 8.5L14.5 1.5"
-                        stroke={msg.isRead ? "#0284c7" : "#64748b"}
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  )}
+                   {sentByMe && (
+                     <>
+                       <svg
+                         width="16"
+                         height="11"
+                         viewBox="0 0 16 11"
+                         fill="none"
+                         xmlns="http://www.w3.org/2000/svg"
+                         style={{ display: "inline-block", verticalAlign: "middle" }}
+                         title={msg.isRead ? "Dibaca oleh penerima" : "Terkirim"}
+                       >
+                         <path
+                           d="M1.5 5.5L4.5 8.5L10.5 1.5"
+                           stroke={msg.isRead ? "#0284c7" : "#64748b"}
+                           strokeWidth="1.8"
+                           strokeLinecap="round"
+                           strokeLinejoin="round"
+                         />
+                         <path
+                           d="M5.5 5.5L8.5 8.5L14.5 1.5"
+                           stroke={msg.isRead ? "#0284c7" : "#64748b"}
+                           strokeWidth="1.8"
+                           strokeLinecap="round"
+                           strokeLinejoin="round"
+                         />
+                       </svg>
+                       <span style={{ fontSize: 9, color: msg.isRead ? "#0284c7" : "#64748b", fontWeight: 600 }}>
+                         {msg.isRead ? "Dibaca" : "Terkirim"}
+                       </span>
+                     </>
+                   )}
                 </div>
               </div>
             </div>

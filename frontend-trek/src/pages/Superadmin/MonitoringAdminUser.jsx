@@ -6,12 +6,14 @@ import "../../css/tabel.css";
 import RoleSwitcher from "../../components/RoleSwitcher";
 import SidebarLogo from "../../components/SidebarLogo";
 import Swal from "sweetalert2";
+import useSupportUnread from "../../hooks/useSupportUnread";
 
 const API_BASE = import.meta.env.VITE_API_BASE;
 
 export default function MonitoringAdminUser({ defaultTab }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { supportUnreadCount } = useSupportUnread("superadmin");
 
   // Tab state: "admin" | "user"
   const [activeTab, setActiveTab] = useState(() => {
@@ -474,6 +476,7 @@ export default function MonitoringAdminUser({ defaultTab }) {
         <nav className="sidebar-menu">
           {sidebarMenus.map((m) => {
             const isActive = m.active || location.pathname === m.to;
+            const isSupport = m.label === "Support";
             return (
               <div
                 key={m.label}
@@ -482,6 +485,9 @@ export default function MonitoringAdminUser({ defaultTab }) {
                 onClick={() => { if (!isActive) navigate(m.to); }}
               >
                 {m.label}
+                {isSupport && supportUnreadCount > 0 && (
+                  <span className="support-badge">{supportUnreadCount}</span>
+                )}
               </div>
             );
           })}

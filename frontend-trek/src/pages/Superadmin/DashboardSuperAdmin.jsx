@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import "../../css/layout.css";
 import RoleSwitcher from "../../components/RoleSwitcher";
 import SidebarLogo from "../../components/SidebarLogo";
+import useSupportUnread from "../../hooks/useSupportUnread";
 
 
 const API_BASE = import.meta.env.VITE_API_BASE;
@@ -20,8 +21,7 @@ export default function DashboardSuperAdmin() {
   const userId = user?.id;
   const userRole = String(user?.role || "").toLowerCase().replace(/[\s_]+/g, "");
   
-  const storedUser = localStorage.getItem("user");
-  const currentUser = storedUser ? JSON.parse(storedUser) : null;
+  const { supportUnreadCount } = useSupportUnread("superadmin");
 
   // =========================
   // SECURITY GUARD
@@ -47,7 +47,6 @@ export default function DashboardSuperAdmin() {
   const [notifications, setNotifications] = useState([]);
   const [loadingNotif, setLoadingNotif] = useState(false);
   const [errorNotif, setErrorNotif] = useState("");
-  const [supportUnreadCount, setSupportUnreadCount] = useState(0);
 
   // =========================
   // LOAD NOTIFIKASI
@@ -126,30 +125,6 @@ export default function DashboardSuperAdmin() {
   // Hitung jumlah unread
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
-  const loadSupportUnread = async () => {
-    try {
-      const res = await fetch(`${API_BASE}/support-tickets/unread-count`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "application/json",
-          "X-Active-Role": "superadmin",
-        },
-      });
-      const data = await res.json();
-      if (data.success) {
-        setSupportUnreadCount(data.count || 0);
-      }
-    } catch (err) {
-      console.error("Gagal memuat support unread count:", err);
-    }
-  };
-
-  useEffect(() => {
-    loadSupportUnread();
-    const interval = setInterval(loadSupportUnread, 15000);
-    return () => clearInterval(interval);
-  }, []);
-
   // =========================
   // MENU SIDEBAR (RAPI)
   // =========================
@@ -168,16 +143,6 @@ export default function DashboardSuperAdmin() {
     ];
   }, []);
 
-  const formatRole = (role) => {
-    if (!role) return "-";
-
-    return role
-      .toLowerCase()
-      .replace(/_/g, " ")
-      .replace(/\b\w/g, (c) => c.toUpperCase());
-  };
-
-  
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768);
 
   return (

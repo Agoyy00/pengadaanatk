@@ -32,6 +32,7 @@ const PIE_COLORS = [
 ];
 
 import SidebarLogo from "../../components/SidebarLogo";
+import useSupportUnread from "../../hooks/useSupportUnread";
 
 export default function Riwayat() {
   const navigate = useNavigate();
@@ -39,6 +40,12 @@ export default function Riwayat() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
+
+  const storedUser = localStorage.getItem("user");
+  const currentUser = storedUser ? JSON.parse(storedUser) : null;
+  const normalizeRole = (r) => String(r || "").toLowerCase().replace(/[\s_]+/g, "");
+  const activeRole = normalizeRole(currentUser?.role);
+  const { supportUnreadCount } = useSupportUnread(activeRole);
 
   // Chart & Filter State
   const [chartData, setChartData] = useState(null);
@@ -71,8 +78,6 @@ export default function Riwayat() {
     ];
   }, []);
 
-  const storedUser = localStorage.getItem("user");
-  const currentUser = storedUser ? JSON.parse(storedUser) : null;
   const userId = currentUser?.id;
   const token = localStorage.getItem("token");
 
@@ -477,6 +482,7 @@ export default function Riwayat() {
         <nav className="sidebar-menu">
           {sidebarMenus.map((m) => {
             const isActive = location.pathname === m.to;
+            const isSupport = m.label === "Support";
             return (
               <div
                 key={m.label}
@@ -487,6 +493,9 @@ export default function Riwayat() {
                 }}
               >
                 {m.label}
+                {isSupport && supportUnreadCount > 0 && (
+                  <span className="support-badge">{supportUnreadCount}</span>
+                )}
               </div>
             );
           })}

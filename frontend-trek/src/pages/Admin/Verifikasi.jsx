@@ -15,10 +15,12 @@ const API_BASE = import.meta.env.VITE_API_BASE;
 const token = localStorage.getItem("token");
 
 import SidebarLogo from "../../components/SidebarLogo";
+import useSupportUnread from "../../hooks/useSupportUnread";
 
 export default function Verifikasi() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { supportUnreadCount } = useSupportUnread("admin");
 
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -570,6 +572,7 @@ const [selectedPengajuan, setSelectedPengajuan] = useState(null);
         <nav className="sidebar-menu">
           {sidebarMenus.map((m) => {
             const isActive = m.to === location.pathname || m.active;
+            const isSupport = m.label === "Support";
             return (
               <div
                 key={m.label}
@@ -580,6 +583,9 @@ const [selectedPengajuan, setSelectedPengajuan] = useState(null);
                 }}
               >
                 {m.label}
+                {isSupport && supportUnreadCount > 0 && (
+                  <span className="support-badge">{supportUnreadCount}</span>
+                )}
               </div>
             );
           })}

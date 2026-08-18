@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import "../../css/layout.css";
 import RoleSwitcher from "../../components/RoleSwitcher";
@@ -7,39 +7,13 @@ import DesktopSidebarToggle from "../../components/DesktopSidebarToggle";
 import TicketList from "../Support/TicketList";
 import OpenTicket from "../Support/OpenTicket";
 import TicketDetail from "../Support/TicketDetail";
-
-const API_BASE = import.meta.env.VITE_API_BASE;
-const token = localStorage.getItem("token");
+import useSupportUnread from "../../hooks/useSupportUnread";
 
 export default function AdminSupport() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { supportUnreadCount } = useSupportUnread("admin");
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768);
-  const [supportUnreadCount, setSupportUnreadCount] = useState(0);
-
-  const loadSupportUnread = async () => {
-    try {
-      const res = await fetch(`${API_BASE}/support-tickets/unread-count`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "application/json",
-          "X-Active-Role": "admin",
-        },
-      });
-      const data = await res.json();
-      if (data.success) {
-        setSupportUnreadCount(data.count || 0);
-      }
-    } catch (err) {
-      console.error("Gagal memuat support unread count:", err);
-    }
-  };
-
-  useEffect(() => {
-    loadSupportUnread();
-    const interval = setInterval(loadSupportUnread, 15000);
-    return () => clearInterval(interval);
-  }, []);
 
   const sidebarMenus = [
     { label: "Dashboard Admin", to: "/dashboardadmin" },

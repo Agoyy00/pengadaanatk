@@ -13,6 +13,7 @@ const normalizeRole = (role) =>
     .replace(/[\s_]+/g, "");
 
 import SidebarLogo from "../components/SidebarLogo";
+import useSupportUnread from "../hooks/useSupportUnread";
 
 export default function TemplateDokumen() {
   const navigate = useNavigate();
@@ -21,6 +22,7 @@ export default function TemplateDokumen() {
   const storedUser = localStorage.getItem("user");
   const currentUser = storedUser ? JSON.parse(storedUser) : null;
   const role = normalizeRole(currentUser?.role);
+  const { supportUnreadCount } = useSupportUnread(role);
 
   const token = localStorage.getItem("token");
   const API_BASE = import.meta.env.VITE_API_BASE;
@@ -182,6 +184,7 @@ export default function TemplateDokumen() {
         <nav className="sidebar-menu">
           {sidebarMenus.map((m) => {
             const isActive = location.pathname === m.to || m.active;
+            const isSupport = m.label === "Support";
             return (
               <div
                 key={m.label}
@@ -192,6 +195,9 @@ export default function TemplateDokumen() {
                 }}
               >
                 {m.label}
+                {isSupport && supportUnreadCount > 0 && (
+                  <span className="support-badge">{supportUnreadCount}</span>
+                )}
               </div>
             );
           })}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import Swal from "sweetalert2";
 import "../../css/layout.css";
@@ -8,42 +8,16 @@ import DesktopSidebarToggle from "../../components/DesktopSidebarToggle";
 import TicketList from "./TicketList";
 import OpenTicket from "./OpenTicket";
 import TicketDetail from "./TicketDetail";
-
-const API_BASE = import.meta.env.VITE_API_BASE;
-const token = localStorage.getItem("token");
+import useSupportUnread from "../../hooks/useSupportUnread";
 
 export default function Support() {
   const navigate = useNavigate();
   const location = useLocation();
   const storedUser = localStorage.getItem("user");
   const currentUser = storedUser ? JSON.parse(storedUser) : null;
+  const activeRole = String(currentUser?.role || "superadmin").toLowerCase();
+  const { supportUnreadCount } = useSupportUnread(activeRole);
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768);
-  const [supportUnreadCount, setSupportUnreadCount] = useState(0);
-
-  const loadSupportUnread = async () => {
-    try {
-      const activeRole = String(currentUser?.role || "superadmin").toLowerCase();
-      const res = await fetch(`${API_BASE}/support-tickets/unread-count`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "application/json",
-          "X-Active-Role": activeRole,
-        },
-      });
-      const data = await res.json();
-      if (data.success) {
-        setSupportUnreadCount(data.count || 0);
-      }
-    } catch (err) {
-      console.error("Gagal memuat support unread count:", err);
-    }
-  };
-
-  useEffect(() => {
-    loadSupportUnread();
-    const interval = setInterval(loadSupportUnread, 15000);
-    return () => clearInterval(interval);
-  }, []);
 
   const sidebarMenus = [
     { label: "Dashboard Super Admin", to: "/dashboardsuperadmin" },

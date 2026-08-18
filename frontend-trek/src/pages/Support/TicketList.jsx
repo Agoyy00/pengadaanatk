@@ -26,6 +26,7 @@ export default function TicketList({ showCreateButton = true }) {
   const [filterPriority, setFilterPriority] = useState("all");
   const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
   const userRole = String(currentUser?.role || "").toLowerCase();
+  const isAdmin = userRole === "admin" || userRole === "superadmin";
   const activeRoleHeader = userRole || "user";
 
   const markSupportNotificationsAsRead = async () => {
@@ -374,21 +375,23 @@ export default function TicketList({ showCreateButton = true }) {
                           >
                             Lihat
                           </button>
-                          <button
-                            onClick={() => handleDelete(ticket)}
-                            style={{
-                              padding: "7px 14px",
-                              background: "#dc2626",
-                              color: "#fff",
-                              border: "none",
-                              borderRadius: 6,
-                              cursor: "pointer",
-                              fontSize: 12,
-                              fontWeight: 600,
-                            }}
-                          >
-                            Hapus
-                          </button>
+                          {isAdmin && (
+                            <button
+                              onClick={() => handleDelete(ticket)}
+                              style={{
+                                padding: "7px 14px",
+                                background: "#dc2626",
+                                color: "#fff",
+                                border: "none",
+                                borderRadius: 6,
+                                cursor: "pointer",
+                                fontSize: 12,
+                                fontWeight: 600,
+                              }}
+                            >
+                              Hapus
+                            </button>
+                          )}
                         </td>
                       </tr>
                     );

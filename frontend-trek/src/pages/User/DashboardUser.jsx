@@ -11,6 +11,7 @@ const API_BASE = import.meta.env.VITE_API_BASE;
 const token = localStorage.getItem("token");
 
 import SidebarLogo from "../../components/SidebarLogo";
+import useSupportUnread from "../../hooks/useSupportUnread";
 
 export default function DashboardUser() {
   const navigate = useNavigate();
@@ -19,6 +20,9 @@ export default function DashboardUser() {
   const currentUser = storedUser ? JSON.parse(storedUser) : null;
   const user = currentUser;
   const userId = user?.id;
+  const normalizeRole = (r) => String(r || "").toLowerCase().replace(/[\s_]+/g, "");
+  const activeRole = normalizeRole(currentUser?.role);
+  const { supportUnreadCount } = useSupportUnread(activeRole);
 
   const [loading, setLoading] = useState(true);
   const [latestPengajuan, setLatestPengajuan] = useState(null);
@@ -28,7 +32,6 @@ export default function DashboardUser() {
   const [periodeOpen, setPeriodeOpen] = useState(false);
   const [periodeMessage, setPeriodeMessage] = useState("");
   const [hasStockOpname, setHasStockOpname] = useState(false);
-  const [supportUnreadCount, setSupportUnreadCount] = useState(0);
 
   useEffect(() => {
     async function loadDashboardData(showNotification = false) {
@@ -149,30 +152,6 @@ export default function DashboardUser() {
       navigate("/template-dokumen");
     }
   };
-
-  const loadSupportUnread = async () => {
-    try {
-      const res = await fetch(`${API_BASE}/support-tickets/unread-count`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "application/json",
-          "X-Active-Role": "user",
-        },
-      });
-      const data = await res.json();
-      if (data.success) {
-        setSupportUnreadCount(data.count || 0);
-      }
-    } catch (err) {
-      console.error("Gagal memuat support unread count:", err);
-    }
-  };
-
-  useEffect(() => {
-    loadSupportUnread();
-    const interval = setInterval(loadSupportUnread, 15000);
-    return () => clearInterval(interval);
-  }, []);
 
   return (
     <div className="layout">

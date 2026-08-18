@@ -14,6 +14,7 @@ class SupportTicketReply extends Model
         'user_id',
         'message',
         'sender_type',
+        'is_read',
     ];
 
     public function ticket()

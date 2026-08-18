@@ -35,10 +35,12 @@ const DEFAULT_UNITS = [
 ];
 
 import SidebarLogo from "../../components/SidebarLogo";
+import useSupportUnread from "../../hooks/useSupportUnread";
 
 export default function GrafikBarangSuperAdmin() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { supportUnreadCount } = useSupportUnread("superadmin");
 
   const [loading, setLoading] = useState(true);
   const [barangs, setBarangs] = useState([]);
@@ -280,6 +282,7 @@ export default function GrafikBarangSuperAdmin() {
         <nav className="sidebar-menu">
           {sidebarMenus.map((m) => {
             const isActive = m.active || location.pathname === m.to;
+            const isSupport = m.label === "Support";
             return (
               <div
                 key={m.label}
@@ -290,6 +293,9 @@ export default function GrafikBarangSuperAdmin() {
                 }}
               >
                 {m.label}
+                {isSupport && supportUnreadCount > 0 && (
+                  <span className="support-badge">{supportUnreadCount}</span>
+                )}
               </div>
             );
           })}

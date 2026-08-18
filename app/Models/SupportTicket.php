@@ -17,6 +17,7 @@ class SupportTicket extends Model
         'message',
         'status',
         'admin_message',
+        'is_read',
     ];
 
     protected $casts = [
