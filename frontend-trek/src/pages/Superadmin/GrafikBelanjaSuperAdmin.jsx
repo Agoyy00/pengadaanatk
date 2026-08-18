@@ -456,6 +456,7 @@ export default function GrafikBelanjaSuperAdmin() {
           </div>
           </div>
           <div className="topbar-right">
+            <img src="/LogoYarsiFull.jpeg" alt="Logo Universitas YARSI" className="topbar-logo-full" />
             <span>Role: </span>
             <RoleSwitcher />
           </div>

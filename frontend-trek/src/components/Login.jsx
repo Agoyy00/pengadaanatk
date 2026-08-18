@@ -3,8 +3,8 @@ import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import "../css/Login.css";
 
+import logoFull from "./LogoYarsiFull.png";
 import atk from "../gambar/Logo.png";
-import logo from "../gambar/LogoYarsi(Tab).png";
 
 function Login({ onClose }) {
   const [ingatSaya, setIngatSaya] = useState(false);
@@ -72,8 +72,13 @@ function Login({ onClose }) {
 
         <div className="login-container-small">
           <div className="left-side-small">
-            <img src={logo} className="logo-atas-small" alt="Logo Yarsi" />
-            <img src={atk} className="logo-bawah-small" alt="Logo ATK" />
+            <div className="login-left-header">
+              <img src={logoFull} className="logo-atas-small" alt="Logo Universitas YARSI" />
+            </div>
+
+            <div className="login-left-illustration">
+              <img src={atk} className="logo-bawah-small" alt="Ilustrasi Pengadaan ATK" />
+            </div>
           </div>
 
           <div className="right-side-small">

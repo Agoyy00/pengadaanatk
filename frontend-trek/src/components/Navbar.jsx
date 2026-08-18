@@ -1,6 +1,8 @@
 import React from "react";
 import { BRANDING } from "../components/Branding";
 
+const logoYarsi = "/LogoYarsiTab.png?v=3";
+
 export default function Navbar({ onLoginClick }) {
   return (
     <nav
@@ -29,14 +31,16 @@ export default function Navbar({ onLoginClick }) {
     >
       {/* BRAND SECTION */}
       <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
-        {/* VERTICAL GOLD ACCENT - More Refined */}
-        <div
+        {/* Logo YARSI - White */}
+        <img
+          src={logoYarsi}
+          alt="Logo YARSI"
           style={{
-            width: "3px",
+            width: "44px",
             height: "44px",
-            background: "linear-gradient(180deg, #D4AF37 0%, #B8860B 100%)",
-            borderRadius: "4px",
-            boxShadow: "0 0 15px rgba(212, 175, 55, 0.3)",
+            objectFit: "contain",
+            flexShrink: 0,
+            color: "1px solid rgba(0, 0, 0, 0.12)"
           }}
         />
 

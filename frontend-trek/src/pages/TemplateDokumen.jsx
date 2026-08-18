@@ -238,6 +238,7 @@ export default function TemplateDokumen() {
             </div>
           </div>
           <div className="topbar-right" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <img src="/LogoYarsiFull.jpeg" alt="Logo Universitas YARSI" className="topbar-logo-full" />
             <PeriodeTimer typeFilter="pengajuan" />
             <PeriodeTimer typeFilter="stock_opname" />
             <span style={{ marginRight: 8 }}>Pengguna: <b>{currentUser?.name}</b></span>

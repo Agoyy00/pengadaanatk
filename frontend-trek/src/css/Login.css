@@ -90,48 +90,67 @@
    ========================================== */
 .left-side-small {
   flex: 1.1;
-  background: #ffffff;
+  background: radial-gradient(circle at 50% 30%, #f0fdf4 0%, #ffffff 65%, #f8fafc 100%);
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
+  gap: 32px;
   padding: 44px 32px;
-  border-right: 1px solid #f1f5f9;
+  border-right: 1px solid #e2e8f0;
+  position: relative;
+  overflow: hidden;
 }
 
-/* Frame Yarsi logo */
+.login-left-header {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  z-index: 2;
+}
+
+/* Frame Yarsi logo full */
 .logo-atas-small {
-  width: 90px;
-  height: 90px;
+  width: 100%;
+  max-width: 210px;
+  height: 54px;
   object-fit: contain;
-  background: transparent;
-  padding: 0;
-  border-radius: 0;
-  border: none;
-  box-shadow: none;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.07));
+}
+
+.login-left-illustration {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  position: relative;
+  z-index: 2;
 }
 
 /* Stationary image without background color or effects */
 .logo-bawah-small {
   width: 100%;
-  max-width: 290px;
-  height: auto;
+  max-width: 240px;
+  max-height: 210px;
   object-fit: contain;
-  margin-top: auto;
-  background: transparent;
-  border-radius: 0;
-  border: none;
-  box-shadow: none;
+  filter: drop-shadow(0 12px 28px rgba(0, 88, 38, 0.16));
+  transition: transform 0.4s ease;
 }
 
-/* ==========================================
-   RIGHT SIDE - CLEAN FORM AREA
-   ========================================== */
-.right-side-small {
-  flex: 1.2;
-  background: #ffffff;
-  display: flex;
-  flex-direction: column;
+.logo-bawah-small:hover {
+  transform: translateY(-4px) scale(1.02);
+}
+
+  /* ==========================================
+    RIGHT SIDE - CLEAN FORM AREA
+    ========================================== */
+  .right-side-small {
+    flex: 1.2;
+    background: #ffffff;
+    display: flex;
+    flex-direction: column;
   justify-content: center;
   padding: 44px 48px;
 }

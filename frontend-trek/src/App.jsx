@@ -260,6 +260,58 @@ function App() {
               >
                 <div className="landing-overlay">
                   <div className="landing-content glass floating">
+                    <div
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        position: "relative",
+                        padding: "6px",
+                        marginTop: "24px",
+                        marginBottom: "0px",
+                      }}
+                    >
+                      {/* Ambient Radial Spotlight Halo */}
+                      <div
+                        style={{
+                          position: "absolute",
+                          inset: "-8px",
+                          background: "radial-gradient(ellipse at center, rgba(255, 255, 255, 0.36) 0%, rgba(255, 255, 255, 0.12) 50%, transparent 100%)",
+                          filter: "blur(15px)",
+                          borderRadius: "999px",
+                          pointerEvents: "none",
+                        }}
+                      />
+
+                      {/* Glass Capsule Badge */}
+                      <div
+                        style={{
+                          position: "relative",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          background: "linear-gradient(135deg, rgba(255, 255, 255, 0.24) 0%, rgba(255, 255, 255, 0.07) 100%)",
+                          backdropFilter: "blur(20px) saturate(160%)",
+                          WebkitBackdropFilter: "blur(20px) saturate(160%)",
+                          padding: "12px 32px",
+                          borderRadius: "999px",
+                          border: "1px solid rgba(255, 255, 255, 0.26)",
+                          boxShadow: "0 8px 22px rgba(0, 0, 0, 0.19), inset 0 1px 0 rgba(255, 255, 255, 0.48)",
+                        }}
+                      >
+                        <img
+                          src="/LogoYarsiFull.png"
+                          alt="Logo Universitas YARSI"
+                          style={{
+                            height: "60px",
+                            width: "auto",
+                            objectFit: "contain",
+                            display: "block",
+                            filter: "drop-shadow(0 2px 8px rgba(0, 0, 0, 0.2))",
+                          }}
+                        />
+                      </div>
+                    </div>
                     <h1>Sistem Pengajuan ATK</h1>
                     <p>Universitas YARSI</p>
                     <span>

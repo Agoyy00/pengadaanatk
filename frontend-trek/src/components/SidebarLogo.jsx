@@ -1,16 +1,18 @@
 import React from "react";
 
+const logoYarsi = "/LogoYarsiTab.png?v=3";
+
 export default function SidebarLogo() {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "32px", padding: "4px 0" }}>
-      {/* Gold Vertical Accent Bar */}
-      <div
+      {/* Logo YARSI - White */}
+      <img
+        src={logoYarsi}
+        alt="Logo YARSI"
         style={{
-          width: "3.5px",
+          width: "38px",
           height: "38px",
-          background: "linear-gradient(180deg, #F59E0B 0%, #D4AF37 50%, #B8860B 100%)",
-          borderRadius: "4px",
-          boxShadow: "0 0 14px rgba(212, 175, 55, 0.5), 0 0 4px rgba(245, 158, 11, 0.4)",
+          objectFit: "contain",
           flexShrink: 0,
         }}
       />

@@ -960,6 +960,7 @@ function Pengajuan() {
           </div>
           </div>
           <div className="topbar-right" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <img src="/LogoYarsiFull.jpeg" alt="Logo Universitas YARSI" className="topbar-logo-full" />
             <PeriodeTimer typeFilter="pengajuan" />
             <PeriodeTimer typeFilter="stock_opname" />
             <span>Role: </span>
