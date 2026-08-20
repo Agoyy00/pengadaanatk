@@ -44,6 +44,8 @@ export default function StockOpname() {
   const [searchQuery, setSearchQuery] = useState("");
   const [loadingSearch, setLoadingSearch] = useState(false);
   const [lockedBarangIds, setLockedBarangIds] = useState([]);
+  const [selectedOpnameIds, setSelectedOpnameIds] = useState([]);
+  const [selectedUnits, setSelectedUnits] = useState([]);
 
   // Filters
   const [statusFilter, setStatusFilter] = useState("all");
@@ -846,6 +848,168 @@ export default function StockOpname() {
     }
   };
 
+  // Bulk Selection & Delete
+  const toggleSelectAll = (items) => {
+    const deletableItems = items.filter((o) => role === "superadmin" || o.status === "pending");
+    if (deletableItems.length === 0) return;
+    const deletableIds = deletableItems.map((o) => o.id);
+    const allSelected = deletableIds.every((id) => selectedOpnameIds.includes(id));
+
+    if (allSelected) {
+      setSelectedOpnameIds((prev) => prev.filter((id) => !deletableIds.includes(id)));
+    } else {
+      setSelectedOpnameIds((prev) => Array.from(new Set([...prev, ...deletableIds])));
+    }
+  };
+
+  const toggleSelectOpname = (id) => {
+    setSelectedOpnameIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedOpnameIds.length === 0) return;
+
+    const result = await Swal.fire({
+      title: `Hapus ${selectedOpnameIds.length} Laporan?`,
+      text: "Apakah Anda yakin ingin menghapus laporan stock opname terpilih ini?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#dc2626",
+      cancelButtonColor: "#64748b",
+      confirmButtonText: `Ya, Hapus (${selectedOpnameIds.length})`,
+      cancelButtonText: "Batal",
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      setLoading(true);
+      const res = await fetch(`${API_BASE}/stock-opname/bulk-delete`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+          "Accept": "application/json",
+        },
+        body: JSON.stringify({ ids: selectedOpnameIds }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setSelectedOpnameIds([]);
+        loadOpnames();
+        Swal.fire({
+          icon: "success",
+          title: "Berhasil Dihapus",
+          text: data.message || `${selectedOpnameIds.length} laporan berhasil dihapus.`,
+          confirmButtonColor: "#10b981",
+        });
+      } else {
+        Swal.fire({
+          icon: "error",
+          title: "Gagal",
+          text: data.message || "Gagal menghapus laporan.",
+          confirmButtonColor: "#ef4444",
+        });
+      }
+    } catch (err) {
+      console.error(err);
+      Swal.fire({
+        icon: "error",
+        title: "Kesalahan Server",
+        text: "Terjadi kesalahan pada server.",
+        confirmButtonColor: "#ef4444",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Unit Summary Bulk Delete (Superadmin only)
+  const toggleSelectAllUnits = (summaryList) => {
+    if (selectedUnits.length >= summaryList.length && summaryList.length > 0) {
+      setSelectedUnits([]);
+    } else {
+      setSelectedUnits(summaryList.map((u) => u.unit));
+    }
+  };
+
+  const toggleSelectUnit = (unitName) => {
+    setSelectedUnits((prev) =>
+      prev.includes(unitName) ? prev.filter((u) => u !== unitName) : [...prev, unitName]
+    );
+  };
+
+  const handleBulkDeleteUnits = async () => {
+    if (selectedUnits.length === 0) return;
+
+    const opnameIdsToDelete = filteredOpnames
+      .filter((o) => selectedUnits.includes(o.unit || o.user?.unit || "Unit Lainnya"))
+      .map((o) => o.id);
+
+    if (opnameIdsToDelete.length === 0) {
+      Swal.fire("Info", "Tidak ada laporan yang dapat dihapus pada unit terpilih.", "info");
+      return;
+    }
+
+    const result = await Swal.fire({
+      title: `Hapus ${selectedUnits.length} Unit Terpilih?`,
+      text: `Tindakan ini akan menghapus total ${opnameIdsToDelete.length} laporan stock opname dari ${selectedUnits.length} unit terpilih.`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#dc2626",
+      cancelButtonColor: "#64748b",
+      confirmButtonText: `Ya, Hapus (${opnameIdsToDelete.length} Laporan)`,
+      cancelButtonText: "Batal",
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      setLoading(true);
+      const res = await fetch(`${API_BASE}/stock-opname/bulk-delete`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+          "Accept": "application/json",
+        },
+        body: JSON.stringify({ ids: opnameIdsToDelete }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setSelectedUnits([]);
+        loadOpnames();
+        Swal.fire({
+          icon: "success",
+          title: "Berhasil Dihapus",
+          text: data.message || `Laporan stock opname unit terpilih berhasil dihapus.`,
+          confirmButtonColor: "#10b981",
+        });
+      } else {
+        Swal.fire({
+          icon: "error",
+          title: "Gagal",
+          text: data.message || "Gagal menghapus laporan.",
+          confirmButtonColor: "#ef4444",
+        });
+      }
+    } catch (err) {
+      console.error(err);
+      Swal.fire({
+        icon: "error",
+        title: "Kesalahan Server",
+        text: "Terjadi kesalahan pada server.",
+        confirmButtonColor: "#ef4444",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const [activeUnitView, setActiveUnitView] = useState(null);
 
   // Available units list for filter dropdown
@@ -870,9 +1034,11 @@ export default function StockOpname() {
     const unitMap = {};
     filteredOpnames.forEach((o) => {
       const uName = o.unit || o.user?.unit || "Unit Lainnya";
+      const uUser = o.user?.name || "User";
       if (!unitMap[uName]) {
         unitMap[uName] = {
           unit: uName,
+          userSet: new Set(),
           totalItems: 0,
           pendingCount: 0,
           verifiedCount: 0,
@@ -880,13 +1046,17 @@ export default function StockOpname() {
           rejectedCount: 0,
         };
       }
+      if (uUser) unitMap[uName].userSet.add(uUser);
       unitMap[uName].totalItems += 1;
       if (o.status === "pending") unitMap[uName].pendingCount += 1;
       if (o.status === "verified") unitMap[uName].verifiedCount += 1;
       if (o.status === "approved") unitMap[uName].approvedCount += 1;
       if (o.status === "rejected") unitMap[uName].rejectedCount += 1;
     });
-    return Object.values(unitMap);
+    return Object.values(unitMap).map((item) => ({
+      ...item,
+      userNames: Array.from(item.userSet).join(", ") || "-",
+    }));
   }, [filteredOpnames]);
 
   // Status Pill Styling
@@ -1125,7 +1295,7 @@ export default function StockOpname() {
                 </div>
 
                 {/* Filter Control Bar: Status Tabs + Unit Dropdown */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, marginBottom: 16 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 16 }}>
                   {/* Status Tabs */}
                   <div style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 4 }}>
                     {[
@@ -1162,7 +1332,7 @@ export default function StockOpname() {
                   </div>
 
                   {/* Unit Dropdown Filter */}
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     <label style={{ fontSize: 13, fontWeight: 700, color: "#374151", whiteSpace: "nowrap" }}>
                       Filter Unit:
                     </label>
@@ -1179,7 +1349,7 @@ export default function StockOpname() {
                         fontSize: "13px",
                         cursor: "pointer",
                         outline: "none",
-                        minWidth: "190px",
+                        minWidth: "160px",
                         boxShadow: "0 1px 2px rgba(0, 0, 0, 0.05)"
                       }}
                     >
@@ -1190,6 +1360,27 @@ export default function StockOpname() {
                         </option>
                       ))}
                     </select>
+
+                    {role === "superadmin" && selectedUnits.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={handleBulkDeleteUnits}
+                        style={{
+                          background: "#dc2626",
+                          color: "#ffffff",
+                          padding: "8px 14px",
+                          borderRadius: "8px",
+                          fontSize: "13px",
+                          fontWeight: 700,
+                          cursor: "pointer",
+                          border: "none",
+                          whiteSpace: "nowrap",
+                          boxShadow: "0 2px 6px rgba(220, 38, 38, 0.25)"
+                        }}
+                      >
+                        Hapus Terpilih ({selectedUnits.length})
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -1208,11 +1399,22 @@ export default function StockOpname() {
                         <tr style={{ borderBottom: "2px solid #e5e7eb", background: "#f9fafb" }}>
                           <th style={{ padding: "12px 16px" }}>No</th>
                           <th style={{ padding: "12px 16px" }}>Nama Unit</th>
+                          <th style={{ padding: "12px 16px" }}>Pemohon</th>
                           <th style={{ padding: "12px 16px", textAlign: "center" }}>Total Barang</th>
                           <th style={{ padding: "12px 16px", textAlign: "center" }}>Pending</th>
                           <th style={{ padding: "12px 16px", textAlign: "center" }}>Diverifikasi Admin</th>
                           <th style={{ padding: "12px 16px", textAlign: "center" }}>Disetujui Superadmin</th>
                           <th style={{ padding: "12px 16px", textAlign: "center" }}>Aksi</th>
+                          {role === "superadmin" && (
+                            <th style={{ padding: "12px 16px", textAlign: "center", width: "40px" }}>
+                              <input
+                                type="checkbox"
+                                style={{ cursor: "pointer", width: 16, height: 16 }}
+                                onChange={() => toggleSelectAllUnits(unitSummaryList)}
+                                checked={unitSummaryList.length > 0 && selectedUnits.length >= unitSummaryList.length}
+                              />
+                            </th>
+                          )}
                         </tr>
                       </thead>
                       <tbody>
@@ -1228,6 +1430,11 @@ export default function StockOpname() {
                             <td style={{ padding: "14px 16px" }}>
                               <span style={{ fontWeight: 700, color: "#0f172a", fontSize: "14px" }}>
                                 {u.unit}
+                              </span>
+                            </td>
+                            <td style={{ padding: "14px 16px" }}>
+                              <span style={{ fontWeight: 600, color: "#334155", fontSize: "14px" }}>
+                                {u.userNames}
                               </span>
                             </td>
                             <td style={{ padding: "14px 16px", textAlign: "center" }}>
@@ -1269,6 +1476,19 @@ export default function StockOpname() {
                                 Lihat Detail
                               </button>
                             </td>
+                            {role === "superadmin" && (
+                              <td
+                                style={{ padding: "14px 16px", textAlign: "center" }}
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={selectedUnits.includes(u.unit)}
+                                  onChange={() => toggleSelectUnit(u.unit)}
+                                  style={{ width: 16, height: 16, cursor: "pointer" }}
+                                />
+                              </td>
+                            )}
                           </tr>
                         ))}
                       </tbody>

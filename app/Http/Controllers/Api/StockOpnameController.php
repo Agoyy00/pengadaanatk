@@ -470,4 +470,29 @@ class StockOpnameController extends Controller
             'message' => 'Laporan stock opname berhasil dihapus.'
         ]);
     }
+
+    public function bulkDestroy(Request $request)
+    {
+        $validated = $request->validate([
+            'ids'   => 'required|array|min:1',
+            'ids.*' => 'required|integer',
+        ]);
+
+        $user = $request->user();
+        $query = StockOpname::whereIn('id', $validated['ids']);
+
+        if ($user->isUser()) {
+            $query->where('user_id', $user->id)->where('status', 'pending');
+        } elseif (!$user->isSuperAdmin()) {
+            $query->where('status', 'pending');
+        }
+
+        $count = $query->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => "{$count} laporan stock opname berhasil dihapus.",
+            'count'   => $count
+        ]);
+    }
 }

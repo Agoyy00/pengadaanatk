@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             RoleSeeder::class,    // seeder role
             UserSeeder::class,    // seeder user
             BarangSeeder::class,  // seeder barang
+            SqlDumpSeeder::class, // seeder dump data
         ]);
     }
 }

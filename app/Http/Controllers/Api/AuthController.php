@@ -36,6 +36,7 @@ class AuthController extends Controller
         if ($ds) {
             ldap_set_option($ds, LDAP_OPT_PROTOCOL_VERSION, 3);
             ldap_set_option($ds, LDAP_OPT_REFERRALS, 0);
+            ldap_set_option($ds, LDAP_OPT_NETWORK_TIMEOUT, 2);
 
             // Bind Awal (Anonymous) untuk mencari user
             if (@ldap_bind($ds)) {

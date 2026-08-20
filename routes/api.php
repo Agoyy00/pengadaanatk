@@ -171,6 +171,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/stock-opname/{id}/verify', [StockOpnameController::class, 'verify']);
     Route::patch('/stock-opname/{id}/approve', [StockOpnameController::class, 'approve']);
     Route::patch('/stock-opname/{id}/reject', [StockOpnameController::class, 'reject']);
+    Route::delete('/stock-opname/bulk-delete', [StockOpnameController::class, 'bulkDestroy']);
     Route::delete('/stock-opname/{id}', [StockOpnameController::class, 'destroy']);
 
     /*
