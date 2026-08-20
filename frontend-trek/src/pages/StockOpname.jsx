@@ -46,6 +46,7 @@ export default function StockOpname() {
 
   // Filters
   const [statusFilter, setStatusFilter] = useState("all");
+  const [unitFilter, setUnitFilter] = useState("all");
 
   // Unit options
   const [unitOptions, setUnitOptions] = useState([]);
@@ -780,11 +781,22 @@ export default function StockOpname() {
 
   const [activeUnitView, setActiveUnitView] = useState(null);
 
+  // Available units list for filter dropdown
+  const availableUnits = useMemo(() => {
+    const unitsFromOpnames = opnames.map((o) => o.unit || o.user?.unit).filter(Boolean);
+    const combined = Array.from(new Set([...unitOptions, ...unitsFromOpnames]));
+    return combined.sort();
+  }, [opnames, unitOptions]);
+
   // Filter local state list
   const filteredOpnames = useMemo(() => {
-    if (statusFilter === "all") return opnames;
-    return opnames.filter((o) => o.status === statusFilter);
-  }, [opnames, statusFilter]);
+    return opnames.filter((o) => {
+      const matchStatus = statusFilter === "all" || o.status === statusFilter;
+      const uName = o.unit || o.user?.unit || "Unit Lainnya";
+      const matchUnit = unitFilter === "all" || uName === unitFilter;
+      return matchStatus && matchUnit;
+    });
+  }, [opnames, statusFilter, unitFilter]);
 
   // Unit Summary List (Grouped by Unit)
   const unitSummaryList = useMemo(() => {
@@ -1045,39 +1057,73 @@ export default function StockOpname() {
                   )}
                 </div>
 
-                {/* Filter Tabs */}
-                <div style={{ display: "flex", gap: 10, marginBottom: 16, overflowX: "auto", paddingBottom: 6 }}>
-                  {[
-                    { value: "all", label: "Semua Laporan" },
-                    { value: "pending", label: "Pending" },
-                    { value: "verified", label: "Terverifikasi Admin" },
-                    { value: "approved", label: "Disetujui Superadmin" },
-                    { value: "rejected", label: "Ditolak" },
-                  ].map((tab) => (
-                    <button
-                      key={tab.value}
-                      onClick={() => setStatusFilter(tab.value)}
-                      onMouseEnter={(e) => {
-                        if (statusFilter === tab.value) e.currentTarget.style.background = "#16a34a";
-                      }}
-                      onMouseLeave={(e) => {
-                        if (statusFilter === tab.value) e.currentTarget.style.background = "#005826";
-                      }}
+                {/* Filter Control Bar: Status Tabs + Unit Dropdown */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, marginBottom: 16 }}>
+                  {/* Status Tabs */}
+                  <div style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 4 }}>
+                    {[
+                      { value: "all", label: "Semua Laporan" },
+                      { value: "pending", label: "Pending" },
+                      { value: "verified", label: "Terverifikasi Admin" },
+                      { value: "approved", label: "Disetujui Superadmin" },
+                      { value: "rejected", label: "Ditolak" },
+                    ].map((tab) => (
+                      <button
+                        key={tab.value}
+                        onClick={() => setStatusFilter(tab.value)}
+                        onMouseEnter={(e) => {
+                          if (statusFilter === tab.value) e.currentTarget.style.background = "#16a34a";
+                        }}
+                        onMouseLeave={(e) => {
+                          if (statusFilter === tab.value) e.currentTarget.style.background = "#005826";
+                        }}
+                        style={{
+                          padding: "8px 14px",
+                          borderRadius: 8,
+                          border: statusFilter === tab.value ? "none" : "1px solid #ddd",
+                          background: statusFilter === tab.value ? "#005826" : "white",
+                          color: statusFilter === tab.value ? "white" : "#4b5563",
+                          fontWeight: 600,
+                          cursor: "pointer",
+                          fontSize: 13,
+                          transition: "all 0.2s ease",
+                        }}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Unit Dropdown Filter */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <label style={{ fontSize: 13, fontWeight: 700, color: "#374151", whiteSpace: "nowrap" }}>
+                      Filter Unit:
+                    </label>
+                    <select
+                      value={unitFilter}
+                      onChange={(e) => setUnitFilter(e.target.value)}
                       style={{
                         padding: "8px 14px",
-                        borderRadius: 8,
-                        border: statusFilter === tab.value ? "none" : "1px solid #ddd",
-                        background: statusFilter === tab.value ? "#005826" : "white",
-                        color: statusFilter === tab.value ? "white" : "#4b5563",
+                        borderRadius: "8px",
+                        border: "1px solid #cbd5e1",
+                        background: "#ffffff",
+                        color: "#1e293b",
                         fontWeight: 600,
+                        fontSize: "13px",
                         cursor: "pointer",
-                        fontSize: 13,
-                        transition: "all 0.2s ease",
+                        outline: "none",
+                        minWidth: "190px",
+                        boxShadow: "0 1px 2px rgba(0, 0, 0, 0.05)"
                       }}
                     >
-                      {tab.label}
-                    </button>
-                  ))}
+                      <option value="all">Semua Unit ({opnames.length})</option>
+                      {availableUnits.map((u) => (
+                        <option key={u} value={u}>
+                          {u}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
                 {loading && <p>Memuat data laporan...</p>}

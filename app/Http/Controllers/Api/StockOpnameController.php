@@ -26,6 +26,11 @@ class StockOpnameController extends Controller
             $query->where('user_id', $user->id);
         }
 
+        // Filter per unit jika ada parameter unit
+        if ($request->has('unit') && !empty($request->unit) && $request->unit !== 'all') {
+            $query->where('unit', $request->unit);
+        }
+
         $data = $query->orderBy('created_at', 'desc')->get();
 
         return response()->json([
