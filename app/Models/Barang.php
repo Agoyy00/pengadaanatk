@@ -13,9 +13,15 @@ class Barang extends Model
         'nama',
         'kode',
         'satuan',
+        'stok',
         'harga_satuan',
         'foto',
     ];
+
+    public function satuans()
+    {
+        return $this->hasMany(BarangSatuan::class, 'barang_id');
+    }
 
     public function auditLogs()
     {

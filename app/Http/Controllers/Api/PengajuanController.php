@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use App\Http\Controllers\Controller;
 use App\Models\Pengajuan;
 use App\Models\PengajuanItem;
@@ -11,9 +13,12 @@ use App\Models\Periode;
 use App\Models\StockOpname;
 use App\Models\Notification;
 use App\Models\User;
+use App\Models\Barang;
+use App\Models\PengajuanLampiran;
+use App\Models\PengajuanRevisionLog;
+use App\Exports\TemplatePengajuanExport;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Imports\BarangATKImport;
-
 
 use Illuminate\Http\Request;
 use Carbon\Carbon;
@@ -23,19 +28,55 @@ class PengajuanController extends Controller
 {
     /**
      * GET /api/pengajuan
-     * User → hanya riwayat dirinya sendiri (pakai query ?user_id=)
-     * Admin → semua pengajuan
+     * User → riwayat miliknya sendiri (atau query ?user_id=)
+     * Admin/Superadmin → semua pengajuan dengan pencarian & filter lengkap
      */
     public function index(Request $request)
     {
-        $query = Pengajuan::with(['items.barang', 'user'])
+        $query = Pengajuan::with(['items.barang', 'user', 'lampirans', 'pengambilan'])
             ->orderBy('created_at', 'desc');
 
         // Jika user_id ada → tampilkan hanya milik user itu
-        if ($request->has('user_id')) {
+        if ($request->has('user_id') && $request->user_id !== 'all') {
             $query->where('user_id', $request->user_id);
         }
-        
+
+        // Pencarian Kata Kunci (ID Pengajuan, Nama Pemohon, Unit, Nama Barang, Nomor Dokumen)
+        if ($request->filled('search')) {
+            $s = trim($request->search);
+            $query->where(function ($q) use ($s) {
+                $q->where('id', 'like', "%$s%")
+                  ->orWhere('nama_pemohon', 'like', "%$s%")
+                  ->orWhere('unit', 'like', "%$s%")
+                  ->orWhere('jabatan', 'like', "%$s%")
+                  ->orWhere('tahun_akademik', 'like', "%$s%")
+                  ->orWhere('status', 'like', "%$s%")
+                  ->orWhereHas('user', function ($uq) use ($s) {
+                      $uq->where('name', 'like', "%$s%")
+                         ->orWhere('email', 'like', "%$s%");
+                  })
+                  ->orWhereHas('items.barang', function ($bq) use ($s) {
+                      $bq->where('nama', 'like', "%$s%")
+                         ->orWhere('kode', 'like', "%$s%");
+                  });
+            });
+        }
+
+        // Filter Status
+        if ($request->filled('status') && $request->status !== 'all') {
+            $query->where('status', $request->status);
+        }
+
+        // Filter Unit
+        if ($request->filled('unit') && $request->unit !== 'all') {
+            $query->where('unit', $request->unit);
+        }
+
+        // Filter Rentang Tanggal
+        if ($request->filled('start_date') && $request->filled('end_date')) {
+            $query->whereBetween('created_at', [$request->start_date . ' 00:00:00', $request->end_date . ' 23:59:59']);
+        }
+
         return response()->json($query->get());
     }
 
@@ -753,10 +794,12 @@ class PengajuanController extends Controller
             'items.*.barang_id'        => 'required|integer|exists:barangs,id',
             'items.*.kebutuhan_total'  => 'required|integer|min:0',
             'items.*.sisa_stok'        => 'required|integer|min:0',
+            'catatan_revisi'           => 'nullable|string|max:1000',
         ]);
 
-        // Pastikan status masih diajukan
-        if ($pengajuan->status !== 'diajukan') {
+        // Pastikan status masih diajukan / draft / revisi
+        $allowedStatuses = ['draft', 'diajukan', 'pending', 'menunggu_verifikasi', 'revisi'];
+        if (!in_array(strtolower($pengajuan->status), $allowedStatuses)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Pengajuan tidak bisa direvisi karena status sudah ' . $pengajuan->status,
@@ -765,12 +808,25 @@ class PengajuanController extends Controller
 
         // Pastikan user hanya bisa revisi pengajuan miliknya
         $user = Auth::user();
-        if ($pengajuan->user_id !== $user->id) {
+        if ($user->role_id === 3 && $pengajuan->user_id !== $user->id) {
             return response()->json([
                 'success' => false,
                 'message' => 'Anda tidak memiliki akses untuk merevisi pengajuan ini.',
             ], 403);
         }
+
+        // Simpan snapshot sebelum perubahan untuk diff_json
+        $oldItems = $pengajuan->items()->with('barang')->get()->map(function ($item) {
+            return [
+                'id'              => $item->id,
+                'barang_id'       => $item->barang_id,
+                'nama_barang'     => $item->barang?->nama ?? '-',
+                'kebutuhan_total' => $item->kebutuhan_total,
+                'sisa_stok'       => $item->sisa_stok,
+                'jumlah_diajukan' => $item->jumlah_diajukan,
+                'subtotal'        => $item->subtotal,
+            ];
+        })->toArray();
 
         $processedIds = [];
         $totalNilai = 0;
@@ -829,10 +885,450 @@ class PengajuanController extends Controller
             'total_nilai'           => $totalNilai,
         ]);
 
+        // Simpan snapshot setelah perubahan
+        $newItems = $pengajuan->items()->with('barang')->get()->map(function ($item) {
+            return [
+                'id'              => $item->id,
+                'barang_id'       => $item->barang_id,
+                'nama_barang'     => $item->barang?->nama ?? '-',
+                'kebutuhan_total' => $item->kebutuhan_total,
+                'sisa_stok'       => $item->sisa_stok,
+                'jumlah_diajukan' => $item->jumlah_diajukan,
+                'subtotal'        => $item->subtotal,
+            ];
+        })->toArray();
+
+        // Catat ke PengajuanRevisionLog (Audit trail versi)
+        PengajuanRevisionLog::create([
+            'pengajuan_id' => $pengajuan->id,
+            'revised_by'   => $user->id,
+            'revised_at'   => Carbon::now('Asia/Jakarta'),
+            'action_type'  => 'revisi',
+            'diff_json'    => [
+                'before' => $oldItems,
+                'after'  => $newItems,
+            ],
+            'catatan'      => $validated['catatan_revisi'] ?? 'Revisi perincian barang oleh ' . $user->name,
+        ]);
+
         return response()->json([
             'success'   => true,
-            'message'   => 'Revisi pengajuan berhasil disimpan',
+            'message'   => 'Revisi pengajuan berhasil disimpan.',
             'pengajuan' => $pengajuan->load('items.barang'),
         ]);
+    }
+
+    /**
+     * DELETE /api/pengajuan/{pengajuan}/items/{item}
+     * Hapus 1 item tertentu dari pengajuan (hanya saat draft / diajukan / revisi)
+     */
+    public function deleteItem(Request $request, $pengajuanId, $itemId)
+    {
+        $pengajuan = Pengajuan::with('items')->findOrFail($pengajuanId);
+        $user = Auth::user();
+
+        // Ownership check
+        if ($user->role_id === 3 && $pengajuan->user_id !== $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki akses ke pengajuan ini.',
+            ], 403);
+        }
+
+        // Status check
+        $allowedStatuses = ['draft', 'diajukan', 'pending', 'menunggu_verifikasi', 'revisi'];
+        if (!in_array(strtolower($pengajuan->status), $allowedStatuses)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Item tidak dapat dihapus karena status pengajuan sudah ' . $pengajuan->status,
+            ], 422);
+        }
+
+        // Guardrail: minimal 1 item harus tersisa
+        $activeItemsCount = $pengajuan->items()->count();
+        if ($activeItemsCount <= 1) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Minimal harus tersisa 1 item dalam pengajuan. Jika ingin membatalkan seluruh pengajuan, silakan gunakan tombol "Batalkan Pengajuan".',
+            ], 422);
+        }
+
+        $item = PengajuanItem::where('pengajuan_id', $pengajuan->id)
+            ->where('id', $itemId)
+            ->firstOrFail();
+
+        $itemNama = $item->barang?->nama ?? "Item #{$itemId}";
+        $itemSnapshot = [
+            'id'              => $item->id,
+            'barang_id'       => $item->barang_id,
+            'nama_barang'     => $itemNama,
+            'kebutuhan_total' => $item->kebutuhan_total,
+            'sisa_stok'       => $item->sisa_stok,
+            'jumlah_diajukan' => $item->jumlah_diajukan,
+            'subtotal'        => $item->subtotal,
+        ];
+
+        // Soft delete item
+        $item->delete();
+
+        // Recalculate totals
+        $remainingItems = $pengajuan->items()->get();
+        $totalJumlahDiajukan = $remainingItems->sum('jumlah_diajukan');
+        $totalNilai = $remainingItems->sum('subtotal');
+
+        $pengajuan->update([
+            'total_jumlah_diajukan' => $totalJumlahDiajukan,
+            'total_nilai'           => $totalNilai,
+        ]);
+
+        // Record revision log
+        PengajuanRevisionLog::create([
+            'pengajuan_id' => $pengajuan->id,
+            'revised_by'   => $user->id,
+            'revised_at'   => Carbon::now('Asia/Jakarta'),
+            'action_type'  => 'hapus_item',
+            'diff_json'    => [
+                'deleted_item' => $itemSnapshot,
+            ],
+            'catatan'      => "Menghapus item {$itemNama} dari pengajuan.",
+        ]);
+
+        return response()->json([
+            'success'   => true,
+            'message'   => "Item \"{$itemNama}\" berhasil dihapus dari pengajuan.",
+            'pengajuan' => $pengajuan->load('items.barang'),
+        ]);
+    }
+
+    /**
+     * GET /api/pengajuan/{pengajuan}/revisions
+     * Dapatkan riwayat revisi dan audit trail untuk pengajuan
+     */
+    public function getRevisionHistory($id)
+    {
+        $pengajuan = Pengajuan::findOrFail($id);
+        $user = Auth::user();
+
+        // Ownership check
+        if ($user->role_id === 3 && $pengajuan->user_id !== $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki akses ke riwayat pengajuan ini.',
+            ], 403);
+        }
+
+        $logs = PengajuanRevisionLog::with('user')
+            ->where('pengajuan_id', $id)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data'    => $logs,
+        ]);
+    }
+
+    /**
+     * PATCH /api/pengajuan/{pengajuan}/cancel
+     * Membatalkan pengajuan (status berubah jadi dibatalkan, butuh alasan pembatalan)
+     */
+    public function cancel(Request $request, $id)
+    {
+        $pengajuan = Pengajuan::findOrFail($id);
+        $user = Auth::user();
+
+        // Cek hak akses: User pemilik atau Admin/Superadmin
+        if ($user->role_id === 3 && $pengajuan->user_id !== $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda hanya dapat membatalkan pengajuan milik Anda sendiri.',
+            ], 403);
+        }
+
+        // Cek status yang diperbolehkan batal (termasuk draft & revisi)
+        $cancellableStatuses = ['draft', 'diajukan', 'pending', 'menunggu_verifikasi', 'revisi'];
+        if (!in_array(strtolower($pengajuan->status), $cancellableStatuses) && !in_array($user->role_id, [1, 2])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Pengajuan tidak dapat dibatalkan karena sudah dalam proses verifikasi atau disetujui.',
+            ], 422);
+        }
+
+        $validated = $request->validate([
+            'alasan_pembatalan' => 'required|string|min:3|max:1000',
+        ]);
+
+        $pengajuan->update([
+            'status'            => 'dibatalkan',
+            'alasan_pembatalan' => $validated['alasan_pembatalan'],
+            'cancelled_by'      => $user->id,
+            'cancelled_at'      => Carbon::now('Asia/Jakarta'),
+        ]);
+
+        // Catat ke PengajuanRevisionLog
+        PengajuanRevisionLog::create([
+            'pengajuan_id' => $pengajuan->id,
+            'revised_by'   => $user->id,
+            'revised_at'   => Carbon::now('Asia/Jakarta'),
+            'action_type'  => 'batal',
+            'diff_json'    => null,
+            'catatan'      => 'Pengajuan dibatalkan: ' . $validated['alasan_pembatalan'],
+        ]);
+
+        // Catat admin/user activity log
+        DB::table('admin_activity_logs')->insert([
+            'user_id'     => $user->id,
+            'action'      => 'cancel_pengajuan',
+            'description' => "Pengajuan #{$pengajuan->id} dibatalkan oleh {$user->name}",
+            'details'     => json_encode(['alasan' => $validated['alasan_pembatalan']]),
+            'ip_address'  => $request->ip(),
+            'created_at'  => now(),
+            'updated_at'  => now(),
+        ]);
+
+        return response()->json([
+            'success'   => true,
+            'message'   => 'Pengajuan berhasil dibatalkan.',
+            'pengajuan' => $pengajuan->load(['items.barang', 'user']),
+        ]);
+    }
+
+    /**
+     * DELETE /api/pengajuan/{pengajuan}
+     * Soft delete pengajuan (hanya draft oleh user, atau rejected/cancelled oleh admin/superadmin)
+     */
+    public function destroy(Request $request, $id)
+    {
+        $pengajuan = Pengajuan::findOrFail($id);
+        $user = Auth::user();
+
+        // Validasi aturan hapus
+        $isSuperAdmin = ($user->role_id === 1 || ($user->role && $user->role->name === 'superadmin'));
+        $isAdmin = ($user->role_id === 2 || ($user->role && $user->role->name === 'admin'));
+        $isOwner = ($pengajuan->user_id === $user->id);
+
+        if (!$isSuperAdmin && !$isAdmin && !$isOwner) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki hak akses untuk menghapus pengajuan ini.',
+            ], 403);
+        }
+
+        // Jika user biasa: hanya boleh hapus yang berstatus draft atau dibatalkan miliknya
+        if ($user->role_id === 3 && !in_array(strtolower($pengajuan->status), ['draft', 'dibatalkan', 'ditolak'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Hanya pengajuan yang dibatalkan atau ditolak yang dapat dihapus.',
+            ], 422);
+        }
+
+        // Lakukan soft delete pada items dan pengajuan
+        $pengajuan->items()->delete();
+        $pengajuan->delete();
+
+        // Catat log
+        DB::table('admin_activity_logs')->insert([
+            'user_id'     => $user->id,
+            'action'      => 'delete_pengajuan',
+            'description' => "Pengajuan #{$id} berhasil dihapus (soft delete) oleh {$user->name}",
+            'details'     => json_encode(['pengajuan_id' => $id]),
+            'ip_address'  => $request->ip(),
+            'created_at'  => now(),
+            'updated_at'  => now(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Pengajuan berhasil dihapus dari sistem.',
+        ]);
+    }
+
+    /**
+     * GET /api/pengajuan/trashed
+     * Melihat pengajuan yang dihapus (Trash / Soft Deleted)
+     */
+    public function trashed(Request $request)
+    {
+        $trashed = Pengajuan::onlyTrashed()
+            ->with(['items.barang', 'user'])
+            ->orderBy('deleted_at', 'desc')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data'    => $trashed,
+        ]);
+    }
+
+    /**
+     * PATCH /api/pengajuan/{id}/restore
+     * Memulihkan pengajuan yang dihapus
+     */
+    public function restore(Request $request, $id)
+    {
+        $pengajuan = Pengajuan::onlyTrashed()->findOrFail($id);
+        $pengajuan->restore();
+        PengajuanItem::onlyTrashed()->where('pengajuan_id', $id)->restore();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Pengajuan berhasil dipulihkan.',
+            'pengajuan' => $pengajuan,
+        ]);
+    }
+
+    /**
+     * POST /api/pengajuan/{pengajuan}/lampiran
+     * Unggah file/dokumen lampiran secara manual
+     */
+    public function uploadLampiran(Request $request, $id)
+    {
+        $pengajuan = Pengajuan::findOrFail($id);
+        $user = Auth::user();
+
+        $validated = $request->validate([
+            'file'       => 'required|file|mimes:pdf,png,jpg,jpeg,xlsx,docx|max:10240', // Max 10MB
+            'kategori'   => 'nullable|string|in:nota,foto_fisik,lampiran_pengajuan,serah_terima',
+            'keterangan' => 'nullable|string|max:255',
+        ]);
+
+        $file = $request->file('file');
+        $originalName = $file->getClientOriginalName();
+        $ext = $file->getClientOriginalExtension();
+        $fileSize = $file->getSize();
+        $mimeType = $file->getMimeType();
+
+        $uniqueName = 'lampiran_' . time() . '_' . Str::random(8) . '.' . $ext;
+        $path = $file->storeAs('lampiran_pengajuan', $uniqueName, 'public');
+
+        $lampiran = PengajuanLampiran::create([
+            'pengajuan_id' => $pengajuan->id,
+            'user_id'      => $user ? $user->id : null,
+            'file_name'    => $originalName,
+            'file_path'    => $path,
+            'file_type'    => $mimeType,
+            'file_size'    => $fileSize,
+            'kategori'     => $validated['kategori'] ?? 'lampiran_pengajuan',
+            'keterangan'   => $validated['keterangan'] ?? null,
+        ]);
+
+        return response()->json([
+            'success'  => true,
+            'message'  => 'File berhasil diunggah.',
+            'lampiran' => $lampiran,
+        ], 201);
+    }
+
+    /**
+     * GET /api/pengajuan/{pengajuan}/lampiran
+     */
+    public function getLampirans($id)
+    {
+        $lampirans = PengajuanLampiran::with('user')
+            ->where('pengajuan_id', $id)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data'    => $lampirans,
+        ]);
+    }
+
+    /**
+     * GET /api/lampiran/{id}/download
+     * Unduh file lampiran dengan proteksi autentikasi, ownership check, dan audit log
+     */
+    public function downloadLampiran(Request $request, $id)
+    {
+        $lampiran = PengajuanLampiran::with('pengajuan')->findOrFail($id);
+        $user = Auth::user();
+
+        // Ownership check: user biasa hanya bisa download file miliknya sendiri
+        if ($user->role_id === 3) {
+            $isOwner = ($lampiran->user_id === $user->id) ||
+                       ($lampiran->pengajuan && $lampiran->pengajuan->user_id === $user->id);
+            if (!$isOwner) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak memiliki akses untuk mengunduh file ini.',
+                ], 403);
+            }
+        }
+
+        // Cek file exists di storage
+        if (!Storage::disk('public')->exists($lampiran->file_path)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'File "' . $lampiran->file_name . '" tidak ditemukan di server. Kemungkinan file telah dipindahkan atau dihapus dari storage.',
+            ], 404);
+        }
+
+        $fullPath = Storage::disk('public')->path($lampiran->file_path);
+
+        // Cek file tidak kosong / rusak
+        if (!is_readable($fullPath) || filesize($fullPath) === 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'File "' . $lampiran->file_name . '" tidak dapat dibaca atau rusak. Silakan hubungi admin.',
+            ], 422);
+        }
+
+        // Audit log: catat setiap download
+        DB::table('admin_activity_logs')->insert([
+            'user_id'     => $user->id,
+            'action'      => 'download_lampiran',
+            'description' => "Download file \"{$lampiran->file_name}\" (lampiran #{$lampiran->id}) oleh {$user->name}",
+            'details'     => json_encode([
+                'lampiran_id'  => $lampiran->id,
+                'pengajuan_id' => $lampiran->pengajuan_id,
+                'file_name'    => $lampiran->file_name,
+                'file_size'    => $lampiran->file_size,
+            ]),
+            'ip_address'  => $request->ip(),
+            'created_at'  => now(),
+            'updated_at'  => now(),
+        ]);
+
+        return response()->download($fullPath, $lampiran->file_name);
+    }
+
+    /**
+     * DELETE /api/lampiran/{id}
+     */
+    public function deleteLampiran(Request $request, $id)
+    {
+        $lampiran = PengajuanLampiran::findOrFail($id);
+        $user = Auth::user();
+
+        if ($user->role_id === 3 && $lampiran->user_id !== $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized.',
+            ], 403);
+        }
+
+        if (Storage::disk('public')->exists($lampiran->file_path)) {
+            Storage::disk('public')->delete($lampiran->file_path);
+        }
+
+        $lampiran->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'File lampiran berhasil dihapus.',
+        ]);
+    }
+
+    /**
+     * GET /api/pengajuan/template-export
+     * Generate & Download template Excel (.xlsx) pengajuan dengan data sisa stok real-time otomatis,
+     * formula excel tertanam, dan proteksi cell read-only.
+     */
+    public function exportTemplate(Request $request)
+    {
+        $userId = $request->user()?->id ?? $request->query('user_id');
+        $filename = 'Template_Pengajuan_ATK_' . date('Ymd_His') . '.xlsx';
+        return Excel::download(new TemplatePengajuanExport($userId), $filename);
     }
 }

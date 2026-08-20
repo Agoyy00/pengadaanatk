@@ -15,9 +15,20 @@ class StockOpname extends Model
         'unit',
         'stok_sistem',
         'stok_fisik',
+        'satuan',
         'hasil_verifikasi',
         'selisih',
+        'rincian_satuan',
+        'keterangan',
+        'alasan_penyesuaian',
         'status',
+        'approved_by',
+        'approved_at',
+    ];
+
+    protected $casts = [
+        'rincian_satuan' => 'array',
+        'approved_at'    => 'datetime',
     ];
 
     public function barang()
@@ -28,5 +39,10 @@ class StockOpname extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function approvedBy()
+    {
+        return $this->belongsTo(User::class, 'approved_by');
     }
 }

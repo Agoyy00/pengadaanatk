@@ -17,6 +17,8 @@ use Maatwebsite\Excel\Excel as ExcelReader;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Writer\Csv;
 
+use App\Models\BarangSatuan;
+
 class BarangController extends Controller
 {
     private function normalizeKode(string $kode): string
@@ -55,34 +57,40 @@ class BarangController extends Controller
 
     // GET /api/barang?q=
     public function index(Request $request)
-{
-    $q = $request->q;
+    {
+        $q = $request->q;
 
-    $barang = Barang::where('nama', 'like', "%$q%")
-        ->orWhere('kode', 'like', "%$q%")
-        ->orWhere('satuan', 'like', "%$q%")
-        ->get()
-        ->map(function ($b) {
-            return [
-                'id' => $b->id,
-                'nama' => $b->nama,
-                'kode' => $b->kode,
-                'stok' => $b->stok,
-                'satuan' => $this->normalizeSatuan($b->satuan ?? ''),
-                'harga_satuan' => $b->harga_satuan,
-
-                'foto' => $b->gambar
-                ? '/storage/barang/' . $b->gambar
-                : null,
+        $barang = Barang::with('satuans')
+            ->where(function ($query) use ($q) {
+                if ($q) {
+                    $query->where('nama', 'like', "%$q%")
+                          ->orWhere('kode', 'like', "%$q%")
+                          ->orWhere('satuan', 'like', "%$q%");
+                }
+            })
+            ->get()
+            ->map(function ($b) {
+                return [
+                    'id' => $b->id,
+                    'nama' => $b->nama,
+                    'kode' => $b->kode,
+                    'stok' => $b->stok,
+                    'satuan' => $this->normalizeSatuan($b->satuan ?? ''),
+                    'harga_satuan' => $b->harga_satuan,
+                    'satuans' => $b->satuans,
+                    'foto' => $b->gambar
+                    ? '/storage/barang/' . $b->gambar
+                    : null,
                 ];  
             });
 
-    return response()->json($barang);
-}
+        return response()->json($barang);
+    }
 
     public function show(Barang $barang)
     {
         $barang->satuan = $this->normalizeSatuan($barang->satuan ?? '');
+        $barang->load('satuans');
         return response()->json($barang);
     }
 
@@ -507,5 +515,56 @@ public function importExcel(Request $request)
 
             $no++;
         }
+    }
+
+    /**
+     * GET /api/barang/{barang}/satuans
+     */
+    public function getSatuans(Barang $barang)
+    {
+        return response()->json([
+            'success' => true,
+            'base_satuan' => $barang->satuan,
+            'satuans' => $barang->satuans()->get()
+        ]);
+    }
+
+    /**
+     * POST /api/barang/{barang}/satuans
+     */
+    public function storeSatuan(Request $request, Barang $barang)
+    {
+        $validated = $request->validate([
+            'nama_satuan'     => 'required|string|max:50',
+            'faktor_konversi' => 'required|integer|min:1',
+            'keterangan'      => 'nullable|string|max:255',
+        ]);
+
+        $satuan = BarangSatuan::create([
+            'barang_id'       => $barang->id,
+            'nama_satuan'     => $this->normalizeSatuan($validated['nama_satuan']),
+            'faktor_konversi' => $validated['faktor_konversi'],
+            'keterangan'      => $validated['keterangan'] ?? null,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Satuan konversi berhasil ditambahkan',
+            'satuan'  => $satuan,
+        ], 201);
+    }
+
+    /**
+     * DELETE /api/barang-satuans/{id}
+     */
+    public function destroySatuan(Request $request, $id)
+    {
+        $satuan = BarangSatuan::findOrFail($id);
+        $satuan->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Satuan konversi berhasil dihapus',
+        ]);
     }
 }

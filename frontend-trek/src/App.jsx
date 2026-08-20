@@ -312,7 +312,7 @@ function App() {
                         />
                       </div>
                     </div>
-                    <h1>Sistem Pengajuan ATK</h1>
+                    <h1>Sistem Pengelolaan ATK</h1>
                     <p>Universitas YARSI</p>
                     <span>
                       Pengajuan alat tulis kantor terintegrasi, transparan, dan efisien
@@ -400,7 +400,7 @@ function App() {
             </RequireAuth>
           }
         />
-          <Route
+        <Route
           path="/periode"
           element={
             <RequireAuth allowRoles={["superadmin"]}>
@@ -476,7 +476,7 @@ function App() {
           }
         />
 
-         <Route
+        <Route
           path="/dashboardsuperadmin"
           element={
             <RequireAuth allowRoles={["superadmin"]}>
@@ -485,51 +485,53 @@ function App() {
           }
         />
 
-          <Route path="/verifikasi/:id" element={<DetailVerifikasi />} />
+        <Route path="/verifikasi/:id" element={<DetailVerifikasi />} />
 
-          {/* ✅ ROUTES BARU: Stock Opname & Template Dokumen */}
-          <Route
-            path="/stock-opname"
-            element={
-              <RequireAuth allowRoles={["user", "admin", "superadmin"]}>
-                <StockOpname />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/template-dokumen"
-            element={
-              <RequireAuth allowRoles={["user", "admin", "superadmin"]}>
-                <TemplateDokumen />
-              </RequireAuth>
-            }
-          />
+        {/* ✅ ROUTES BARU: Stock Opname & Template Dokumen */}
+        <Route
+          path="/stock-opname"
+          element={
+            <RequireAuth allowRoles={["user", "admin", "superadmin"]}>
+              <StockOpname />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/template-dokumen"
+          element={
+            <RequireAuth allowRoles={["user", "admin", "superadmin"]}>
+              <TemplateDokumen />
+            </RequireAuth>
+          }
+        />
 
-          {/* ✅ ROUTES BARU: Support Ticket */}
-          <Route
-            path="/support"
-            element={
-              <RequireAuth allowRoles={["user", "admin", "superadmin"]}>
-                <SupportRouter />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/support/open-ticket"
-            element={
-              <RequireAuth allowRoles={["user", "admin", "superadmin"]}>
-                <OpenTicket />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/support/:id"
-            element={
-              <RequireAuth allowRoles={["user", "admin", "superadmin"]}>
-                <TicketDetail />
-              </RequireAuth>
-            }
-          />
+        {/* ✅ ROUTES BARU: Support Ticket */}
+        <Route
+          path="/support"
+          element={
+            <RequireAuth allowRoles={["user", "admin", "superadmin"]}>
+              <SupportRouter />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/support/open-ticket"
+          element={
+            <RequireAuth allowRoles={["user", "admin", "superadmin"]}>
+              <OpenTicket />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/support/:id"
+          element={
+            <RequireAuth allowRoles={["user", "admin", "superadmin"]}>
+              <TicketDetail />
+            </RequireAuth>
+          }
+        />
+
+        {/* ✅ ROUTES BARU: Support Ticket (Pengumuman now inside Support tabs) */}
 
         {/* fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />

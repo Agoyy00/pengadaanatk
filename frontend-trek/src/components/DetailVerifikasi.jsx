@@ -148,6 +148,52 @@ export default function DetailVerifikasi({ pengajuan, onClose, onSuccess }) {
     }
   };
 
+  const NumericInput = ({ value, onChange, placeholder = "0", disabled = false }) => {
+    const [display, setDisplay] = React.useState(() => {
+      const v = value ?? 0;
+      return v === 0 ? "" : String(v);
+    });
+    const justBlurred = React.useRef(false);
+
+    React.useEffect(() => {
+      if (justBlurred.current) {
+        justBlurred.current = false;
+        return;
+      }
+      const v = value ?? 0;
+      setDisplay(v === 0 ? "" : String(v));
+    }, [value]);
+
+    const handleChange = (e) => {
+      const raw = e.target.value;
+      const cleaned = raw.replace(/[^0-9]/g, "");
+      setDisplay(cleaned);
+      const num = cleaned === "" ? 0 : parseInt(cleaned, 10) || 0;
+      onChange(num);
+    };
+
+    const handleBlur = () => {
+      if (display === "") {
+        justBlurred.current = true;
+        setDisplay("0");
+        onChange(0);
+      }
+    };
+
+    return (
+      <input
+        type="text"
+        inputMode="numeric"
+        placeholder={placeholder}
+        value={display}
+        onChange={handleChange}
+        onBlur={handleBlur}
+        disabled={disabled}
+        style={{ width: "100%", padding: "6px 10px" }}
+      />
+    );
+  };
+
   return (
     <div className="modal-overlay">
       <div className="modal-card" style={{ maxWidth: "650px", width: "100%", maxHeight: "90vh", overflowY: "auto" }}>
@@ -196,39 +242,35 @@ export default function DetailVerifikasi({ pengajuan, onClose, onSuccess }) {
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px", marginBottom: "12px" }}>
                   <div className="item-row">
                     <label style={{ fontSize: "12px", color: "#64748b" }}>Kebutuhan Total</label>
-                    <input
-                      type="number"
-                      min="0"
-                      style={{ width: "100%", padding: "6px 10px" }}
+                    <NumericInput
                       value={draftItems[item.id].kebutuhan_total}
-                      onChange={(e) =>
+                      onChange={(num) => {
                         setDraftItems((prev) => ({
                           ...prev,
                           [item.id]: {
                             ...prev[item.id],
-                            kebutuhan_total: Number(e.target.value),
+                            kebutuhan_total: num,
                           },
-                        }))
-                      }
+                        }));
+                      }}
+                      placeholder="0"
                     />
                   </div>
 
                   <div className="item-row">
                     <label style={{ fontSize: "12px", color: "#64748b" }}>Sisa Stok Saat Ini</label>
-                    <input
-                      type="number"
-                      min="0"
-                      style={{ width: "100%", padding: "6px 10px" }}
+                    <NumericInput
                       value={draftItems[item.id].sisa_stok}
-                      onChange={(e) =>
+                      onChange={(num) => {
                         setDraftItems((prev) => ({
                           ...prev,
                           [item.id]: {
                             ...prev[item.id],
-                            sisa_stok: Number(e.target.value),
+                            sisa_stok: num,
                           },
-                        }))
-                      }
+                        }));
+                      }}
+                      placeholder="0"
                     />
                   </div>
 

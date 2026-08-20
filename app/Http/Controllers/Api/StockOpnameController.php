@@ -19,7 +19,7 @@ class StockOpnameController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        $query = StockOpname::with(['barang', 'user']);
+        $query = StockOpname::with(['barang.satuans', 'user', 'approvedBy']);
 
         // Jika role user biasa, batasi hanya data miliknya sendiri
         if ($user->isUser()) {
@@ -31,6 +31,38 @@ class StockOpnameController extends Controller
             $query->where('unit', $request->unit);
         }
 
+        // Search Keyword
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $query->where(function ($q) use ($s) {
+                $q->where('unit', 'like', "%$s%")
+                  ->orWhere('keterangan', 'like', "%$s%")
+                  ->orWhere('alasan_penyesuaian', 'like', "%$s%")
+                  ->orWhereHas('barang', function ($bq) use ($s) {
+                      $bq->where('nama', 'like', "%$s%")
+                         ->orWhere('kode', 'like', "%$s%");
+                  })
+                  ->orWhereHas('user', function ($uq) use ($s) {
+                      $uq->where('name', 'like', "%$s%")
+                         ->orWhere('email', 'like', "%$s%");
+                  });
+            });
+        }
+
+        // Filter Status
+        if ($request->filled('status') && $request->status !== 'all') {
+            $query->where('status', $request->status);
+        }
+
+        // Filter Unit
+        if ($request->filled('unit') && $request->unit !== 'all') {
+            $query->where('unit', $request->unit);
+        }
+
+        // Filter Tanggal
+        if ($request->filled('start_date') && $request->filled('end_date')) {
+            $query->whereBetween('created_at', [$request->start_date . ' 00:00:00', $request->end_date . ' 23:59:59']);
+        }
         $data = $query->orderBy('created_at', 'desc')->get();
 
         return response()->json([
@@ -52,7 +84,7 @@ class StockOpnameController extends Controller
             ]);
         }
 
-        $stockOpnames = StockOpname::with(['barang'])
+        $stockOpnames = StockOpname::with(['barang.satuans'])
             ->where('user_id', $user->id)
             ->where('created_at', '>=', Carbon::parse($periode->mulai)->subDays(7))
             ->get();
@@ -60,14 +92,14 @@ class StockOpnameController extends Controller
         $items = $stockOpnames->map(function ($so) {
             $barang = $so->barang;
             $stokFisik = (int)($so->stok_fisik ?? 0);
-            $sisaStok = $so->hasil_verifikasi !== null && $so->hasil_verifikasi !== undefined
+            $sisaStok = $so->hasil_verifikasi !== null
                 ? (int)$so->hasil_verifikasi
                 : $stokFisik;
 
             return [
                 'barang_id'       => $so->barang_id,
                 'nama'            => $barang->nama ?? 'Barang Terhapus',
-                'satuan'          => $barang->satuan ?? '',
+                'satuan'          => $so->satuan ?? $barang->satuan ?? '',
                 'kebutuhan_total' => 0,
                 'sisa_stok'       => $sisaStok,
                 'jumlah_diajukan' => 0,
@@ -76,6 +108,8 @@ class StockOpnameController extends Controller
                 'stok_fisik'      => $stokFisik,
                 'hasil_verifikasi' => $so->hasil_verifikasi,
                 'selisih'         => $so->selisih,
+                'rincian_satuan'  => $so->rincian_satuan,
+                'alasan_penyesuaian' => $so->alasan_penyesuaian,
                 'unit'            => $so->unit,
             ];
         })->values()->all();
@@ -89,9 +123,13 @@ class StockOpnameController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'barang_id'   => 'required|exists:barangs,id',
-            'stok_fisik'  => 'required|integer|min:0',
-            'unit'        => 'required|string|max:255',
+            'barang_id'           => 'required|exists:barangs,id',
+            'stok_fisik'          => 'nullable|integer|min:0',
+            'satuan'              => 'nullable|string|max:50',
+            'unit'                => 'required|string|max:255',
+            'rincian_satuan'      => 'nullable|array',
+            'keterangan'          => 'nullable|string',
+            'alasan_penyesuaian'  => 'nullable|string',
         ]);
 
         $existing = StockOpname::where('user_id', $request->user()->id)
@@ -131,25 +169,41 @@ class StockOpnameController extends Controller
             $user->save();
         }
 
-        $barang = Barang::findOrFail($validated['barang_id']);
+        $barang = Barang::with('satuans')->findOrFail($validated['barang_id']);
         $stok_sistem = $barang->stok; // Stok sistem saat ini
-        $stok_fisik = (int)$validated['stok_fisik'];
+
+        // Hitung total fisik dari rincian multi satuan jika disediakan
+        $stok_fisik = 0;
+        if (!empty($validated['rincian_satuan']) && is_array($validated['rincian_satuan'])) {
+            foreach ($validated['rincian_satuan'] as $rincian) {
+                $qty = (int)($rincian['jumlah'] ?? 0);
+                $konversi = (int)($rincian['faktor_konversi'] ?? 1);
+                $stok_fisik += ($qty * $konversi);
+            }
+        } elseif (isset($validated['stok_fisik'])) {
+            $stok_fisik = (int)$validated['stok_fisik'];
+        }
+
         $selisih = $stok_fisik - $stok_sistem;
 
         $stockOpname = StockOpname::create([
-            'barang_id'   => $validated['barang_id'],
-            'user_id'     => $user->id,
-            'unit'        => $validated['unit'],
-            'stok_sistem' => $stok_sistem,
-            'stok_fisik'  => $stok_fisik,
-            'selisih'     => $selisih,
-            'status'      => 'pending',
+            'barang_id'          => $validated['barang_id'],
+            'user_id'            => $user->id,
+            'unit'               => $validated['unit'],
+            'stok_sistem'        => $stok_sistem,
+            'stok_fisik'         => $stok_fisik,
+            'satuan'             => $validated['satuan'] ?? $barang->satuan ?? 'Pcs',
+            'selisih'            => $selisih,
+            'rincian_satuan'     => $validated['rincian_satuan'] ?? null,
+            'keterangan'         => $validated['keterangan'] ?? null,
+            'alasan_penyesuaian' => $validated['alasan_penyesuaian'] ?? null,
+            'status'             => 'pending',
         ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Laporan stock opname berhasil dikirim.',
-            'data'    => $stockOpname->load(['barang', 'user'])
+            'data'    => $stockOpname->load(['barang.satuans', 'user'])
         ], 201);
     }
 
@@ -321,9 +375,11 @@ class StockOpnameController extends Controller
         }
 
         // Mulai transaksi database
-        DB::transaction(function () use ($stockOpname, $request) {
+        DB::transaction(function () use ($stockOpname, $request, $user) {
             $stockOpname->update([
-                'status' => 'approved'
+                'status'      => 'approved',
+                'approved_by' => $user->id,
+                'approved_at' => now(),
             ]);
 
             $barang = Barang::findOrFail($stockOpname->barang_id);

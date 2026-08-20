@@ -7,6 +7,8 @@ import "../../css/Riwayat.css";
 import "../../css/layout.css";
 import RoleSwitcher from "../../components/RoleSwitcher";
 import PeriodeTimer from "../../components/PeriodeTimer";
+import FormPengambilanModal from "../../components/FormPengambilanModal";
+import LampiranModal from "../../components/LampiranModal";
 import {
   BarChart,
   Bar,
@@ -56,6 +58,10 @@ export default function Riwayat() {
   // Modal Detail Barang State
   const [detailPengajuan, setDetailPengajuan] = useState(null);
 
+  // Modal Lampiran & Pengambilan State
+  const [lampiranPengajuanId, setLampiranPengajuanId] = useState(null);
+  const [pengambilanPengajuan, setPengambilanPengajuan] = useState(null);
+
   // Modal Revisi State
   const [selectedPengajuan, setSelectedPengajuan] = useState(null); // pengajuan object
   const [revisiItems, setRevisiItems] = useState([]);               // items being edited
@@ -66,6 +72,101 @@ export default function Riwayat() {
   const [masterBarang, setMasterBarang] = useState([]);
   const [showAddBarangModal, setShowAddBarangModal] = useState(false);
   const [addBarangQuery, setAddBarangQuery] = useState("");
+
+  const handleCancelPengajuan = async (p) => {
+    const { value: alasan, isConfirmed } = await Swal.fire({
+      title: "Batalkan Pengajuan?",
+      html: `Masukkan alasan pembatalan pengajuan <b>#${p.id}</b> (${p.tahun_akademik}):`,
+      input: "textarea",
+      inputPlaceholder: "Tuliskan alasan pembatalan di sini...",
+      inputAttributes: {
+        "aria-label": "Alasan pembatalan",
+      },
+      showCancelButton: true,
+      confirmButtonText: "Ya, Batalkan",
+      cancelButtonText: "Kembali",
+      confirmButtonColor: "#d97706",
+      cancelButtonColor: "#64748b",
+      inputValidator: (value) => {
+        if (!value || value.trim().length < 3) {
+          return "Alasan pembatalan wajib diisi (minimal 3 karakter).";
+        }
+      },
+    });
+
+    if (!isConfirmed || !alasan) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/pengajuan/${p.id}/cancel`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+        },
+        body: JSON.stringify({ alasan_pembatalan: alasan }),
+      });
+
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.message || "Gagal membatalkan pengajuan.");
+      }
+
+      Swal.fire({
+        icon: "success",
+        title: "Dibatalkan",
+        text: "Pengajuan Anda telah berhasil dibatalkan.",
+        timer: 1800,
+        showConfirmButton: false,
+      });
+
+      loadRiwayat();
+    } catch (err) {
+      Swal.fire("Error", err.message || "Terjadi kesalahan.", "error");
+    }
+  };
+
+  const handleDeletePengajuan = async (p) => {
+    const confirm = await Swal.fire({
+      title: "Hapus Pengajuan?",
+      html: `Anda akan menghapus pengajuan <b>#${p.id}</b> secara permanen dari daftar riwayat.<br>Lanjutkan?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Ya, Hapus",
+      cancelButtonText: "Batal",
+      confirmButtonColor: "#dc2626",
+      cancelButtonColor: "#64748b",
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/pengajuan/${p.id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+        },
+      });
+
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.message || "Gagal menghapus pengajuan.");
+      }
+
+      Swal.fire({
+        icon: "success",
+        title: "Terhapus",
+        text: "Pengajuan berhasil dihapus.",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+
+      loadRiwayat();
+    } catch (err) {
+      Swal.fire("Error", err.message || "Terjadi kesalahan.", "error");
+    }
+  };
 
   const sidebarMenus = useMemo(() => {
     return [
@@ -262,14 +363,14 @@ export default function Riwayat() {
     setSearchFilter("");
   };
 
-  const handleRevisiItemChange = (targetItem, field, value) => {
+  const handleRevisiItemChange = (targetItem, field, numVal) => {
+    const val = Math.max(0, numVal);
     setRevisiItems((prev) => {
       return prev.map((item) => {
         if (item === targetItem) {
-          const numVal = Math.max(0, parseInt(value) || 0);
-          const updated = { ...item, [field]: numVal };
-          const kebutuhan = field === "kebutuhan_total" ? numVal : updated.kebutuhan_total;
-          const stok = field === "sisa_stok" ? numVal : updated.sisa_stok;
+          const updated = { ...item, [field]: val };
+          const kebutuhan = field === "kebutuhan_total" ? val : updated.kebutuhan_total;
+          const stok = field === "sisa_stok" ? val : updated.sisa_stok;
           updated.jumlah_diajukan = Math.max(0, kebutuhan - stok);
           return updated;
         }
@@ -463,7 +564,54 @@ export default function Riwayat() {
     0
   );
 
-  
+  const NumericInput = ({ value, onChange, placeholder = "0", disabled = false, className = "", readOnly = false }) => {
+    const [display, setDisplay] = useState(() => {
+      const v = value ?? 0;
+      return v === 0 ? "" : String(v);
+    });
+    const justBlurred = React.useRef(false);
+
+    useEffect(() => {
+      if (justBlurred.current) {
+        justBlurred.current = false;
+        return;
+      }
+      const v = value ?? 0;
+      setDisplay(v === 0 ? "" : String(v));
+    }, [value]);
+
+    const handleChange = (e) => {
+      const raw = e.target.value;
+      const cleaned = raw.replace(/[^0-9]/g, "");
+      setDisplay(cleaned);
+      const num = cleaned === "" ? 0 : parseInt(cleaned, 10) || 0;
+      onChange(num);
+    };
+
+    const handleBlur = () => {
+      if (display === "") {
+        justBlurred.current = true;
+        setDisplay("0");
+        onChange(0);
+      }
+    };
+
+    return (
+      <input
+        type="text"
+        inputMode="numeric"
+        className={`input-revisi ${className}`}
+        value={display}
+        onChange={handleChange}
+        onBlur={handleBlur}
+        placeholder={placeholder}
+        disabled={disabled}
+        readOnly={readOnly}
+      />
+    );
+  };
+
+   
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768);
 
   return (
@@ -684,14 +832,94 @@ export default function Riwayat() {
 
                               {/* KOLOM AKSI */}
                               <td>
-                                {canRevisi(p.status) && (
+                                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                                  {canRevisi(p.status) && (
+                                    <button
+                                      className="btn-revisi"
+                                      onClick={() => openRevisiModal(p)}
+                                    >
+                                      Edit / Revisi
+                                    </button>
+                                  )}
+
+                                  {/* Tombol Lampiran */}
                                   <button
-                                    className="btn-revisi"
-                                    onClick={() => openRevisiModal(p)}
+                                    type="button"
+                                    onClick={() => setLampiranPengajuanId(p.id)}
+                                    style={{
+                                      padding: "4px 8px",
+                                      background: "#f1f5f9",
+                                      color: "#334155",
+                                      border: "1px solid #cbd5e1",
+                                      borderRadius: "4px",
+                                      fontSize: "12px",
+                                      fontWeight: "600",
+                                      cursor: "pointer",
+                                    }}
                                   >
-                                    Edit / Revisi
+                                    📎 Lampiran ({p.lampirans?.length || 0})
                                   </button>
-                                )}
+
+                                  {/* Form Pengambilan Barang (Jika Disetujui / Selesai) */}
+                                  {(p.status === "disetujui" || p.status === "selesai") && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setPengambilanPengajuan(p)}
+                                      style={{
+                                        padding: "4px 8px",
+                                        background: p.status === "selesai" ? "#0284c7" : "#059669",
+                                        color: "#ffffff",
+                                        border: "none",
+                                        borderRadius: "4px",
+                                        fontSize: "12px",
+                                        fontWeight: "600",
+                                        cursor: "pointer",
+                                      }}
+                                    >
+                                      {p.status === "selesai" ? "📄 Berita Acara" : "📦 Serah Terima"}
+                                    </button>
+                                  )}
+
+                                  {/* Tombol Batalkan Pengajuan (Status Diajukan) */}
+                                  {(p.status === "diajukan" || p.status === "pending") && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleCancelPengajuan(p)}
+                                      style={{
+                                        padding: "4px 8px",
+                                        background: "#fffbeb",
+                                        color: "#d97706",
+                                        border: "1px solid #fde68a",
+                                        borderRadius: "4px",
+                                        fontSize: "12px",
+                                        fontWeight: "600",
+                                        cursor: "pointer",
+                                      }}
+                                    >
+                                      ❌ Batalkan
+                                    </button>
+                                  )}
+
+                                  {/* Tombol Hapus (Status Dibatalkan / Ditolak) */}
+                                  {(p.status === "dibatalkan" || p.status === "ditolak" || p.status === "ditolak_admin") && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeletePengajuan(p)}
+                                      style={{
+                                        padding: "4px 8px",
+                                        background: "#fee2e2",
+                                        color: "#dc2626",
+                                        border: "1px solid #fecaca",
+                                        borderRadius: "4px",
+                                        fontSize: "12px",
+                                        fontWeight: "600",
+                                        cursor: "pointer",
+                                      }}
+                                    >
+                                      🗑️ Hapus
+                                    </button>
+                                  )}
+                                </div>
                               </td>
                             </tr>
                           );
@@ -990,14 +1218,10 @@ export default function Riwayat() {
                               >
                                 −
                               </button>
-                              <input
-                                type="number"
-                                className="input-revisi"
-                                min="0"
+                              <NumericInput
                                 value={item.kebutuhan_total}
-                                onChange={(e) =>
-                                  handleRevisiItemChange(item, "kebutuhan_total", e.target.value)
-                                }
+                                onChange={(val) => handleRevisiItemChange(item, "kebutuhan_total", val)}
+                                placeholder="0"
                               />
                               <button
                                 type="button"
@@ -1019,14 +1243,11 @@ export default function Riwayat() {
                               >
                                 −
                               </button>
-                              <input
-                                type="number"
-                                className="input-revisi input-amber"
-                                min="0"
+                              <NumericInput
                                 value={item.sisa_stok}
-                                onChange={(e) =>
-                                  handleRevisiItemChange(item, "sisa_stok", e.target.value)
-                                }
+                                onChange={(val) => handleRevisiItemChange(item, "sisa_stok", val)}
+                                placeholder="0"
+                                className="input-amber"
                               />
                               <button
                                 type="button"
@@ -1273,6 +1494,29 @@ export default function Riwayat() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ================= MODAL LAMPIRAN DOKUMEN ================= */}
+      {lampiranPengajuanId && (
+        <LampiranModal
+          isOpen={!!lampiranPengajuanId}
+          onClose={() => setLampiranPengajuanId(null)}
+          pengajuanId={lampiranPengajuanId}
+          canUpload={true}
+        />
+      )}
+
+      {/* ================= MODAL FORM PENGAMBILAN BARANG ================= */}
+      {pengambilanPengajuan && (
+        <FormPengambilanModal
+          isOpen={!!pengambilanPengajuan}
+          onClose={() => setPengambilanPengajuan(null)}
+          pengajuan={pengambilanPengajuan}
+          onSuccess={() => {
+            loadRiwayat();
+            setPengambilanPengajuan(null);
+          }}
+        />
       )}
     </div>
   );

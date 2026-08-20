@@ -1,6 +1,7 @@
 import DesktopSidebarToggle from '../../components/DesktopSidebarToggle';
 import React, { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import * as XLSX from "xlsx";
 import Swal from "sweetalert2";
 import "../../css/Pengajuan.css";
 import "../../css/layout.css";
@@ -489,128 +490,338 @@ function Pengajuan() {
     setStep2Error("");
   };
 
-  // ====== DOWNLOAD TEMPLATE CSV DINAMIS ======
+  // ====== DOWNLOAD TEMPLATE CSV DINAMIS (DARI STOCK OPNAME) ======
   const handleDownloadTemplate = async () => {
+    if (stockOpnameRequired) {
+      Swal.fire({
+        icon: "warning",
+        title: "Stock Opname Diperlukan",
+        text: "Anda belum melakukan Stock Opname pada periode ini. Silakan lakukan stock opname terlebih dahulu sebelum mengunduh template.",
+        confirmButtonColor: "#d97706",
+      });
+      return;
+    }
+
     try {
       setImportLoading(true);
-      const res = await fetch(`${API_BASE}/barang`, {
+      const res = await fetch(`${API_BASE}/stock-opname/draft-pengajuan`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      const masterDataRes = await res.json();
-      const masterData = Array.isArray(masterDataRes) ? masterDataRes : (masterDataRes.data || []);
+      const data = await res.json();
 
-      if (masterData.length === 0) {
-        Swal.fire("Info", "Belum ada data barang di sistem.", "info");
+      if (!data.success || !Array.isArray(data.items) || data.items.length === 0) {
+        Swal.fire("Info", "Belum ada data stock opname untuk periode ini.", "info");
         return;
       }
 
-      // Generate CSV header + rows (format sesuai template)
-      const header = "nama_barang;satuan;harga;kebutuhan total;sisa stock saat ini";
-      const rows = masterData.map((b) => 
-        `${b.nama};${b.satuan};${b.harga_satuan};;`
-      );
+      const header = "nama_barang;satuan;kebutuhan_total;sisa_stok_saat_ini";
+      const rows = data.items.map((it) => {
+        const sisa = it.sisa_stok ?? it.stok_fisik ?? it.hasil_verifikasi ?? 0;
+        return `${it.nama || ''};${it.satuan || ''};;${sisa}`;
+      });
       const csvContent = [header, ...rows].join("\n");
 
-      // Download file
       const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = "Template_Pengajuan_ATK.csv";
+      link.download = "Template_Pengajuan_ATK_StockOpname.csv";
       link.click();
       URL.revokeObjectURL(url);
 
       Swal.fire({
         icon: "success",
-        title: "Template Diunduh",
-        text: `Template berisi ${masterData.length} barang. Isi kolom Kebutuhan Total dan Sisa Stok Saat Ini, lalu import kembali.`,
+        title: "Template Dinamis Diunduh",
+        text: `Template berisi ${data.items.length} barang hasil stock opname Anda pada periode ini. Isi kolom Kebutuhan Total lalu upload kembali.`,
         confirmButtonColor: "#2563eb",
       });
     } catch (err) {
       console.error("Gagal download template:", err);
-      Swal.fire("Error", "Gagal mengambil data barang dari server", "error");
+      Swal.fire("Error", "Gagal mengambil data stock opname dari server", "error");
     } finally {
       setImportLoading(false);
     }
   };
 
-  // ====== IMPORT CSV (DENGAN PREVIEW) ======
+  // ====== IMPORT EXCEL / CSV (PROTEKSI SERVER-SIDE: HANYA BACA NAMA BARANG & KEBUTUHAN TOTAL) ======
   const handleImportCSV = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      const text = event.target.result;
-      const lines = text.split(/\r?\n/).filter(line => line.trim() !== "");
-      if (lines.length < 2) {
-        Swal.fire("Error", "File CSV kosong atau format salah", "error");
+    if (stockOpnameRequired) {
+      Swal.fire({
+        icon: "warning",
+        title: "Stock Opname Diperlukan",
+        text: "Anda belum melakukan Stock Opname pada periode ini. Silakan lakukan stock opname terlebih dahulu sebelum mengimpor pengajuan.",
+        confirmButtonColor: "#d97706",
+      });
+      e.target.value = null;
+      return;
+    }
+
+    try {
+      setImportLoading(true);
+
+      let parsedRows = [];
+      const fileName = (file.name || "").toLowerCase();
+      const isCsv = fileName.endsWith(".csv") || file.type.includes("csv");
+
+      if (isCsv) {
+        // Baca sebagai text untuk menjamin pemisahan delimiter (; , \t) akurat
+        const text = await file.text();
+        const lines = text.split(/\r?\n/).filter((l) => l.trim() !== "");
+        if (lines.length > 0) {
+          const firstLine = lines[0];
+          const delimiter = firstLine.includes(";")
+            ? ";"
+            : firstLine.includes("\t")
+            ? "\t"
+            : ",";
+          parsedRows = lines.map((line) =>
+            line.split(delimiter).map((c) => c.trim().replace(/^["']|["']$/g, ""))
+          );
+        }
+      } else {
+        // Baca sebagai Excel workbook
+        const buffer = await file.arrayBuffer();
+        const workbook = XLSX.read(buffer, { type: "array" });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        parsedRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
+
+        // Normalisasi jika ada row yang terbaca satu string dengan delimiter
+        parsedRows = parsedRows.map((row) => {
+          if (
+            row.length === 1 &&
+            typeof row[0] === "string" &&
+            (row[0].includes(";") || row[0].includes(","))
+          ) {
+            const delim = row[0].includes(";") ? ";" : ",";
+            return row[0].split(delim).map((c) => c.trim().replace(/^["']|["']$/g, ""));
+          }
+          return row;
+        });
+      }
+
+      if (!parsedRows || parsedRows.length < 2) {
+        Swal.fire("Error", "File kosong atau tidak memiliki baris data.", "error");
+        e.target.value = null;
         return;
       }
 
-      const delimiter = lines[0].includes(";") ? ";" : ",";
+      // Cari baris header kolom secara fleksibel
+      let headerRowIdx = -1;
+      let nameIdx = 0;
+      let kebutuhanIdx = 2;
 
-      try {
-        setImportLoading(true);
-        const res = await fetch(`${API_BASE}/barang`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const masterDataRes = await res.json();
-        const masterData = Array.isArray(masterDataRes) ? masterDataRes : (masterDataRes.data || []);
+      for (let r = 0; r < Math.min(parsedRows.length, 10); r++) {
+        const row = (parsedRows[r] || []).map((cell) =>
+          String(cell || "").toLowerCase().trim()
+        );
+        const foundName = row.findIndex(
+          (c) => c.includes("nama") || c.includes("barang") || c.includes("item")
+        );
+        if (foundName !== -1) {
+          headerRowIdx = r;
+          nameIdx = foundName;
+          const foundKebutuhan = row.findIndex(
+            (c) =>
+              c.includes("kebutuhan") ||
+              c.includes("qty") ||
+              c.includes("jumlah") ||
+              c.includes("total")
+          );
+          if (foundKebutuhan !== -1) {
+            kebutuhanIdx = foundKebutuhan;
+          } else {
+            kebutuhanIdx = row.length > 2 ? 2 : 1;
+          }
+          break;
+        }
+      }
 
-        const previewItems = [];
+      if (headerRowIdx === -1) {
+        headerRowIdx = 0;
+        nameIdx = 0;
+        kebutuhanIdx = parsedRows[0]?.length > 2 ? 2 : 1;
+      }
 
-        for (let i = 1; i < lines.length; i++) {
-          const cols = lines[i].split(delimiter).map(c => c.trim().replace(/^"|"$/g, ''));
-          // Format: nama_barang;satuan;harga;kebutuhan total;sisa stock saat ini
-          if (cols.length >= 1) {
-            const namaCSV = cols[0]?.toLowerCase() || "";
-            const kebutuhan = parseInt(cols[3]) || 0;
-            const sisa = parseInt(cols[4]) || 0;
+      // Ambil data resmi stock opname user untuk periode ini
+      const soRes = await fetch(`${API_BASE}/stock-opname/draft-pengajuan`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const soData = await soRes.json();
+      const stockOpnameMap = new Map();
 
-            // Skip baris yang tidak diisi (kebutuhan dan sisa kosong)
-            if (kebutuhan === 0 && sisa === 0) continue;
+      const cleanText = (str) =>
+        String(str || "")
+          .toLowerCase()
+          .trim()
+          .replace(/\s+/g, " ")
+          .replace(/[\u200B-\u200D\uFEFF\u00A0]/g, "");
 
-            const matchedBarang = masterData.find(b => 
-              b.nama.toLowerCase() === namaCSV
-            );
+      const normalizeKey = (str) =>
+        String(str || "")
+          .toLowerCase()
+          .trim()
+          .replace(/\s+/g, " ")
+          .replace(/[\u200B-\u200D\uFEFF\u00A0]/g, "")
+          .replace(/[^a-z0-9]/g, "");
 
-            if (matchedBarang) {
-              const exists = items.some(it => it.id === matchedBarang.id) || 
-                             previewItems.some(it => it.id === matchedBarang.id);
-              if (!exists) {
-                const jumlahDiajukan = Math.max(kebutuhan - sisa, 0);
-                previewItems.push({
-                  id: matchedBarang.id,
-                  nama: matchedBarang.nama,
-                  satuan: matchedBarang.satuan,
-                  kebutuhanTotal: kebutuhan,
-                  sisaStok: sisa,
-                  jumlahDiajukan: jumlahDiajukan,
-                  estimasiNilai: matchedBarang.harga_satuan,
-                  foto: matchedBarang.foto || null,
-                });
-              }
-            }
+      const stockOpnameList = [];
+
+      (soData.items || []).forEach((it) => {
+        const kode = String(it.barang?.kode || it.kode || "").toLowerCase().trim();
+        const nama = String(it.nama || it.barang?.nama || "").toLowerCase().trim();
+        const sisa = it.sisa_stok ?? it.stok_fisik ?? it.hasil_verifikasi ?? 0;
+        const entry = {
+          kode,
+          nama: it.nama || it.barang?.nama || kode,
+          sisa_stok: sisa,
+          satuan: it.satuan || it.barang?.satuan || "Pcs",
+          harga_satuan: it.estimasi_nilai || it.barang?.harga || 0,
+          barang_id: it.barang_id || it.barang?.id || it.id,
+        };
+
+        stockOpnameList.push({ key: nama, entry });
+
+        if (kode) stockOpnameMap.set(kode, entry);
+        if (nama) {
+          stockOpnameMap.set(nama, entry);
+          stockOpnameMap.set(nama.replace(/\s+/g, " "), entry);
+          stockOpnameMap.set(cleanText(nama), entry);
+          stockOpnameMap.set(normalizeKey(nama), entry);
+        }
+      });
+
+      if (stockOpnameMap.size === 0) {
+        Swal.fire("Info", "Belum ada data stock opname untuk periode ini.", "info");
+        e.target.value = null;
+        return;
+      }
+
+      const previewItems = [];
+      const importSummary = { success: 0, error: 0, warning: 0, errors: [], warnings: [] };
+
+      for (let r = headerRowIdx + 1; r < parsedRows.length; r++) {
+        const row = parsedRows[r];
+        if (!row || row.length === 0) continue;
+
+        const rawName = String(row[nameIdx] || "").trim();
+        if (!rawName) continue;
+
+        // Skip jika ada baris info banner atau header/total
+        const lowerName = rawName.toLowerCase();
+        if (
+          lowerName.startsWith("data stok") ||
+          lowerName.startsWith("total") ||
+          lowerName === "nama barang" ||
+          lowerName === "nama_barang"
+        ) {
+          continue;
+        }
+
+        const namaKey = lowerName.replace(/\s+/g, " ");
+        const normKey = normalizeKey(rawName);
+        const cleanKey = cleanText(rawName);
+
+        let matchedSO =
+          stockOpnameMap.get(namaKey) ||
+          stockOpnameMap.get(lowerName) ||
+          stockOpnameMap.get(cleanKey) ||
+          stockOpnameMap.get(normKey);
+
+        // Fallback: cek apakah nama CSV mengandung atau terkandung oleh nama stock opname
+        if (!matchedSO) {
+          const candidates = stockOpnameList.filter(({ key }) =>
+            key.includes(namaKey) || namaKey.includes(key)
+          );
+          if (candidates.length === 1) {
+            matchedSO = candidates[0].entry;
           }
         }
 
-        if (previewItems.length > 0) {
-          setImportPreviewData(previewItems);
-          setShowImportPreview(true);
-        } else {
-          Swal.fire("Info", "Tidak ada barang yang cocok dari CSV, atau kolom Kebutuhan Total & Sisa Stok belum diisi.", "info");
+        if (!matchedSO) {
+          importSummary.error++;
+          importSummary.errors.push(`Baris ${r + 1}: "${rawName}" tidak ditemukan di data Stock Opname.`);
+          continue;
         }
-      } catch (err) {
-        console.error("Gagal import CSV", err);
-        Swal.fire("Error", "Gagal mengambil data barang dari server", "error");
-      } finally {
-        setImportLoading(false);
+
+        const exists =
+          items.some((it) => it.id === matchedSO.barang_id) ||
+          previewItems.some((it) => it.id === matchedSO.barang_id);
+        if (exists) {
+          importSummary.warning++;
+          importSummary.warnings.push(`Baris ${r + 1}: "${matchedSO.nama}" sudah ada dalam daftar.`);
+          continue;
+        }
+
+        const kebutuhanRaw = row[kebutuhanIdx] !== undefined ? row[kebutuhanIdx] : "";
+        const kebutuhanTotal = parseInt(String(kebutuhanRaw).replace(/[^0-9]/g, ""), 10) || 0;
+
+        // Nilai sisa_stok selalu diambil 100% dari database resmi stock opname
+        const sisaStok = matchedSO.sisa_stok;
+        const jumlahDiajukan = Math.max(kebutuhanTotal - sisaStok, 0);
+
+        previewItems.push({
+          id: matchedSO.barang_id,
+          nama: matchedSO.nama,
+          satuan: matchedSO.satuan,
+          kebutuhanTotal: Math.max(0, kebutuhanTotal),
+          sisaStok: sisaStok,
+          jumlahDiajukan: jumlahDiajukan,
+          estimasiNilai: matchedSO.harga_satuan || 0,
+          foto: null,
+        });
+        importSummary.success++;
       }
 
+      if (previewItems.length > 0) {
+        setImportPreviewData(previewItems);
+        setShowImportPreview(true);
+
+        if (importSummary.error > 0 || importSummary.warning > 0) {
+          const totalDataRows = parsedRows.length - (headerRowIdx + 1);
+          Swal.fire({
+            icon: importSummary.error > 0 ? "warning" : "info",
+            title: "Ringkasan Import",
+            html:
+              `<b>${importSummary.success}</b> dari <b>${totalDataRows}</b> barang berhasil dicocokkan.` +
+              (importSummary.error > 0
+                ? `<br><span style="color:#dc2626">${importSummary.error} barang tidak ditemukan.</span>`
+                : "") +
+              (importSummary.warning > 0
+                ? `<br><span style="color:#d97706">${importSummary.warning} barang duplikat dilewati.</span>`
+                : "") +
+              (importSummary.errors.length > 0
+                ? `<br><br><details style="text-align:left"><summary>Lihat Detail Barang Gagal</summary><small>${importSummary.errors.slice(0, 20).join("<br>")}</small></details>`
+                : "") +
+              (importSummary.warnings.length > 0
+                ? `<br><br><details style="text-align:left"><summary>Lihat Detail Peringatan</summary><small>${importSummary.warnings.slice(0, 20).join("<br>")}</small></details>`
+                : ""),
+            confirmButtonColor: "#2563eb",
+          });
+        }
+      } else {
+        const totalDataRows = parsedRows.length - (headerRowIdx + 1);
+        Swal.fire({
+          icon: "warning",
+          title: "Tidak Ada Data Cocok",
+          html:
+            `Tidak ada barang yang dapat diimpor dari <b>${totalDataRows}</b> baris data.` +
+            (importSummary.errors.length > 0
+              ? `<br><br><b>Detail kegagalan:</b><br><small>${importSummary.errors.slice(0, 20).join("<br>")}</small>`
+              : "<br>Pastikan nama barang pada CSV/Excel sesuai dengan hasil Stock Opname Anda."),
+          confirmButtonColor: "#d97706",
+        });
+      }
+    } catch (err) {
+      console.error("Gagal import file:", err);
+      Swal.fire("Error", "Gagal memproses file. Pastikan format file adalah CSV atau Excel.", "error");
+    } finally {
+      setImportLoading(false);
       e.target.value = null;
-    };
-    reader.readAsText(file);
+    }
   };
 
   // Confirm import dari preview
@@ -632,23 +843,15 @@ function Pengajuan() {
   }, [items]);
 
 
-  // hanya boleh angka (0–9) di keyboard
-  const handleNumericKeyDown = (e) => {
-    const allowedKeys = ["Backspace", "Tab", "ArrowLeft", "ArrowRight", "Delete"];
-    if (allowedKeys.includes(e.key)) return;
-    if (!/^[0-9]$/.test(e.key)) e.preventDefault();
-  };
-
   // kebutuhan total berubah → jumlah diajukan = kebutuhan - sisa
-  const handleChangeKebutuhan = (id, value) => {
-    // ⛔ tidak boleh minus
-    const num = Math.max(0, Number(value) || 0);
+  const handleChangeKebutuhan = (id, num) => {
+    const val = Math.max(0, num);
     setItems((prev) =>
       prev.map((item) => {
         if (item.id !== id) return item;
         const sisa = item.sisaStok || 0;
-        const jumlahDiajukan = Math.max(num - sisa, 0);
-        return { ...item, kebutuhanTotal: num, jumlahDiajukan };
+        const jumlahDiajukan = Math.max(val - sisa, 0);
+        return { ...item, kebutuhanTotal: val, jumlahDiajukan };
       })
     );
   };
@@ -692,15 +895,14 @@ function Pengajuan() {
 
 
   // sisa stok berubah → jumlah diajukan = kebutuhan - sisa
-  const handleChangeSisaStok = (id, value) => {
-    // ⛔ tidak boleh minus
-    const num = Math.max(0, Number(value) || 0);
+  const handleChangeSisaStok = (id, num) => {
+    const val = Math.max(0, num);
     setItems((prev) =>
       prev.map((item) => {
         if (item.id !== id) return item;
         const kebutuhan = item.kebutuhanTotal || 0;
-        const jumlahDiajukan = Math.max(kebutuhan - num, 0);
-        return { ...item, sisaStok: num, jumlahDiajukan };
+        const jumlahDiajukan = Math.max(kebutuhan - val, 0);
+        return { ...item, sisaStok: val, jumlahDiajukan };
       })
     );
   };
@@ -708,6 +910,65 @@ function Pengajuan() {
   const handleRemoveItem = (id) => {
     setItems((prev) => prev.filter((i) => i.id !== id));
     setConfirmId(null);
+  };
+
+  const resetDraft = () => {
+    setItems([]);
+    setStep2Error("");
+    Swal.fire({
+      icon: "info",
+      title: "Draft Direset",
+      text: "Semua perubahan belum disimpan telah dibatalkan.",
+      timer: 1500,
+      showConfirmButton: false,
+    });
+  };
+
+  const NumericInput = ({ value, onChange, placeholder = "0", disabled = false, className = "", readOnly = false }) => {
+    const [display, setDisplay] = useState(() => {
+      const v = value ?? 0;
+      return v === 0 ? "" : String(v);
+    });
+    const justBlurred = React.useRef(false);
+
+    useEffect(() => {
+      if (justBlurred.current) {
+        justBlurred.current = false;
+        return;
+      }
+      const v = value ?? 0;
+      setDisplay(v === 0 ? "" : String(v));
+    }, [value]);
+
+    const handleChange = (e) => {
+      const raw = e.target.value;
+      const cleaned = raw.replace(/[^0-9]/g, "");
+      setDisplay(cleaned);
+      const num = cleaned === "" ? 0 : parseInt(cleaned, 10) || 0;
+      onChange(num);
+    };
+
+    const handleBlur = () => {
+      if (display === "") {
+        justBlurred.current = true;
+        setDisplay("0");
+        onChange(0);
+      }
+    };
+
+    return (
+      <input
+        type="text"
+        inputMode="numeric"
+        className={`input-number ${className}`}
+        value={display}
+        onChange={handleChange}
+        onBlur={handleBlur}
+        placeholder={placeholder}
+        disabled={disabled}
+        readOnly={readOnly}
+      />
+    );
   };
 
   // total nilai semua item
@@ -1319,7 +1580,6 @@ function Pengajuan() {
                             <th>Kebutuhan Total</th>
                             <th>Sisa stok saat ini</th>
                             <th>Jumlah Diajukan</th>
-                            <th>Harga Total</th>
                             <th style={{
                               borderBottom: "1px solid #eee", textAlign: "center",
                             }}>Aksi</th>
@@ -1356,30 +1616,18 @@ function Pengajuan() {
                               </td>
 
                               <td>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  inputMode="numeric"
-                                  onKeyDown={handleNumericKeyDown}
-                                  className="input-number"
+                                <NumericInput
                                   value={item.kebutuhanTotal}
-                                  onChange={(e) =>
-                                    handleChangeKebutuhan(item.id, e.target.value)
-                                  }
+                                  onChange={(val) => handleChangeKebutuhan(item.id, val)}
+                                  placeholder="0"
                                 />
                               </td>
 
                               <td>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  inputMode="numeric"
-                                  onKeyDown={handleNumericKeyDown}
-                                  className="input-number"
+                                <NumericInput
                                   value={item.sisaStok}
-                                  onChange={(e) =>
-                                    handleChangeSisaStok(item.id, e.target.value)
-                                  }
+                                  onChange={(val) => handleChangeSisaStok(item.id, val)}
+                                  placeholder="0"
                                 />
                               </td>
 
@@ -1466,6 +1714,15 @@ function Pengajuan() {
                         onClick={() => setCurrentStep(1)}
                       >
                         Kembali
+                      </button>
+
+                      <button
+                        type="button"
+                        className="btn"
+                        onClick={resetDraft}
+                        style={{ color: "#dc2626", borderColor: "#fecaca" }}
+                      >
+                        Batal
                       </button>
 
                       <button
@@ -1727,88 +1984,97 @@ function Pengajuan() {
       {/* MODAL PREVIEW IMPORT CSV */}
       {showImportPreview && (
         <div className="verify-overlay" onClick={() => setShowImportPreview(false)}>
-          <div className="detail-panel" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 800 }}>
-            <div className="detail-panel-header">
-              <div>
-                <h3>Verifikasi Data Import CSV</h3>
-                <p>{importPreviewData.length} barang ditemukan dari file CSV. Periksa data sebelum menambahkan ke daftar pengajuan.</p>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 800 }}>
+            {/* HEADER (fixed) */}
+            <div className="modal-header">
+              <div className="detail-panel-header">
+                <div>
+                  <h3>Verifikasi Data Import CSV</h3>
+                  <p>{importPreviewData.length} barang ditemukan dari file CSV. Periksa data sebelum menambahkan ke daftar pengajuan.</p>
+                </div>
+                <button
+                  type="button"
+                  className="detail-close-btn"
+                  onClick={() => setShowImportPreview(false)}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
               </div>
-              <button
-                type="button"
-                className="detail-close-btn"
-                onClick={() => setShowImportPreview(false)}
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
             </div>
 
-            <div className="detail-table-wrapper">
-              <table className="detail-table">
-                <thead>
-                  <tr>
-                    <th>No</th>
-                    <th>Nama Barang</th>
-                    <th>Satuan</th>
-                    <th>Kebutuhan Total</th>
-                    <th>Sisa Stok</th>
-                    <th>Jumlah Diajukan</th>
-                    <th>Harga Satuan</th>
-                    <th>Subtotal</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {importPreviewData.map((item, idx) => (
-                    <tr key={item.id}>
-                      <td className="detail-td-no">{idx + 1}</td>
-                      <td className="detail-td-nama">{item.nama}</td>
-                      <td>{item.satuan}</td>
-                      <td style={{ textAlign: "center" }}>{item.kebutuhanTotal}</td>
-                      <td style={{ textAlign: "center" }}>{item.sisaStok}</td>
-                      <td style={{ textAlign: "center", fontWeight: 700, color: item.jumlahDiajukan > 0 ? "#16a34a" : "#6b7280" }}>
-                        {item.jumlahDiajukan}
-                      </td>
-                      <td className="detail-td-harga">Rp {Number(item.estimasiNilai).toLocaleString("id-ID")}</td>
-                      <td className="detail-td-subtotal">Rp {(item.jumlahDiajukan * item.estimasiNilai).toLocaleString("id-ID")}</td>
+            {/* BODY (scrollable) */}
+            <div className="modal-body-scrollable">
+              <div className="detail-table-wrapper">
+                <table className="detail-table">
+                  <thead>
+                    <tr>
+                      <th>No</th>
+                      <th>Nama Barang</th>
+                      <th>Satuan</th>
+                      <th>Kebutuhan Total</th>
+                      <th>Sisa Stok</th>
+                      <th>Jumlah Diajukan</th>
+                      <th>Harga Satuan</th>
+                      <th>Subtotal</th>
                     </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr>
-                    <td colSpan="5" className="detail-footer-label">Total</td>
-                    <td className="detail-footer-qty" style={{ textAlign: "center", fontWeight: 700 }}>
-                      {importPreviewData.reduce((sum, i) => sum + i.jumlahDiajukan, 0)}
-                    </td>
-                    <td></td>
-                    <td className="detail-footer-total">
-                      Rp {importPreviewData.reduce((sum, i) => sum + (i.jumlahDiajukan * i.estimasiNilai), 0).toLocaleString("id-ID")}
-                    </td>
-                  </tr>
-                </tfoot>
-              </table>
+                  </thead>
+                  <tbody>
+                    {importPreviewData.map((item, idx) => (
+                      <tr key={item.id}>
+                        <td className="detail-td-no">{idx + 1}</td>
+                        <td className="detail-td-nama">{item.nama}</td>
+                        <td>{item.satuan}</td>
+                        <td style={{ textAlign: "center" }}>{item.kebutuhanTotal}</td>
+                        <td style={{ textAlign: "center" }}>{item.sisaStok}</td>
+                        <td style={{ textAlign: "center", fontWeight: 700, color: item.jumlahDiajukan > 0 ? "#16a34a" : "#6b7280" }}>
+                          {item.jumlahDiajukan}
+                        </td>
+                        <td className="detail-td-harga">Rp {Number(item.estimasiNilai).toLocaleString("id-ID")}</td>
+                        <td className="detail-td-subtotal">Rp {(item.jumlahDiajukan * item.estimasiNilai).toLocaleString("id-ID")}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <td colSpan="5" className="detail-footer-label">Total</td>
+                      <td className="detail-footer-qty" style={{ textAlign: "center", fontWeight: 700 }}>
+                        {importPreviewData.reduce((sum, i) => sum + i.jumlahDiajukan, 0)}
+                      </td>
+                      <td></td>
+                      <td className="detail-footer-total">
+                        Rp {importPreviewData.reduce((sum, i) => sum + (i.jumlahDiajukan * i.estimasiNilai), 0).toLocaleString("id-ID")}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
             </div>
 
-            <div className="detail-panel-footer" style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-              <button
-                type="button"
-                className="btn"
-                onClick={() => setShowImportPreview(false)}
-                style={{ padding: "10px 16px", borderRadius: 8 }}
-              >
-                Batal
-              </button>
-              <button
-                type="button"
-                className="btn btn-primary detail-close-action"
-                onClick={handleConfirmImport}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-                Konfirmasi Import ({importPreviewData.length} barang)
-              </button>
+            {/* FOOTER (fixed/sticky) */}
+            <div className="modal-footer-fixed">
+              <div className="detail-panel-footer" style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={() => setShowImportPreview(false)}
+                  style={{ padding: "10px 16px", borderRadius: 8 }}
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary detail-close-action"
+                  onClick={handleConfirmImport}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  Konfirmasi Import ({importPreviewData.length} barang)
+                </button>
+              </div>
             </div>
           </div>
         </div>

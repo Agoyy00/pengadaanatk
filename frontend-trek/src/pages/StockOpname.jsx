@@ -19,6 +19,7 @@ const normalizeRole = (role) =>
 
 import SidebarLogo from "../components/SidebarLogo";
 import useSupportUnread from "../hooks/useSupportUnread";
+import KelolaSatuanModal from "../components/KelolaSatuanModal";
 
 export default function StockOpname() {
   const navigate = useNavigate();
@@ -135,8 +136,26 @@ export default function StockOpname() {
     }
   };
 
+  const loadSatuanOptions = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/options/satuan`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data)) {
+        const values = json.data.map((item) =>
+          typeof item === "string" ? item : item.value
+        );
+        setSatuanOptions(values);
+      }
+    } catch (err) {
+      console.error("Gagal load opsi satuan:", err);
+    }
+  };
+
   useEffect(() => {
     loadUnitOptions();
+    loadSatuanOptions();
     if (activeTahunAkademik !== null) {
       loadUserUnit();
     }
@@ -144,6 +163,12 @@ export default function StockOpname() {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedBarang, setSelectedBarang] = useState(null);
   const [stokFisik, setStokFisik] = useState("");
+  const [satuan, setSatuan] = useState("");
+  const [satuanOptions, setSatuanOptions] = useState([]);
+  const [rincianSatuan, setRincianSatuan] = useState([]);
+  const [alasanPenyesuaian, setAlasanPenyesuaian] = useState("");
+  const [keteranganInput, setKeteranganInput] = useState("");
+  const [selectedBarangForSatuan, setSelectedBarangForSatuan] = useState(null);
   const [queryBarang, setQueryBarang] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [formError, setFormError] = useState("");
@@ -286,6 +311,10 @@ export default function StockOpname() {
   const openCreate = () => {
     setSelectedBarang(null);
     setStokFisik("");
+    setSatuan("");
+    setRincianSatuan([]);
+    setAlasanPenyesuaian("");
+    setKeteranganInput("");
     const defaultUnit = currentUser?.unit || localStorage.getItem("selectedUnit") || "";
     setUnit(defaultUnit);
     setQueryBarang("");
@@ -338,6 +367,21 @@ export default function StockOpname() {
   };
 
   // ====== IMPORT CSV STOCK OPNAME (DENGAN PREVIEW) ======
+  const cleanText = (str) =>
+    String(str || "")
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, " ")
+      .replace(/[\u200B-\u200D\uFEFF\u00A0]/g, "");
+
+  const normalizeKey = (str) =>
+    String(str || "")
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, " ")
+      .replace(/[\u200B-\u200D\uFEFF\u00A0]/g, "")
+      .replace(/[^a-z0-9]/g, "");
+
   const handleImportCSV = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -364,19 +408,29 @@ export default function StockOpname() {
         const previewItems = [];
 
         for (let i = 1; i < lines.length; i++) {
-          const cols = lines[i].split(delimiter).map(c => c.trim().replace(/^"|"$/g, ''));
+          const cols = lines[i].split(delimiter).map(c => c.trim().replace(/^["']|["']$/g, ''));
           // Format: Kode Barang;Nama Barang;Stok Sistem;Stok Fisik
           if (cols.length >= 4) {
-            const kodeCSV = cols[0]?.toLowerCase() || "";
-            const namaCSV = cols[1]?.toLowerCase() || "";
+            const kodeCSV = cleanText(cols[0]);
+            const namaCSV = cleanText(cols[1]);
             const stokFisikVal = parseInt(cols[3]);
 
             // Skip baris yang stok fisik tidak diisi
             if (isNaN(stokFisikVal)) continue;
 
-            const matchedBarang = masterData.find(b =>
-              b.kode?.toLowerCase() === kodeCSV || b.nama?.toLowerCase() === namaCSV
-            );
+            const matchedBarang = masterData.find(b => {
+              const masterKode = cleanText(b.kode);
+              const masterNama = cleanText(b.nama);
+              const masterNorm = normalizeKey(masterNama);
+              const csvNorm = normalizeKey(namaCSV);
+              return (
+                masterKode === kodeCSV ||
+                masterNama === namaCSV ||
+                masterNorm === csvNorm ||
+                masterNama.includes(namaCSV) ||
+                namaCSV.includes(masterNama)
+              );
+            });
 
             if (matchedBarang) {
               const exists = previewItems.some(it => it.barang_id === matchedBarang.id);
@@ -410,7 +464,14 @@ export default function StockOpname() {
             });
           }
         } else {
-          Swal.fire("Info", "Tidak ada barang yang cocok dari CSV, atau kolom Stok Fisik belum diisi.", "info");
+          const totalRows = lines.length - 1;
+          Swal.fire({
+            icon: "warning",
+            title: "Tidak Ada Data Cocok",
+            text: `Dari ${totalRows} baris, tidak ada barang yang cocok. ` +
+              "Pastikan nama barang pada CSV sesuai dengan data di sistem.",
+            confirmButtonColor: "#d97706",
+          });
         }
       } catch (err) {
         console.error("Gagal import CSV", err);
@@ -490,6 +551,7 @@ export default function StockOpname() {
 
   const selectBarangItem = (b) => {
     setSelectedBarang(b);
+    setSatuan(b.satuan || "");
     setQueryBarang("");
     setSearchResults([]);
   };
@@ -502,6 +564,10 @@ export default function StockOpname() {
     }
     if (stokFisik === "" || stokFisik === null) {
       setFormError("Stok fisik wajib diisi.");
+      return;
+    }
+    if (!satuan) {
+      setFormError("Satuan barang wajib dipilih.");
       return;
     }
     if (!unit) {
@@ -525,6 +591,7 @@ export default function StockOpname() {
         body: JSON.stringify({
           barang_id: selectedBarang.id,
           stok_fisik: Number(stokFisik),
+          satuan: satuan,
           unit: unit,
         }),
       });
@@ -1525,7 +1592,7 @@ export default function StockOpname() {
                     >
                       <div><b>{b.nama}</b> (Kode: {b.kode})</div>
                       <div style={{ fontSize: 11, color: "#6b7280" }}>
-                        Stok Sistem: {b.stok} {b.satuan} | Rp {Number(b.harga_satuan).toLocaleString("id-ID")}
+                        {role !== "user" ? `Stok Sistem: ${b.stok} ${b.satuan} | ` : `Satuan: ${b.satuan} | `}Rp {Number(b.harga_satuan).toLocaleString("id-ID")}
                       </div>
                     </div>
                   ))}
@@ -1547,7 +1614,9 @@ export default function StockOpname() {
                   <h4 style={{ margin: "4px 0" }}>{selectedBarang.nama}</h4>
                   <div style={{ display: "flex", gap: 20, marginTop: 6, fontSize: 13 }}>
                     <div>Kode: <b>{selectedBarang.kode}</b></div>
-                    <div>Stok Terdaftar: <b>{selectedBarang.stok} {selectedBarang.satuan}</b></div>
+                    {role !== "user" && (
+                      <div>Stok Terdaftar: <b>{selectedBarang.stok} {selectedBarang.satuan}</b></div>
+                    )}
                   </div>
                 </div>
               )}
@@ -1588,8 +1657,8 @@ export default function StockOpname() {
               </div>
 
               {/* Stock count and discrepancy */}
-              <div style={{ display: "flex", gap: 16, marginTop: 16 }}>
-                <div style={{ flex: 1 }}>
+              <div style={{ display: "grid", gridTemplateColumns: role !== "user" ? "1fr 1fr 1fr" : "1fr 1fr", gap: 16, marginTop: 16 }}>
+                <div>
                   <label style={{ display: "block", marginBottom: 6 }}>
                     <b>Jumlah Barang</b>
                   </label>
@@ -1608,8 +1677,34 @@ export default function StockOpname() {
                   />
                 </div>
 
+                <div>
+                  <label style={{ display: "block", marginBottom: 6 }}>
+                    <b>Satuan Barang</b>
+                  </label>
+                  <select
+                    value={satuan}
+                    onChange={(e) => setSatuan(e.target.value)}
+                    style={{
+                      width: "100%",
+                      padding: 10,
+                      borderRadius: 10,
+                      border: "1px solid #ddd",
+                      background: "#fff",
+                      fontSize: 14,
+                    }}
+                  >
+                    {!satuan && <option value="">-- Pilih Satuan --</option>}
+                    {satuan && !satuanOptions.includes(satuan) && (
+                      <option value={satuan}>{satuan}</option>
+                    )}
+                    {satuanOptions.map((opt) => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                  </select>
+                </div>
+
                 {role !== "user" && (
-                  <div style={{ flex: 1 }}>
+                  <div>
                     <label style={{ display: "block", marginBottom: 6 }}>
                       <b>Selisih Perhitungan</b>
                     </label>
@@ -1637,6 +1732,7 @@ export default function StockOpname() {
                   </div>
                 )}
               </div>
+
 
               {formError && (
                 <div style={{ color: "#ef4444", marginTop: 10, fontSize: 14 }}>
@@ -1828,20 +1924,23 @@ export default function StockOpname() {
               maxHeight: "85vh",
               display: "flex",
               flexDirection: "column",
+              overflow: "hidden",
+              padding: 0,
             }}
           >
             <button className="close-btn-small" onClick={() => setShowImportPreview(false)}>
               ✖
             </button>
 
-            <div style={{ padding: 20 }}>
-              <h2 style={{ marginTop: 0, marginBottom: 4 }}>Verifikasi Import CSV Stock Opname</h2>
-              <p style={{ color: "#6b7280", margin: "0 0 16px 0", fontSize: 14 }}>
+            {/* 1. FIXED HEADER */}
+            <div style={{ padding: "20px 24px 12px 24px", flexShrink: 0, borderBottom: "1px solid #f1f5f9" }}>
+              <h2 style={{ marginTop: 0, marginBottom: 4, fontSize: 20 }}>Verifikasi Import CSV Stock Opname</h2>
+              <p style={{ color: "#6b7280", margin: "0 0 14px 0", fontSize: 13 }}>
                 {importPreviewData.length} barang ditemukan dari file CSV. Periksa data sebelum mengirim laporan.
               </p>
 
-              <div style={{ marginBottom: 16 }}>
-                <label style={{ display: "block", marginBottom: 6 }}>
+              <div>
+                <label style={{ display: "block", marginBottom: 6, fontSize: 13 }}>
                   <b>Unit / Bagian</b>
                 </label>
                 <select
@@ -1851,12 +1950,12 @@ export default function StockOpname() {
                   style={{
                     width: "100%",
                     maxWidth: 400,
-                    padding: 10,
-                    borderRadius: 10,
-                    border: "1px solid #ddd",
+                    padding: "8px 12px",
+                    borderRadius: 8,
+                    border: "1px solid #cbd5e1",
                     fontSize: 14,
-                    background: unitLocked ? "#f3f4f6" : "#fff",
-                    opacity: unitLocked ? 0.8 : 1,
+                    background: unitLocked ? "#f8fafc" : "#fff",
+                    opacity: unitLocked ? 0.85 : 1,
                     cursor: unitLocked ? "not-allowed" : "default",
                   }}
                 >
@@ -1874,105 +1973,124 @@ export default function StockOpname() {
                   </div>
                 )}
               </div>
+            </div>
 
-              <div style={{ overflowX: "auto", maxHeight: "50vh", overflowY: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: 14 }}>
-                  <thead>
-                    <tr style={{ borderBottom: "2px solid #e5e7eb", background: "#f9fafb", position: "sticky", top: 0 }}>
-                      <th style={{ padding: "10px 12px" }}>No</th>
-                      <th style={{ padding: "10px 12px" }}>Kode</th>
-                      <th style={{ padding: "10px 12px" }}>Nama Barang</th>
-                      <th style={{ padding: "10px 12px", textAlign: "center" }}>Stok Sistem</th>
-                      <th style={{ padding: "10px 12px", textAlign: "center" }}>Stok Fisik</th>
-                      <th style={{ padding: "10px 12px", textAlign: "center" }}>Selisih</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {importPreviewData.map((item, idx) => {
-                      const selisihColor = item.selisih === 0 ? "#374151" : item.selisih > 0 ? "#16a34a" : "#dc2626";
-                      const selisihLabel = Math.abs(item.selisih);
-                      return (
-                        <tr key={item.barang_id} style={{ borderBottom: "1px solid #f3f4f6" }}>
-                          <td style={{ padding: "10px 12px", color: "#9ca3af" }}>{idx + 1}</td>
-                          <td style={{ padding: "10px 12px", fontFamily: "monospace", fontSize: 13 }}>{item.kode}</td>
-                          <td style={{ padding: "10px 12px", fontWeight: 600 }}>{item.nama}</td>
-                          <td style={{ padding: "10px 12px", textAlign: "center" }}>{item.stok_sistem}</td>
-                          <td style={{ padding: "10px 12px", textAlign: "center", fontWeight: 600 }}>{item.stok_fisik}</td>
-                          <td style={{ padding: "10px 12px", textAlign: "center", fontWeight: 700, color: selisihColor }}>
-                            {selisihLabel}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+            {/* 2. SCROLLABLE BODY */}
+            <div
+              style={{
+                flex: "1 1 auto",
+                overflowY: "auto",
+                overflowX: "auto",
+                minHeight: 0,
+                overscrollBehavior: "contain",
+                padding: "0 24px",
+              }}
+            >
+              <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: 14 }}>
+                <thead>
+                  <tr style={{ background: "#065b32", position: "sticky", top: 0, zIndex: 2 }}>
+                    <th style={{ padding: "12px 14px", color: "#ffffff", fontWeight: 700 }}>NO</th>
+                    <th style={{ padding: "12px 14px", color: "#ffffff", fontWeight: 700 }}>KODE</th>
+                    <th style={{ padding: "12px 14px", color: "#ffffff", fontWeight: 700 }}>NAMA BARANG</th>
+                    <th style={{ padding: "12px 14px", color: "#ffffff", fontWeight: 700, textAlign: "center" }}>STOK SISTEM</th>
+                    <th style={{ padding: "12px 14px", color: "#ffffff", fontWeight: 700, textAlign: "center" }}>STOK FISIK</th>
+                    <th style={{ padding: "12px 14px", color: "#ffffff", fontWeight: 700, textAlign: "center" }}>SELISIH</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {importPreviewData.map((item, idx) => {
+                    const selisihColor = item.selisih === 0 ? "#374151" : item.selisih > 0 ? "#16a34a" : "#dc2626";
+                    const selisihLabel = Math.abs(item.selisih);
+                    return (
+                      <tr key={item.barang_id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                        <td style={{ padding: "10px 14px", color: "#9ca3af" }}>{idx + 1}</td>
+                        <td style={{ padding: "10px 14px", fontFamily: "monospace", fontSize: 13 }}>{item.kode}</td>
+                        <td style={{ padding: "10px 14px", fontWeight: 600 }}>{item.nama}</td>
+                        <td style={{ padding: "10px 14px", textAlign: "center" }}>{item.stok_sistem}</td>
+                        <td style={{ padding: "10px 14px", textAlign: "center", fontWeight: 600 }}>{item.stok_fisik}</td>
+                        <td style={{ padding: "10px 14px", textAlign: "center", fontWeight: 700, color: selisihColor }}>
+                          {selisihLabel}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
 
-              {/* Summary */}
+            {/* 3. FIXED FOOTER */}
+            <div
+              style={{
+                flexShrink: 0,
+                padding: "14px 24px 18px 24px",
+                borderTop: "1px solid #e2e8f0",
+                background: "#ffffff",
+                boxShadow: "0 -4px 12px rgba(0, 0, 0, 0.05)",
+              }}
+            >
               <div
                 style={{
-                  marginTop: 16,
-                  padding: "12px 16px",
+                  padding: "10px 14px",
                   background: "#f0fdf4",
-                  borderRadius: 10,
+                  borderRadius: 8,
                   border: "1px solid #bbf7d0",
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
                   flexWrap: "wrap",
                   gap: 8,
+                  marginBottom: 12,
                 }}
               >
-                <div style={{ fontSize: 14, color: "#166534" }}>
+                <div style={{ fontSize: 13, color: "#166534" }}>
                   <strong>{importPreviewData.length}</strong> laporan siap dikirim
                 </div>
-                <div style={{ fontSize: 13, color: "#4b5563" }}>
+                <div style={{ fontSize: 12, color: "#4b5563" }}>
                   Selisih positif: <strong style={{ color: "#16a34a" }}>{importPreviewData.filter(i => i.selisih > 0).length}</strong> ·
                   Cocok: <strong>{importPreviewData.filter(i => i.selisih === 0).length}</strong> ·
                   Selisih negatif: <strong style={{ color: "#dc2626" }}>{importPreviewData.filter(i => i.selisih < 0).length}</strong>
                 </div>
               </div>
 
-              {/* Actions */}
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 20 }}>
-                <button
-                  onClick={() => setShowImportPreview(false)}
-                  style={{
-                    padding: "10px 16px",
-                    borderRadius: 10,
-                    border: "1px solid #ef4444",
-                    background: "transparent",
-                    color: "#ef4444",
-                    cursor: "pointer",
-                    fontWeight: 600,
-                    fontSize: 14,
-                  }}
-                >
-                  Batal
-                </button>
-                <button
-                  onClick={handleBulkSubmit}
-                  disabled={importLoading}
-                  style={{
-                    padding: "10px 20px",
-                    borderRadius: 10,
-                    border: "none",
-                    cursor: importLoading ? "not-allowed" : "pointer",
-                    background: importLoading ? "#9ca3af" : "#16a34a",
-                    color: "white",
-                    fontWeight: 700,
-                    fontSize: 14,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 6,
-                  }}
-                >
-                  {importLoading ? "⏳ Mengirim..." : `✅ Kirim ${importPreviewData.length} Laporan`}
-                </button>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+                  <button
+                    onClick={() => setShowImportPreview(false)}
+                    style={{
+                      padding: "10px 16px",
+                      borderRadius: 10,
+                      border: "1px solid #ef4444",
+                      background: "transparent",
+                      color: "#ef4444",
+                      cursor: "pointer",
+                      fontWeight: 600,
+                      fontSize: 14,
+                    }}
+                  >
+                    Batal
+                  </button>
+                  <button
+                    onClick={handleBulkSubmit}
+                    disabled={importLoading}
+                    style={{
+                      padding: "10px 20px",
+                      borderRadius: 10,
+                      border: "none",
+                      cursor: importLoading ? "not-allowed" : "pointer",
+                      background: importLoading ? "#9ca3af" : "#16a34a",
+                      color: "white",
+                      fontWeight: 700,
+                      fontSize: 14,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                    }}
+                  >
+                    {importLoading ? "⏳ Mengirim..." : `✅ Kirim ${importPreviewData.length} Laporan`}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
       )}
     </div>
   );

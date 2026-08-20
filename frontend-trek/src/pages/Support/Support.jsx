@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import Swal from "sweetalert2";
 import "../../css/layout.css";
 import RoleSwitcher from "../../components/RoleSwitcher";
@@ -8,11 +8,15 @@ import DesktopSidebarToggle from "../../components/DesktopSidebarToggle";
 import TicketList from "./TicketList";
 import OpenTicket from "./OpenTicket";
 import TicketDetail from "./TicketDetail";
+import AnnouncementAdminTab from "../../components/AnnouncementAdminTab";
 import useSupportUnread from "../../hooks/useSupportUnread";
 
 export default function Support() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const currentTab = searchParams.get("tab") || "tiket";
+
   const storedUser = localStorage.getItem("user");
   const currentUser = storedUser ? JSON.parse(storedUser) : null;
   const activeRole = String(currentUser?.role || "superadmin").toLowerCase();
@@ -32,10 +36,16 @@ export default function Support() {
     { label: "Support", to: "/support", active: true },
   ];
 
+  const handleTabChange = (newTab) => {
+    setSearchParams({ tab: newTab });
+  };
+
   const getPageTitle = () => {
     if (location.pathname === "/support/open-ticket") return "Buat Tiket Support Baru";
     if (location.pathname.match(/\/support\/\d+/)) return "Detail Tiket Support";
-    return "Daftar Tiket Support";
+    if (currentTab === "pengumuman-aktif") return "Kelola Pengumuman Aktif";
+    if (currentTab === "pengumuman-riwayat") return "Riwayat Pengumuman";
+    return "Support & Pengumuman Superadmin";
   };
 
   const isAdmin = String(currentUser?.role || "").toLowerCase() === "admin" || String(currentUser?.role || "").toLowerCase() === "superadmin";
@@ -102,7 +112,103 @@ export default function Support() {
         <section className="main-content">
           {!isAdmin && location.pathname === "/support/open-ticket" && <OpenTicket />}
           {location.pathname.match(/\/support\/\d+/) && <TicketDetail />}
-          {location.pathname === "/support" && <TicketList showCreateButton={false} />}
+          {location.pathname === "/support" && (
+            <div>
+              {/* Tab Navigation */}
+              <div
+                style={{
+                  display: "flex",
+                  gap: 10,
+                  borderBottom: "2px solid #e5e7eb",
+                  marginBottom: 20,
+                  paddingBottom: 4,
+                  flexWrap: "wrap",
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => handleTabChange("tiket")}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "10px 18px",
+                    fontWeight: 600,
+                    borderRadius: 10,
+                    border: "none",
+                    backgroundColor: currentTab === "tiket" ? "#1e40af" : "transparent",
+                    color: currentTab === "tiket" ? "#ffffff" : "#6b7280",
+                    cursor: "pointer",
+                    boxShadow: currentTab === "tiket" ? "0 4px 12px rgba(30, 64, 175, 0.2)" : "none",
+                    transition: "all 0.2s ease-in-out",
+                  }}
+                >
+                  <span>🎫 Seluruh Tiket Support</span>
+                  {supportUnreadCount > 0 && (
+                    <span
+                      style={{
+                        background: currentTab === "tiket" ? "#ffffff" : "#ef4444",
+                        color: currentTab === "tiket" ? "#1e40af" : "#ffffff",
+                        padding: "2px 6px",
+                        borderRadius: 10,
+                        fontSize: 11,
+                        fontWeight: 700,
+                      }}
+                    >
+                      {supportUnreadCount}
+                    </span>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleTabChange("pengumuman-aktif")}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "10px 18px",
+                    fontWeight: 600,
+                    borderRadius: 10,
+                    border: "none",
+                    backgroundColor: currentTab === "pengumuman-aktif" ? "#1e40af" : "transparent",
+                    color: currentTab === "pengumuman-aktif" ? "#ffffff" : "#6b7280",
+                    cursor: "pointer",
+                    boxShadow: currentTab === "pengumuman-aktif" ? "0 4px 12px rgba(30, 64, 175, 0.2)" : "none",
+                    transition: "all 0.2s ease-in-out",
+                  }}
+                >
+                  <span>📢 Kelola Pengumuman Aktif</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleTabChange("pengumuman-riwayat")}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "10px 18px",
+                    fontWeight: 600,
+                    borderRadius: 10,
+                    border: "none",
+                    backgroundColor: currentTab === "pengumuman-riwayat" ? "#1e40af" : "transparent",
+                    color: currentTab === "pengumuman-riwayat" ? "#ffffff" : "#6b7280",
+                    cursor: "pointer",
+                    boxShadow: currentTab === "pengumuman-riwayat" ? "0 4px 12px rgba(30, 64, 175, 0.2)" : "none",
+                    transition: "all 0.2s ease-in-out",
+                  }}
+                >
+                  <span>📁 Riwayat & Arsip Pengumuman</span>
+                </button>
+              </div>
+
+              {/* Tab Content */}
+              {currentTab === "tiket" && <TicketList showCreateButton={false} />}
+              {currentTab === "pengumuman-aktif" && <AnnouncementAdminTab subTab="active" />}
+              {currentTab === "pengumuman-riwayat" && <AnnouncementAdminTab subTab="history" />}
+            </div>
+          )}
         </section>
       </main>
     </div>

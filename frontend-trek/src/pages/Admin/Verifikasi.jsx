@@ -193,16 +193,16 @@ const downloadPdfAdmin = async (id, status) => {
         { label: "Stock Opname Barang", to: "/stock-opname" },
         { label: "Support", to: "/support" },
       ];
-     } else {
-       return [
-         { label: "Dashboard Admin", to: "/dashboardadmin" },
-         { label: "Verifikasi Pengajuan", to: "/verifikasi", active: true },
-         { label: "Kelola Barang ATK", to: "/kelola-barang" },
-         { label: "Grafik Usulan Barang", to: "/grafik-usulan-barang" },
-         { label: "Stock Opname Barang", to: "/stock-opname" },
-         { label: "Support", to: "/support" },
-       ];
-    }
+      } else {
+        return [
+          { label: "Dashboard Admin", to: "/dashboardadmin" },
+          { label: "Verifikasi Pengajuan", to: "/verifikasi", active: true },
+          { label: "Kelola Barang ATK", to: "/kelola-barang" },
+          { label: "Grafik Usulan Barang", to: "/grafik-usulan-barang" },
+          { label: "Stock Opname Barang", to: "/stock-opname" },
+          { label: "Support", to: "/support" },
+        ];
+     }
   }, [role]);
 
   const formatRole = (role) => {
@@ -333,13 +333,13 @@ const downloadPdfAdmin = async (id, status) => {
         return { kebutuhan, sisa, diajukan };
       };
 
-      const setItemEdit = (itemId, field, value) => {
-        const num = Number(value) || 0;
-        setItemEdits((prev) => ({
-          ...prev,
-          [itemId]: { ...prev[itemId], [field]: num },
-        }));
-      };
+  const setItemEdit = (itemId, field, value) => {
+    const num = Math.max(0, Number(value) || 0);
+    setItemEdits((prev) => ({
+      ...prev,
+      [itemId]: { ...prev[itemId], [field]: num },
+    }));
+  };
 
       const setItemDecision = (itemId, status) => {
         setItemDecisions((prev) => ({
@@ -552,7 +552,55 @@ const submitVerifikasi = async (pengajuanId) => {
   }
 };
 
-const [selectedPengajuan, setSelectedPengajuan] = useState(null);
+  const [selectedPengajuan, setSelectedPengajuan] = useState(null);
+
+  const NumericInput = ({ value, onChange, placeholder = "0", disabled = false, className = "", readOnly = false }) => {
+    const [display, setDisplay] = React.useState(() => {
+      const v = value ?? 0;
+      return v === 0 ? "" : String(v);
+    });
+    const justBlurred = React.useRef(false);
+
+    React.useEffect(() => {
+      if (justBlurred.current) {
+        justBlurred.current = false;
+        return;
+      }
+      const v = value ?? 0;
+      setDisplay(v === 0 ? "" : String(v));
+    }, [value]);
+
+    const handleChange = (e) => {
+      const raw = e.target.value;
+      const cleaned = raw.replace(/[^0-9]/g, "");
+      setDisplay(cleaned);
+      const num = cleaned === "" ? 0 : parseInt(cleaned, 10) || 0;
+      onChange(num);
+    };
+
+    const handleBlur = () => {
+      if (display === "") {
+        justBlurred.current = true;
+        setDisplay("0");
+        onChange(0);
+      }
+    };
+
+    return (
+      <input
+        type="text"
+        inputMode="numeric"
+        className={`${className}`}
+        value={display}
+        onChange={handleChange}
+        onBlur={handleBlur}
+        placeholder={placeholder}
+        disabled={disabled}
+        readOnly={readOnly}
+        style={{ width: "70px", padding: "6px 8px", fontSize: "13px", border: "1px solid #cbd5e1", borderRadius: "6px", textAlign: "center", fontWeight: 600, background: "#f8fafc", color: "#0f172a", outline: "none", transition: "border-color 0.15s ease" }}
+      />
+    );
+  };
   
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768);
 
@@ -1039,22 +1087,20 @@ const [selectedPengajuan, setSelectedPengajuan] = useState(null);
                                     <tr style={{ borderBottom: "1px solid #f1f5f9", backgroundColor: rowBg, transition: "background-color 0.2s ease" }}>
                                       <td style={{ padding: "10px 12px", fontWeight: 600, fontSize: "14px" }}>{m.nama}</td>
                                       <td style={{ padding: "10px 12px" }}>{m.satuan}</td>
-                                      <td style={{ padding: "10px 12px", textAlign: "center" }}>
-                                        <input type="number" min="0" value={vals.kebutuhan}
-                                          onChange={(e) => setItemEdit("merged_" + m.key, 'kebutuhan', e.target.value)}
-                                          style={inputStyle}
-                                          onFocus={(e) => (e.target.style.borderColor = '#0284c7')}
-                                          onBlur={(e) => (e.target.style.borderColor = '#cbd5e1')}
-                                        />
-                                      </td>
-                                      <td style={{ padding: "10px 12px", textAlign: "center" }}>
-                                        <input type="number" min="0" value={vals.sisa}
-                                          onChange={(e) => setItemEdit("merged_" + m.key, 'sisa', e.target.value)}
-                                          style={inputStyle}
-                                          onFocus={(e) => (e.target.style.borderColor = '#0284c7')}
-                                          onBlur={(e) => (e.target.style.borderColor = '#cbd5e1')}
-                                        />
-                                      </td>
+                                       <td style={{ padding: "10px 12px", textAlign: "center" }}>
+                                         <NumericInput
+                                           value={vals.kebutuhan}
+                                           onChange={(val) => setItemEdit("merged_" + m.key, 'kebutuhan', val)}
+                                           placeholder="0"
+                                         />
+                                       </td>
+                                       <td style={{ padding: "10px 12px", textAlign: "center" }}>
+                                         <NumericInput
+                                           value={vals.sisa}
+                                           onChange={(val) => setItemEdit("merged_" + m.key, 'sisa', val)}
+                                           placeholder="0"
+                                         />
+                                       </td>
                                       <td style={{ padding: "10px 12px", textAlign: "center", fontWeight: 700, color: "#2563eb", fontSize: "15px" }}>
                                         {vals.diajukan}
                                       </td>

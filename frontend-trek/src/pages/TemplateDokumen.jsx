@@ -60,6 +60,7 @@ export default function TemplateDokumen() {
         { label: "Atur Periode", to: "/periode" },
         { label: "Daftar Barang ATK", to: "/superadmin/daftar-barang" },
         { label: "Stock Opname Barang", to: "/stock-opname" },
+        { label: "Support", to: "/support" },
       ];
     } else if (role === "admin") {
       return [
@@ -68,6 +69,7 @@ export default function TemplateDokumen() {
         { label: "Kelola Barang ATK", to: "/kelola-barang" },
         { label: "Grafik Usulan Barang", to: "/grafik-usulan-barang" },
         { label: "Stock Opname Barang", to: "/stock-opname" },
+        { label: "Support", to: "/support" },
       ];
     } else {
       return [
@@ -129,40 +131,28 @@ export default function TemplateDokumen() {
   const handleDownloadPengajuanTemplate = async () => {
     try {
       setImportLoading(true);
-      const res = await fetch(`${API_BASE}/barang`, {
+      const res = await fetch(`${API_BASE}/pengajuan/template-export`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      const masterDataRes = await res.json();
-      const masterData = Array.isArray(masterDataRes) ? masterDataRes : (masterDataRes.data || []);
+      if (!res.ok) throw new Error("Gagal mengunduh template Excel");
 
-      if (masterData.length === 0) {
-        Swal.fire("Info", "Belum ada data barang di sistem.", "info");
-        return;
-      }
-
-      const header = "nama_barang;satuan;harga;kebutuhan total;sisa stock saat ini";
-      const rows = masterData.map((b) =>
-        `${b.nama};${b.satuan};${b.harga_satuan};;`
-      );
-      const csvContent = [header, ...rows].join("\n");
-
-      const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+      const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = "Template_Pengajuan_ATK.csv";
+      link.download = `Template_Pengajuan_ATK_Stok_Realtime_${new Date().toISOString().slice(0, 10)}.xlsx`;
       link.click();
       URL.revokeObjectURL(url);
 
       Swal.fire({
         icon: "success",
-        title: "Template Diunduh",
-        text: `Template berisi ${masterData.length} barang. Isi kolom Kebutuhan Total dan Sisa Stok Saat Ini, lalu import kembali.`,
+        title: "Template Excel (.xlsx) Diunduh",
+        text: "Template Excel resmi dengan data stok real-time dan rumus otomatis telah diunduh. Cukup isi kolom Kebutuhan Total, kolom Jumlah Diajukan akan terhitung otomatis!",
         confirmButtonColor: "#2563eb",
       });
     } catch (err) {
       console.error("Gagal download template:", err);
-      Swal.fire("Error", "Gagal mengambil data barang dari server", "error");
+      Swal.fire("Error", "Gagal mengunduh template Excel dari server", "error");
     } finally {
       setImportLoading(false);
     }

@@ -17,11 +17,14 @@ use App\Http\Controllers\Api\SupportTicketController;
 use App\Http\Controllers\Api\StockOpnameController;
 use App\Http\Controllers\Api\Superadmin\PengajuanPdfSuperadminController;
 use App\Http\Controllers\Api\OptionController;
+use App\Http\Controllers\Api\AnnouncementController;
 /*
 |--------------------------------------------------------------------------
 | Auth
 |--------------------------------------------------------------------------
 */
+use App\Http\Controllers\Api\PengambilanBarangController;
+
 /*
 |--------------------------------------------------------------------------
 | Public API
@@ -39,6 +42,12 @@ Route::get('/periode/active', [PeriodeController::class, 'active']);
 Route::middleware('auth:sanctum')->group(function () {
 
     /*
+    | Monitoring (Admin & Super Admin)
+    */
+    Route::get('/monitoring/admin', [MonitoringController::class, 'adminLogs']);
+    Route::get('/monitoring/user', [MonitoringController::class, 'userRequests']);
+
+    /*
     | User Management (Super Admin)
     */
     Route::get('/users', [UserManagementController::class, 'index']);
@@ -47,33 +56,62 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/users/{user}/reset-unit', [UserManagementController::class, 'resetUnit']);
 
     /*
-    | Barang
+    | Barang & Satuan
     */
     Route::get('/barang', [BarangController::class, 'index']);
     Route::post('/barang', [BarangController::class, 'store']);
-
     Route::post('/barang/bulk/delete', [BarangController::class, 'bulkDelete']);
     Route::post('/barang/import-excel', [BarangController::class, 'importExcel']);
     Route::post('/barang/import', [PengajuanController::class, 'importBarangATK']);
+    Route::get('/barang/template-pengajuan', [PengajuanController::class, 'exportTemplate']);
 
     Route::get('/barang/{barang}/logs', [BarangController::class, 'logs']);
     Route::patch('/barang/{barang}/harga', [BarangController::class, 'updateHarga']);
+    Route::get('/barang/{barang}/satuans', [BarangController::class, 'getSatuans']);
+    Route::post('/barang/{barang}/satuans', [BarangController::class, 'storeSatuan']);
+    Route::delete('/barang-satuans/{id}', [BarangController::class, 'destroySatuan']);
 
     Route::get('/barang/{barang}', [BarangController::class, 'show'])->whereNumber('barang');
     Route::patch('/barang/{barang}', [BarangController::class, 'update'])->whereNumber('barang');
     Route::delete('/barang/{barang}', [BarangController::class, 'destroy'])->whereNumber('barang');
 
-
+    /*
+    | Pengajuan
+    */
     Route::get('/pengajuan', [PengajuanController::class, 'index']);
     Route::post('/pengajuan', [PengajuanController::class, 'store']);
+    Route::get('/pengajuan/template-export', [PengajuanController::class, 'exportTemplate']);
+    Route::get('/pengajuan/trashed', [PengajuanController::class, 'trashed']);
+    Route::patch('/pengajuan/{id}/restore', [PengajuanController::class, 'restore']);
     Route::get('/pengajuan/check/{user}',[PengajuanController::class, 'checkLimit']);
 
-
     Route::patch('/pengajuan/{pengajuan}/status', [PengajuanController::class, 'updateStatus']);
+    Route::patch('/pengajuan/{pengajuan}/cancel', [PengajuanController::class, 'cancel']);
     Route::patch('/pengajuan/{pengajuan}/revisi', [PengajuanController::class, 'revisiItems']);
     Route::patch('/pengajuan/{pengajuan}/user-revisi', [PengajuanController::class, 'userRevisiItems']);
+    Route::delete('/pengajuan/{pengajuan}/items/{item}', [PengajuanController::class, 'deleteItem']);
+    Route::get('/pengajuan/{pengajuan}/revisions', [PengajuanController::class, 'getRevisionHistory']);
     Route::get('/pengajuan/user-statistik', [PengajuanController::class, 'userStatistik']);
     Route::delete('/pengajuan/{pengajuan}', [PengajuanController::class, 'destroy']);
+
+    /*
+    | Lampiran File Pengajuan
+    */
+    Route::post('/pengajuan/{pengajuan}/lampiran', [PengajuanController::class, 'uploadLampiran']);
+    Route::get('/pengajuan/{pengajuan}/lampiran', [PengajuanController::class, 'getLampirans']);
+    Route::get('/lampiran/{id}/download', [PengajuanController::class, 'downloadLampiran']);
+    Route::delete('/lampiran/{id}', [PengajuanController::class, 'deleteLampiran']);
+
+    /*
+    | Form Pengambilan Barang (Serah Terima & Auto-Deduct)
+    */
+    Route::get('/pengambilan-barang', [PengambilanBarangController::class, 'index']);
+    Route::get('/pengambilan-barang/{id}', [PengambilanBarangController::class, 'show']);
+    Route::get('/pengajuan/{pengajuan}/pengambilan', [PengambilanBarangController::class, 'getByPengajuan']);
+    Route::get('/pengajuan/{pengajuan}/handover-history', [PengambilanBarangController::class, 'getHandoverHistory']);
+    Route::post('/pengajuan/{pengajuan}/pengambilan', [PengambilanBarangController::class, 'store']);
+    Route::get('/pengambilan-barang/{id}/pdf', [PengambilanBarangController::class, 'downloadPdf']);
+
     /*
     | Approval (Super Admin)
     */
@@ -95,7 +133,6 @@ Route::middleware('auth:sanctum')->group(function () {
         );
 
     });
-
 
     /*
     | Analisis & Laporan
@@ -156,5 +193,22 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/support-tickets/{id}/status', [SupportTicketController::class, 'updateStatus']);
     Route::post('/support-tickets/{id}/reply', [SupportTicketController::class, 'reply']);
     Route::delete('/support-tickets/{id}', [SupportTicketController::class, 'destroy']);
+
+    /*
+    | Pengumuman (Announcements)
+    */
+    // Admin / Superadmin Management
+    Route::get('/announcements', [AnnouncementController::class, 'index']);
+    Route::post('/announcements', [AnnouncementController::class, 'store']);
+    Route::put('/announcements/{id}', [AnnouncementController::class, 'update']);
+    Route::patch('/announcements/{id}/publish', [AnnouncementController::class, 'publish']);
+    Route::delete('/announcements/{id}', [AnnouncementController::class, 'destroy']);
+    Route::get('/announcements/{id}/read-receipts', [AnnouncementController::class, 'readReceipts']);
+
+    // User Broadcast & Read-Only Notifications
+    Route::get('/me/announcements', [AnnouncementController::class, 'myAnnouncements']);
+    Route::get('/me/announcements/unread-count', [AnnouncementController::class, 'unreadCount']);
+    Route::get('/me/announcements/history', [AnnouncementController::class, 'myHistory']);
+    Route::get('/me/announcements/{id}', [AnnouncementController::class, 'show']);
 
 });
