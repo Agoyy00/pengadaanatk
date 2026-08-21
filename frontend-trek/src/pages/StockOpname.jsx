@@ -187,6 +187,35 @@ export default function StockOpname() {
   const [importLoading, setImportLoading] = useState(false);
   const [importUnit, setImportUnit] = useState(getInitialUnit);
 
+  // ====== PERSISTENCE: RESTORE IMPORT PREVIEW ======
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem("stockopname_import_preview");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setImportPreviewData(parsed);
+          setShowImportPreview(true);
+        }
+      }
+    } catch (e) {
+      console.error("Gagal memuat preview impor:", e);
+    }
+  }, []);
+
+  // ====== PERSISTENCE: SAVE IMPORT PREVIEW ======
+  useEffect(() => {
+    try {
+      if (importPreviewData.length > 0) {
+        sessionStorage.setItem("stockopname_import_preview", JSON.stringify(importPreviewData));
+      } else {
+        sessionStorage.removeItem("stockopname_import_preview");
+      }
+    } catch (e) {
+      console.error("Gagal menyimpan preview impor:", e);
+    }
+  }, [importPreviewData]);
+
   const formatRole = (role) => {
     if (!role) return "-";
     return role
@@ -340,9 +369,9 @@ export default function StockOpname() {
         return;
       }
 
-      const header = "kode_barang;nama_barang;stok_sistem;stok_fisik";
+      const header = "kode_barang;nama_barang;satuan;stok_sistem;stok_fisik";
       const rows = masterData.map((b) =>
-        `${b.kode};${b.nama};${b.stok};`
+        `${b.kode};${b.nama};;${b.stok};`
       );
       const csvContent = [header, ...rows].join("\n");
 
@@ -357,7 +386,7 @@ export default function StockOpname() {
       Swal.fire({
         icon: "success",
         title: "Template Diunduh",
-        text: `Template berisi ${masterData.length} barang. Isi kolom Stok Fisik, lalu import kembali.`,
+        text: `Template berisi ${masterData.length} barang. Isi kolom Satuan dan Stok Fisik, lalu import kembali.`,
         confirmButtonColor: "#2563eb",
       });
     } catch (err) {
@@ -397,7 +426,7 @@ export default function StockOpname() {
         return;
       }
 
-      const delimiter = lines[0].includes(";") ? ";" : ",";
+      const delimiter = lines[0].includes(",") ? "," : lines[0].includes(";") ? ";" : ",";
 
       try {
         setImportLoading(true);
@@ -411,14 +440,19 @@ export default function StockOpname() {
 
         for (let i = 1; i < lines.length; i++) {
           const cols = lines[i].split(delimiter).map(c => c.trim().replace(/^["']|["']$/g, ''));
-          // Format: Kode Barang;Nama Barang;Stok Sistem;Stok Fisik
-          if (cols.length >= 4) {
+          // Format: Kode Barang;Nama Barang;Satuan;Stok Sistem;Stok Fisik
+          if (cols.length >= 5) {
             const kodeCSV = cleanText(cols[0]);
             const namaCSV = cleanText(cols[1]);
-            const stokFisikVal = parseInt(cols[3]);
+            const satuanCSV = cleanText(cols[2]);
+            const stokFisikVal = parseInt(cols[4]);
 
-            // Skip baris yang stok fisik tidak diisi
+            // Skip baris yang satuan atau stok fisik tidak diisi
+            if (!satuanCSV || satuanCSV === "") continue;
             if (isNaN(stokFisikVal)) continue;
+
+            // Validasi satuan harus sesuai daftar opsi (case-insensitive)
+            if (satuanOptions.length > 0 && !satuanOptions.some(opt => cleanText(opt) === satuanCSV)) continue;
 
             const matchedBarang = masterData.find(b => {
               const masterKode = cleanText(b.kode);
@@ -442,7 +476,7 @@ export default function StockOpname() {
                   barang_id: matchedBarang.id,
                   kode: matchedBarang.kode,
                   nama: matchedBarang.nama,
-                  satuan: matchedBarang.satuan,
+                  satuan: satuanCSV,
                   stok_sistem: matchedBarang.stok || 0,
                   stok_fisik: stokFisikVal,
                   selisih: selisih,
@@ -500,6 +534,7 @@ export default function StockOpname() {
         items: importPreviewData.map(item => ({
           barang_id: item.barang_id,
           stok_fisik: item.stok_fisik,
+          satuan: item.satuan,
           unit: importUnit,
         })),
       };
@@ -529,6 +564,7 @@ export default function StockOpname() {
         }
         setShowImportPreview(false);
         setImportPreviewData([]);
+        sessionStorage.removeItem("stockopname_import_preview");
         loadOpnames();
         Swal.fire({
           icon: "success",
@@ -1290,6 +1326,20 @@ export default function StockOpname() {
                       >
                         Buat Laporan Manual
                       </button>
+                    </div>
+                  )}
+
+                  {role === "user" && satuanOptions.length > 0 && (
+                    <div style={{
+                      padding: "10px 14px",
+                      background: "#eff6ff",
+                      border: "1px solid #bfdbfe",
+                      borderRadius: 10,
+                      fontSize: 12,
+                      color: "#1e40af",
+                      lineHeight: 1.6
+                    }}>
+                      <b>Daftar Satuan yang Sah:</b> {satuanOptions.join(", ")}
                     </div>
                   )}
                 </div>
@@ -2212,6 +2262,7 @@ export default function StockOpname() {
                     <th style={{ padding: "12px 14px", color: "#ffffff", fontWeight: 700 }}>NO</th>
                     <th style={{ padding: "12px 14px", color: "#ffffff", fontWeight: 700 }}>KODE</th>
                     <th style={{ padding: "12px 14px", color: "#ffffff", fontWeight: 700 }}>NAMA BARANG</th>
+                    <th style={{ padding: "12px 14px", color: "#ffffff", fontWeight: 700 }}>SATUAN</th>
                     <th style={{ padding: "12px 14px", color: "#ffffff", fontWeight: 700, textAlign: "center" }}>STOK SISTEM</th>
                     <th style={{ padding: "12px 14px", color: "#ffffff", fontWeight: 700, textAlign: "center" }}>STOK FISIK</th>
                     <th style={{ padding: "12px 14px", color: "#ffffff", fontWeight: 700, textAlign: "center" }}>SELISIH</th>
@@ -2226,6 +2277,7 @@ export default function StockOpname() {
                         <td style={{ padding: "10px 14px", color: "#9ca3af" }}>{idx + 1}</td>
                         <td style={{ padding: "10px 14px", fontFamily: "monospace", fontSize: 13 }}>{item.kode}</td>
                         <td style={{ padding: "10px 14px", fontWeight: 600 }}>{item.nama}</td>
+                        <td style={{ padding: "10px 14px" }}>{item.satuan}</td>
                         <td style={{ padding: "10px 14px", textAlign: "center" }}>{item.stok_sistem}</td>
                         <td style={{ padding: "10px 14px", textAlign: "center", fontWeight: 600 }}>{item.stok_fisik}</td>
                         <td style={{ padding: "10px 14px", textAlign: "center", fontWeight: 700, color: selisihColor }}>
@@ -2274,7 +2326,11 @@ export default function StockOpname() {
 
               <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
                   <button
-                    onClick={() => setShowImportPreview(false)}
+                    onClick={() => {
+                      setShowImportPreview(false);
+                      setImportPreviewData([]);
+                      sessionStorage.removeItem("stockopname_import_preview");
+                    }}
                     style={{
                       padding: "10px 16px",
                       borderRadius: 10,

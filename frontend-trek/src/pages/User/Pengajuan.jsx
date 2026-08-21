@@ -235,9 +235,6 @@ function Pengajuan() {
   const [importPreviewData, setImportPreviewData] = useState([]);
   const [importLoading, setImportLoading] = useState(false);
 
-
-
-
   // preview foto besar
   const [previewImage, setPreviewImage] = useState(null);
 
@@ -368,6 +365,21 @@ function Pengajuan() {
   }, [tahunAkademik, userId, periodeLoading, periodeOpen]);
 
 
+  // ====== PERSISTENCE: RESTORE DRAFT ITEMS ======
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem("pengajuan_draft_items");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          setItems(parsed);
+        }
+      }
+    } catch (e) {
+      console.error("Gagal memuat draft pengajuan:", e);
+    }
+  }, []);
+
   // ====== AUTO-FILL DARI STOCK OPNAME ======
   const [draftLoaded, setDraftLoaded] = useState(false);
 
@@ -418,6 +430,19 @@ function Pengajuan() {
 
     loadDraftFromStockOpname();
   }, [userId, tahunAkademik, periodeOpen, draftLoaded]);
+
+  // ====== PERSISTENCE: SAVE DRAFT ITEMS ======
+  useEffect(() => {
+    try {
+      if (items.length > 0) {
+        sessionStorage.setItem("pengajuan_draft_items", JSON.stringify(items));
+      } else {
+        sessionStorage.removeItem("pengajuan_draft_items");
+      }
+    } catch (e) {
+      console.error("Gagal menyimpan draft pengajuan:", e);
+    }
+  }, [items]);
 
 
   // ====== AUTO-SUGGEST BARANG ======
@@ -549,11 +574,20 @@ function Pengajuan() {
     if (!file) return;
 
     if (stockOpnameRequired) {
+      console.log("[IMPORT_DEBUG] stockOpnameRequired true");
       Swal.fire({
         icon: "warning",
         title: "Stock Opname Diperlukan",
-        text: "Anda belum melakukan Stock Opname pada periode ini. Silakan lakukan stock opname terlebih dahulu sebelum mengimpor pengajuan.",
+        html:
+          `<div style="text-align:left">` +
+          `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">` +
+          `<span style="font-size:24px">📋</span>` +
+          `<div>Anda belum melakukan <b>Stock Opname</b> pada periode ini.</div>` +
+          `</div>` +
+          `<div style="color:#4b5563;font-size:13px">Silakan lakukan stock opname terlebih dahulu sebelum mengimpor pengajuan.</div>` +
+          `</div>`,
         confirmButtonColor: "#d97706",
+        confirmButtonText: "Mengerti",
       });
       e.target.value = null;
       return;
@@ -561,10 +595,12 @@ function Pengajuan() {
 
     try {
       setImportLoading(true);
+      console.log("[IMPORT_DEBUG] import started", { fileName: file.name, fileType: file.type });
 
       let parsedRows = [];
       const fileName = (file.name || "").toLowerCase();
       const isCsv = fileName.endsWith(".csv") || file.type.includes("csv");
+      console.log("[IMPORT_DEBUG] isCsv", isCsv);
 
       if (isCsv) {
         // Baca sebagai text untuk menjamin pemisahan delimiter (; , \t) akurat
@@ -572,7 +608,9 @@ function Pengajuan() {
         const lines = text.split(/\r?\n/).filter((l) => l.trim() !== "");
         if (lines.length > 0) {
           const firstLine = lines[0];
-          const delimiter = firstLine.includes(";")
+          const delimiter = firstLine.includes(",")
+            ? ","
+            : firstLine.includes(";")
             ? ";"
             : firstLine.includes("\t")
             ? "\t"
@@ -604,7 +642,13 @@ function Pengajuan() {
       }
 
       if (!parsedRows || parsedRows.length < 2) {
-        Swal.fire("Error", "File kosong atau tidak memiliki baris data.", "error");
+        console.log("[IMPORT_DEBUG] parsedRows too short", { parsedRowsLength: parsedRows?.length });
+        Swal.fire({
+          icon: "error",
+          title: "File Kosong",
+          text: "File yang diunggah tidak memiliki baris data. Pastikan file CSV/Excel berisi header dan data barang.",
+          confirmButtonColor: "#dc2626",
+        });
         e.target.value = null;
         return;
       }
@@ -695,7 +739,13 @@ function Pengajuan() {
       });
 
       if (stockOpnameMap.size === 0) {
-        Swal.fire("Info", "Belum ada data stock opname untuk periode ini.", "info");
+        console.log("[IMPORT_DEBUG] stockOpnameMap empty");
+        Swal.fire({
+          icon: "info",
+          title: "Belum Ada Data Stock Opname",
+          text: "Anda belum melakukan Stock Opname pada periode ini. Silakan lakukan stock opname terlebih dahulu sebelum mengimpor pengajuan.",
+          confirmButtonColor: "#2563eb",
+        });
         e.target.value = null;
         return;
       }
@@ -747,17 +797,16 @@ function Pengajuan() {
           continue;
         }
 
-        const exists =
-          items.some((it) => it.id === matchedSO.barang_id) ||
-          previewItems.some((it) => it.id === matchedSO.barang_id);
-        if (exists) {
-          importSummary.warning++;
-          importSummary.warnings.push(`Baris ${r + 1}: "${matchedSO.nama}" sudah ada dalam daftar.`);
-          continue;
-        }
-
         const kebutuhanRaw = row[kebutuhanIdx] !== undefined ? row[kebutuhanIdx] : "";
         const kebutuhanTotal = parseInt(String(kebutuhanRaw).replace(/[^0-9]/g, ""), 10) || 0;
+
+        console.log("[IMPORT_DEBUG] kebutuhanTotal", {
+          rowIndex: r + 1,
+          rawName,
+          kebutuhanIdx,
+          kebutuhanRaw,
+          kebutuhanTotal,
+        });
 
         // Nilai sisa_stok selalu diambil 100% dari database resmi stock opname
         const sisaStok = matchedSO.sisa_stok;
@@ -779,69 +828,131 @@ function Pengajuan() {
       if (previewItems.length > 0) {
         setImportPreviewData(previewItems);
         setShowImportPreview(true);
+        console.log("[IMPORT_DEBUG] preview shown", { success: importSummary.success, error: importSummary.error, warning: importSummary.warning });
 
-        if (importSummary.error > 0 || importSummary.warning > 0) {
+        if (importSummary.error > 0) {
           const totalDataRows = parsedRows.length - (headerRowIdx + 1);
           Swal.fire({
-            icon: importSummary.error > 0 ? "warning" : "info",
-            title: "Ringkasan Import",
+            icon: "warning",
+            title: "Import Berhasil (Sebagian)",
             html:
-              `<b>${importSummary.success}</b> dari <b>${totalDataRows}</b> barang berhasil dicocokkan.` +
-              (importSummary.error > 0
-                ? `<br><span style="color:#dc2626">${importSummary.error} barang tidak ditemukan.</span>`
-                : "") +
-              (importSummary.warning > 0
-                ? `<br><span style="color:#d97706">${importSummary.warning} barang duplikat dilewati.</span>`
-                : "") +
+              `<div style="text-align:left">` +
+              `<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">` +
+              `<span style="font-size:28px">📦</span>` +
+              `<div><b>${importSummary.success}</b> dari <b>${totalDataRows}</b> barang berhasil dicocokkan dan siap diimpor.</div>` +
+              `</div>` +
+              `<div style="background:#fef2f2;border:1px solid #fecaca;color:#991b1b;padding:10px 12px;border-radius:8px;font-size:13px">` +
+              `⚠️ ${importSummary.error} barang tidak ditemukan di data Stock Opname.` +
+              `</div>` +
               (importSummary.errors.length > 0
-                ? `<br><br><details style="text-align:left"><summary>Lihat Detail Barang Gagal</summary><small>${importSummary.errors.slice(0, 20).join("<br>")}</small></details>`
+                ? `<details style="margin-top:10px"><summary style="cursor:pointer;color:#2563eb;font-size:13px">Lihat Detail Barang Gagal</summary><small style="display:block;margin-top:6px;color:#374151">${importSummary.errors.slice(0, 20).join("<br>")}</small></details>`
                 : "") +
-              (importSummary.warnings.length > 0
-                ? `<br><br><details style="text-align:left"><summary>Lihat Detail Peringatan</summary><small>${importSummary.warnings.slice(0, 20).join("<br>")}</small></details>`
-                : ""),
+              `</div>`,
             confirmButtonColor: "#2563eb",
+            confirmButtonText: "Lihat Preview",
+          });
+        } else {
+          Swal.fire({
+            icon: "success",
+            title: "Import Berhasil",
+            html:
+              `<div style="text-align:left">` +
+              `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">` +
+              `<span style="font-size:28px">✅</span>` +
+              `<div><b>${importSummary.success}</b> barang berhasil dicocokkan dan siap diimpor.</div>` +
+              `</div>` +
+              `<div style="background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;padding:8px 12px;border-radius:8px;font-size:13px">` +
+              `Semua nama barang cocok dengan data Stock Opname.` +
+              `</div>` +
+              `</div>`,
+            confirmButtonColor: "#10b981",
+            confirmButtonText: "Lanjutkan",
           });
         }
       } else {
         const totalDataRows = parsedRows.length - (headerRowIdx + 1);
-        Swal.fire({
-          icon: "warning",
-          title: "Tidak Ada Data Cocok",
-          html:
-            `Tidak ada barang yang dapat diimpor dari <b>${totalDataRows}</b> baris data.` +
-            (importSummary.errors.length > 0
-              ? `<br><br><b>Detail kegagalan:</b><br><small>${importSummary.errors.slice(0, 20).join("<br>")}</small>`
-              : "<br>Pastikan nama barang pada CSV/Excel sesuai dengan hasil Stock Opname Anda."),
-          confirmButtonColor: "#d97706",
-        });
+        console.log("[IMPORT_DEBUG] no previewItems", { totalDataRows, error: importSummary.error, warning: importSummary.warning });
+        if (importSummary.error > 0) {
+          Swal.fire({
+            icon: "error",
+            title: "Import Gagal",
+            html:
+              `<div style="text-align:left">` +
+              `<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">` +
+              `<span style="font-size:28px">❌</span>` +
+              `<div>Tidak ada barang yang dapat diimpor dari <b>${totalDataRows}</b> baris data.</div>` +
+              `</div>` +
+              `<div style="background:#fef2f2;border:1px solid #fecaca;color:#991b1b;padding:10px 12px;border-radius:8px;font-size:13px">` +
+              `⚠️ ${importSummary.error} barang tidak ditemukan di data Stock Opname.` +
+              `</div>` +
+              `<details style="margin-top:10px"><summary style="cursor:pointer;color:#2563eb;font-size:13px">Lihat Detail Kegagalan</summary><small style="display:block;margin-top:6px;color:#374151">${importSummary.errors.slice(0, 20).join("<br>")}</small></details>` +
+              `</div>`,
+            confirmButtonColor: "#dc2626",
+          });
+        } else {
+          Swal.fire({
+            icon: "warning",
+            title: "Tidak Ada Data Cocok",
+            html:
+              `<div style="text-align:left">` +
+              `<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">` +
+              `<span style="font-size:28px">🔍</span>` +
+              `<div>Tidak ada barang yang dapat diimpor dari <b>${totalDataRows}</b> baris data.</div>` +
+              `</div>` +
+              `<div style="background:#fffbeb;border:1px solid #fde68a;color:#92400e;padding:10px 12px;border-radius:8px;font-size:13px">` +
+              `💡 Pastikan nama barang pada CSV/Excel sesuai dengan hasil Stock Opname Anda. Coba download template dan isi ulang.` +
+              `</div>` +
+              `</div>`,
+            confirmButtonColor: "#d97706",
+            confirmButtonText: "Mengerti",
+          });
+        }
       }
     } catch (err) {
-      console.error("Gagal import file:", err);
-      Swal.fire("Error", "Gagal memproses file. Pastikan format file adalah CSV atau Excel.", "error");
+      console.error("[IMPORT_DEBUG] catch", err);
+      Swal.fire({
+        icon: "error",
+        title: "Gagal Memproses File",
+        text: "Gagal memproses file. Pastikan format file adalah CSV atau Excel yang valid.",
+        confirmButtonColor: "#dc2626",
+      });
     } finally {
+      console.log("[IMPORT_DEBUG] import finished");
       setImportLoading(false);
       e.target.value = null;
     }
   };
 
   // Confirm import dari preview
-
   const handleConfirmImport = () => {
-    setItems(prev => [...prev, ...importPreviewData]);
+    const previewIds = new Set(importPreviewData.map((it) => it.id));
+    setItems((prev) => {
+      const replaced = prev.filter((it) => !previewIds.has(it.id));
+      return [...replaced, ...importPreviewData];
+    });
     setShowImportPreview(false);
     setImportPreviewData([]);
+    sessionStorage.removeItem("pengajuan_draft_items");
+    const totalQty = importPreviewData.reduce((sum, i) => sum + i.jumlahDiajukan, 0);
+    const totalHarga = importPreviewData.reduce((sum, i) => sum + (i.jumlahDiajukan * i.estimasiNilai), 0);
     Swal.fire({
       icon: "success",
       title: "Import Berhasil",
-      text: `${importPreviewData.length} barang berhasil ditambahkan ke daftar pengajuan.`,
+      html:
+        `<div style="text-align:left">` +
+        `<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">` +
+        `<span style="font-size:28px">🎉</span>` +
+        `<div><b>${importPreviewData.length}</b> barang berhasil diimpor ke daftar pengajuan.</div>` +
+        `</div>` +
+        `<div style="background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;padding:10px 12px;border-radius:8px;font-size:13px;display:grid;gap:4px">` +
+        `📦 Total jumlah diajukan: <b>${totalQty}</b>` +
+        `<br>💰 Estimasi total: <b>Rp ${totalHarga.toLocaleString("id-ID")}</b>` +
+        `</div>` +
+        `</div>`,
       confirmButtonColor: "#10b981",
+      confirmButtonText: "Selesai",
     });
   };
-
-  useEffect(() => {
-    console.log("ITEMS:", items);
-  }, [items]);
-
 
   // kebutuhan total berubah → jumlah diajukan = kebutuhan - sisa
   const handleChangeKebutuhan = (id, num) => {
@@ -915,6 +1026,7 @@ function Pengajuan() {
   const resetDraft = () => {
     setItems([]);
     setStep2Error("");
+    sessionStorage.removeItem("pengajuan_draft_items");
     Swal.fire({
       icon: "info",
       title: "Draft Direset",
@@ -1123,6 +1235,7 @@ function Pengajuan() {
             }
           } catch {}
         }
+        sessionStorage.removeItem("pengajuan_draft_items");
         window.location.href = "/riwayat";
       });
     } catch (err) {
@@ -1576,7 +1689,6 @@ function Pengajuan() {
                           <tr>
                             <th>Barang</th>
                             <th>Satuan</th>
-                            <th>Harga Satuan</th>
                             <th>Kebutuhan Total</th>
                             <th>Sisa stok saat ini</th>
                             <th>Jumlah Diajukan</th>
@@ -1588,7 +1700,7 @@ function Pengajuan() {
                         <tbody>
                           {items.length === 0 && (
                             <tr>
-                              <td colSpan="8">Belum ada item.</td>
+                              <td colSpan="6">Belum ada item.</td>
                             </tr>
                           )}
 
@@ -1611,9 +1723,6 @@ function Pengajuan() {
                                 </div>
                               </td>
                               <td>{item.satuan}</td>
-                              <td>
-                                Rp {item.estimasiNilai.toLocaleString("id-ID")}
-                              </td>
 
                               <td>
                                 <NumericInput
@@ -1632,11 +1741,6 @@ function Pengajuan() {
                               </td>
 
                               <td>{item.jumlahDiajukan}</td>
-
-                              <td>
-                                Rp{" "}
-                                {(item.jumlahDiajukan * item.estimasiNilai).toLocaleString("id-ID")}
-                              </td>
 
                               <td>
                                 {confirmId === item.id ? (
@@ -1984,26 +2088,28 @@ function Pengajuan() {
       {/* MODAL PREVIEW IMPORT CSV */}
       {showImportPreview && (
         <div className="verify-overlay" onClick={() => setShowImportPreview(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 800 }}>
-            {/* HEADER (fixed) */}
-            <div className="modal-header">
-              <div className="detail-panel-header">
-                <div>
-                  <h3>Verifikasi Data Import CSV</h3>
-                  <p>{importPreviewData.length} barang ditemukan dari file CSV. Periksa data sebelum menambahkan ke daftar pengajuan.</p>
-                </div>
-                <button
-                  type="button"
-                  className="detail-close-btn"
-                  onClick={() => setShowImportPreview(false)}
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="18" y1="6" x2="6" y2="18" />
-                    <line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
-                </button>
-              </div>
-            </div>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 900 }}>
+            <button
+              type="button"
+              className="detail-close-btn"
+              onClick={() => setShowImportPreview(false)}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+             {/* HEADER (fixed) */}
+             <div className="modal-header">
+               <div className="detail-panel-header">
+                 <div>
+                   <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: "#111827" }}>Preview Import CSV</h3>
+                   <p style={{ margin: "2px 0 0", fontSize: 13, color: "#6b7280" }}>
+                     {importPreviewData.length} barang siap diimpor dari file. Periksa kembali sebelum konfirmasi.
+                   </p>
+                 </div>
+               </div>
+             </div>
 
             {/* BODY (scrollable) */}
             <div className="modal-body-scrollable">
@@ -2011,14 +2117,12 @@ function Pengajuan() {
                 <table className="detail-table">
                   <thead>
                     <tr>
-                      <th>No</th>
+                      <th style={{ width: 50 }}>No</th>
                       <th>Nama Barang</th>
                       <th>Satuan</th>
-                      <th>Kebutuhan Total</th>
-                      <th>Sisa Stok</th>
-                      <th>Jumlah Diajukan</th>
-                      <th>Harga Satuan</th>
-                      <th>Subtotal</th>
+                      <th style={{ textAlign: "center" }}>Kebutuhan Total</th>
+                      <th style={{ textAlign: "center" }}>Sisa Stok</th>
+                       <th style={{ textAlign: "center" }}>Jumlah Diajukan</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -2027,25 +2131,20 @@ function Pengajuan() {
                         <td className="detail-td-no">{idx + 1}</td>
                         <td className="detail-td-nama">{item.nama}</td>
                         <td>{item.satuan}</td>
-                        <td style={{ textAlign: "center" }}>{item.kebutuhanTotal}</td>
-                        <td style={{ textAlign: "center" }}>{item.sisaStok}</td>
-                        <td style={{ textAlign: "center", fontWeight: 700, color: item.jumlahDiajukan > 0 ? "#16a34a" : "#6b7280" }}>
+                        <td className="detail-td-qty">{item.kebutuhanTotal}</td>
+                        <td className="detail-td-qty">{item.sisaStok}</td>
+                        <td className="detail-td-qty" style={{ fontWeight: 700, color: item.jumlahDiajukan > 0 ? "#16a34a" : "#6b7280" }}>
                           {item.jumlahDiajukan}
                         </td>
-                        <td className="detail-td-harga">Rp {Number(item.estimasiNilai).toLocaleString("id-ID")}</td>
-                        <td className="detail-td-subtotal">Rp {(item.jumlahDiajukan * item.estimasiNilai).toLocaleString("id-ID")}</td>
                       </tr>
                     ))}
                   </tbody>
                   <tfoot>
                     <tr>
-                      <td colSpan="5" className="detail-footer-label">Total</td>
+                      <td colSpan="4" className="detail-footer-label">Total</td>
+                      <td></td>
                       <td className="detail-footer-qty" style={{ textAlign: "center", fontWeight: 700 }}>
                         {importPreviewData.reduce((sum, i) => sum + i.jumlahDiajukan, 0)}
-                      </td>
-                      <td></td>
-                      <td className="detail-footer-total">
-                        Rp {importPreviewData.reduce((sum, i) => sum + (i.jumlahDiajukan * i.estimasiNilai), 0).toLocaleString("id-ID")}
                       </td>
                     </tr>
                   </tfoot>
@@ -2055,25 +2154,31 @@ function Pengajuan() {
 
             {/* FOOTER (fixed/sticky) */}
             <div className="modal-footer-fixed">
-              <div className="detail-panel-footer" style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-                <button
-                  type="button"
-                  className="btn"
-                  onClick={() => setShowImportPreview(false)}
-                  style={{ padding: "10px 16px", borderRadius: 8 }}
-                >
-                  Batal
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-primary detail-close-action"
-                  onClick={handleConfirmImport}
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                  Konfirmasi Import ({importPreviewData.length} barang)
-                </button>
+              <div className="detail-panel-footer" style={{ display: "flex", gap: 10, justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ fontSize: 12, color: "#6b7280" }}>
+                  💡 Data barang yang sama akan diperbarui dengan nilai dari file.
+                </div>
+                <div style={{ display: "flex", gap: 10 }}>
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={() => setShowImportPreview(false)}
+                    style={{ padding: "10px 18px", borderRadius: 8, border: "1px solid #d1d5db", background: "#fff", color: "#374151" }}
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-primary detail-close-action"
+                    onClick={handleConfirmImport}
+                    style={{ padding: "10px 22px" }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                    Konfirmasi Import ({importPreviewData.length} barang)
+                  </button>
+                </div>
               </div>
             </div>
           </div>

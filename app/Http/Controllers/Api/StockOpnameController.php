@@ -216,6 +216,7 @@ class StockOpnameController extends Controller
             'items'              => 'required|array|min:1',
             'items.*.barang_id'  => 'required|exists:barangs,id',
             'items.*.stok_fisik' => 'required|integer|min:0',
+            'items.*.satuan'     => 'required|string|max:50',
             'items.*.unit'       => 'required|string|max:255',
         ]);
 
@@ -279,6 +280,7 @@ class StockOpnameController extends Controller
                     'unit'        => $bulkUnit,
                     'stok_sistem' => $stok_sistem,
                     'stok_fisik'  => $stok_fisik,
+                    'satuan'      => $item['satuan'],
                     'selisih'     => $selisih,
                     'status'      => 'pending',
                 ]);
