@@ -182,6 +182,30 @@ export default function Riwayat() {
   const userId = currentUser?.id;
   const token = localStorage.getItem("token");
 
+  const handleDownloadBukti = async (p) => {
+    try {
+      const res = await fetch(`${API_BASE}/pengajuan/${p.id}/pdf/bukti`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || "Gagal mengunduh bukti pengajuan.");
+      }
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Bukti-Pengajuan-${p.id}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(err);
+      Swal.fire("Error", "Gagal mengunduh bukti pengajuan.", "error");
+    }
+  };
+
   async function loadRiwayat() {
     if (!userId) {
       setErrorMsg("User belum login.");
@@ -763,21 +787,6 @@ export default function Riwayat() {
 
                                             {isProcessed && disetujui != null ? (
                                               <div className="revisi-history-box">
-                                                <div className="revisi-history-meta-grid">
-                                                  <div>
-                                                    <span className="meta-label">Kebutuhan:</span>{" "}
-                                                    <span className={item.kebutuhan_total_admin != null ? "meta-value-changed" : ""}>
-                                                      {item.kebutuhan_total_admin != null ? `${item.kebutuhan_total} ➜ ${item.kebutuhan_total_admin}` : item.kebutuhan_total}
-                                                    </span>
-                                                  </div>
-                                                  <div>
-                                                    <span className="meta-label">Sisa Stok:</span>{" "}
-                                                    <span className={item.sisa_stok_admin != null ? "meta-value-changed" : ""}>
-                                                      {item.sisa_stok_admin != null ? `${item.sisa_stok} ➜ ${item.sisa_stok_admin}` : item.sisa_stok}
-                                                    </span>
-                                                  </div>
-                                                </div>
-
                                                 <div className="revisi-history-row" style={{ marginTop: "6px" }}>
                                                   <span className="revisi-label">Diajukan Awal:</span>
                                                   <span className={`revisi-value ${hasRevisi ? "revisi-value-old" : "revisi-value-same"}`}>
@@ -808,8 +817,8 @@ export default function Riwayat() {
                                                 )}
                                               </div>
                                             ) : (
-                                              <div style={{ paddingLeft: "4px", marginTop: "2px", fontSize: "12px", color: "#64748b" }}>
-                                                Kebutuhan: <strong>{item.kebutuhan_total}</strong> · Sisa: <strong>{item.sisa_stok}</strong> · Diajukan: <strong className="qty-tag">{diajukan} {satuan}</strong>
+                                              <div style={{ paddingLeft: "4px", marginTop: "2px", fontSize: "12px" }}>
+                                                <strong className="qty-tag">{diajukan} {satuan}</strong>
                                               </div>
                                             )}
                                           </li>
@@ -858,6 +867,24 @@ export default function Riwayat() {
                                     }}
                                   >
                                     📎 Lampiran ({p.lampirans?.length || 0})
+                                  </button>
+
+                                  {/* Unduh Bukti Pengajuan (PDF) */}
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDownloadBukti(p)}
+                                    style={{
+                                      padding: "4px 8px",
+                                      background: "#eff6ff",
+                                      color: "#2563eb",
+                                      border: "1px solid #bfdbfe",
+                                      borderRadius: "4px",
+                                      fontSize: "12px",
+                                      fontWeight: "600",
+                                      cursor: "pointer",
+                                    }}
+                                  >
+                                    ⬇️ Unduh Bukti
                                   </button>
 
                                   {/* Form Pengambilan Barang (Jika Disetujui / Selesai) */}

@@ -8,6 +8,33 @@ export default function DetailVerifikasi({ pengajuan, onClose, onSuccess }) {
   const [processing, setProcessing] = useState(false);
   const [catatanAdmin, setCatatanAdmin] = useState("");
 
+  const handleDownloadPdf = async () => {
+    if (pengajuan.status !== "diajukan") {
+      alert("PDF admin hanya bisa diunduh saat pengajuan masih dalam status diajukan.");
+      return;
+    }
+    try {
+      const res = await fetch(`${API_BASE}/pengajuan/${pengajuan.id}/pdf/admin`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        throw new Error("Gagal mengunduh PDF.");
+      }
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `pengajuan-admin-${pengajuan.id}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(err);
+      alert("Gagal mengunduh bukti pengajuan.");
+    }
+  };
+
   const [draftItems, setDraftItems] = useState(() => {
     const initial = {};
     pengajuan.items.forEach((item) => {
@@ -326,8 +353,29 @@ export default function DetailVerifikasi({ pengajuan, onClose, onSuccess }) {
           />
         </div>
 
-        <div className="modal-actions" style={{ marginTop: "24px", display: "flex", gap: "10px", justifyContent: "flex-end" }}>
-          <button 
+         <div className="modal-actions" style={{ marginTop: "24px", display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+           <button
+             type="button"
+             onClick={handleDownloadPdf}
+             disabled={processing}
+             style={{
+               padding: "8px 14px",
+               background: "#eff6ff",
+               color: "#2563eb",
+               border: "1px solid #bfdbfe",
+               borderRadius: "8px",
+               fontSize: "12px",
+               fontWeight: "600",
+               cursor: "pointer",
+               display: "inline-flex",
+               alignItems: "center",
+               gap: "6px",
+             }}
+           >
+             ⬇️ Unduh Bukti Pengajuan
+           </button>
+
+           <button 
             onClick={onClose} 
             disabled={processing}
             style={{ background: "#94a3b8", color: "#ffffff", boxShadow: "none" }}

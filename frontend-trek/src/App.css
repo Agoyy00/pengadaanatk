@@ -233,9 +233,5 @@ body{
 
 /* Logo Full YARSI di Topbar Dashboard */
 .topbar-logo-full {
-  height: 32px;
-  width: auto;
-  object-fit: contain;
-  margin-right: 12px;
-  flex-shrink: 0;
+  display: none;
 }

@@ -73,6 +73,12 @@ export default function Approval() {
       .replace(/\b\w/g, (c) => c.toUpperCase());
   };
 
+  const getSatuanFromItems = (p) => {
+    if (!p.items || p.items.length === 0) return "-";
+    const satuans = [...new Set(p.items.map((it) => it.barang?.satuan).filter(Boolean))];
+    return satuans.length > 0 ? satuans.join(", ") : "-";
+  };
+
   const handleStatusUpdate = async (id, newStatus) => {
     if (!currentUser) {
   alert("User belum login");
@@ -174,7 +180,46 @@ console.log(token); // harus ada
     });
   }
 };
-  return (
+
+  const handleDownloadBukti = async (id) => {
+    try {
+      const res = await fetch(`${API_BASE}/pengajuan/${id}/pdf/bukti`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/pdf",
+        },
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        Swal.fire({
+          icon: "error",
+          title: "Gagal Unduh",
+          text: text || "Gagal mengunduh bukti pengajuan.",
+          confirmButtonColor: "#ef4444",
+        });
+        return;
+      }
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Bukti-Pengajuan-${id}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Download error:", err);
+      Swal.fire({
+        icon: "error",
+        title: "Kesalahan Jaringan",
+        text: "Terjadi kesalahan saat mengunduh bukti pengajuan.",
+        confirmButtonColor: "#ef4444",
+      });
+    }
+  };
+   return (
     
     <div className="layout">
       <DesktopSidebarToggle isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
@@ -265,6 +310,7 @@ console.log(token); // harus ada
                       <th>Jabatan</th>
                       <th>Tahun</th>
                       <th>Total Jumlah</th>
+                      <th>Satuan</th>
                       <th>Status</th>
                       <th>Aksi</th>
                       <th>PDF</th>
@@ -279,29 +325,48 @@ console.log(token); // harus ada
                         <td>{p.jabatan}</td>
                         <td>{p.tahun_akademik}</td>
                         <td>{p.total_jumlah_diajukan}</td>
+                        <td>{getSatuanFromItems(p)}</td>
                         <td>{p.status}</td>
-                        <td>
-                          {p.status === "diverifikasi_admin" ? (
-                            <>
+                          <td>
+                            <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                              {p.status === "diverifikasi_admin" ? (
+                                <>
+                                  <button
+                                    disabled={processingId === p.id}
+                                    onClick={() => handleStatusUpdate(p.id, "disetujui")}
+                                    style={{ backgroundColor: "#005826", color: "#ffffff", border: "none" }}
+                                  >
+                                    {processingId === p.id ? "Memproses..." : "Approve"}
+                                  </button>
+                                  <button
+                                    disabled={processingId === p.id}
+                                    onClick={() => handleStatusUpdate(p.id, "ditolak_admin")}
+                                    style={{ backgroundColor: "#dc2626", color: "#ffffff", border: "none", marginLeft: 6 }}
+                                  >
+                                    {processingId === p.id ? "Memproses..." : "Tolak"}
+                                  </button>
+                                </>
+                              ) : (
+                                <span style={{ fontSize: "12px", color: "#94a3b8" }}>Menunggu verifikasi</span>
+                              )}
                               <button
-                                disabled={processingId === p.id}
-                                onClick={() => handleStatusUpdate(p.id, "disetujui")}
-                                style={{ backgroundColor: "#005826", color: "#ffffff", border: "none" }}
+                                type="button"
+                                onClick={() => handleDownloadBukti(p.id)}
+                                style={{
+                                  padding: "4px 8px",
+                                  background: "#eff6ff",
+                                  color: "#2563eb",
+                                  border: "1px solid #bfdbfe",
+                                  borderRadius: "4px",
+                                  fontSize: "11px",
+                                  fontWeight: "600",
+                                  cursor: "pointer",
+                                }}
                               >
-                                {processingId === p.id ? "Memproses..." : "Approve"}
+                                ⬇️ Bukti
                               </button>
-                              <button
-                                disabled={processingId === p.id}
-                                onClick={() => handleStatusUpdate(p.id, "ditolak_admin")}
-                                style={{ backgroundColor: "#dc2626", color: "#ffffff", border: "none", marginLeft: 6 }}
-                              >
-                                {processingId === p.id ? "Memproses..." : "Tolak"}
-                              </button>
-                            </>
-                          ) : (
-                            <span>Tidak ada aksi</span>
-                          )}
-                        </td>
+                            </div>
+                          </td>
                         <td>
                         {["disetujui", "ditolak_admin"].includes(p.status) && (
                           <button

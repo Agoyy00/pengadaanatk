@@ -242,18 +242,18 @@ export default function PengumumanUser() {
 
             {/* Content List */}
             {loading ? (
-              <div style={{ textAlign: "center", padding: "40px", color: "#64748b" }}>
-                Memuat pengumuman...
-              </div>
+        <div style={{ textAlign: "center", padding: "40px", color: "#6b7280" }}>
+          Memuat pengumuman...
+        </div>
             ) : (activeTab === "active" ? announcements : historyAnnouncements).length === 0 ? (
               <div
                 style={{
-                  background: "#ffffff",
+                  background: "#f9fafb",
                   padding: "40px",
                   borderRadius: "12px",
                   textAlign: "center",
-                  color: "#94a3b8",
-                  border: "1px solid #e2e8f0",
+                  color: "#6b7280",
+                  border: "1px dashed #e5e7eb",
                 }}
               >
                 {activeTab === "active"
@@ -262,51 +262,50 @@ export default function PengumumanUser() {
               </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-                {(activeTab === "active" ? announcements : historyAnnouncements).map((item) => {
-                  const isImportant = item.priority === "IMPORTANT";
-                  return (
-                    <div
-                      key={item.id}
-                      className={`pengumuman-card ${isImportant ? "important" : "normal"}`}
-                      style={{
-                        background: item.is_read ? "#ffffff" : "#f0fdf4",
-                        cursor: "pointer",
-                      }}
-                      onClick={() => handleOpenDetail(item)}
-                    >
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "10px" }}>
-                        <div>
-                          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
-                            <span className={isImportant ? "badge-priority-important" : "badge-priority-normal"}>
-                              {isImportant ? "🔴 PENTING" : "🔵 INFO"}
-                            </span>
-                            {!item.is_read && (
-                              <span style={{ background: "#22c55e", color: "#fff", padding: "2px 8px", borderRadius: "12px", fontSize: "11px", fontWeight: "700" }}>
-                                BARU
-                              </span>
-                            )}
-                          </div>
-                          <h3 style={{ margin: "0 0 6px 0", fontSize: "16px", color: "#0f172a", fontWeight: "700" }}>
-                            {item.title}
-                          </h3>
-                        </div>
+                 {(activeTab === "active" ? announcements : historyAnnouncements).map((item) => {
+                   const isImportant = item.priority === "IMPORTANT";
+                   return (
+                     <div
+                       key={item.id}
+                       className={`pengumuman-card ${isImportant ? "important" : "normal"}`}
+                       style={{ cursor: "pointer" }}
+                       onClick={() => handleOpenDetail(item)}
+                     >
+                       <div className="pengumuman-card-left">
+                         <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px", flexWrap: "wrap" }}>
+                           <span className={isImportant ? "badge-priority-important" : "badge-priority-normal"}>
+                             {isImportant ? "🔴 PENTING" : "🔵 INFO"}
+                           </span>
+                           {!item.is_read && (
+                             <span style={{ background: "#22c55e", color: "#fff", padding: "2px 8px", borderRadius: "12px", fontSize: "11px", fontWeight: "700" }}>
+                               BARU
+                             </span>
+                           )}
+                         </div>
+                         <h3 style={{ margin: "0 0 6px 0", fontSize: "16px", color: "#0f172a", fontWeight: "700" }}>
+                           {item.title}
+                         </h3>
+                         <div className="pengumuman-body-text" style={{ maxHeight: "72px", overflow: "hidden", textOverflow: "ellipsis" }}>
+                           {item.body}
+                         </div>
+                         <div className="pengumuman-card-meta">
+                           <span>Oleh: <b>{item.creator?.name || "Admin Pengadaan"}</b></span>
+                         </div>
+                       </div>
 
-                        <span style={{ fontSize: "12px", color: "#64748b", flexShrink: 0 }}>
-                          {item.published_at ? new Date(item.published_at).toLocaleDateString("id-ID", { dateStyle: "long" }) : "-"}
-                        </span>
-                      </div>
-
-                      <div className="pengumuman-body-text" style={{ maxHeight: "72px", overflow: "hidden", textOverflow: "ellipsis" }}>
-                        {item.body}
-                      </div>
-
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #f1f5f9", paddingTop: "10px", fontSize: "12px", color: "#64748b" }}>
-                        <span>Oleh: <b>{item.creator?.name || "Admin Pengadaan"}</b></span>
-                        <span style={{ color: "#2563eb", fontWeight: "600" }}>Buka & Baca Selengkapnya ➔</span>
-                      </div>
-                    </div>
-                  );
-                })}
+                       <div className="pengumuman-card-right">
+                         <div style={{ textAlign: "center" }}>
+                           <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "6px" }}>
+                             {item.published_at ? new Date(item.published_at).toLocaleDateString("id-ID", { dateStyle: "long" }) : "-"}
+                           </div>
+                           <div style={{ fontSize: "12px", color: "#2563eb", fontWeight: "600" }}>
+                             Baca Selengkapnya ➔
+                           </div>
+                         </div>
+                       </div>
+                     </div>
+                   );
+                 })}
               </div>
             )}
           </div>
@@ -322,20 +321,35 @@ export default function PengumumanUser() {
                 <span className={selectedAnnouncement.priority === "IMPORTANT" ? "badge-priority-important" : "badge-priority-normal"}>
                   {selectedAnnouncement.priority === "IMPORTANT" ? "🔴 PENTING" : "🔵 INFO"}
                 </span>
-                <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "700" }}>
+                <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "700", color: "#1f2937" }}>
                   {selectedAnnouncement.title}
                 </h3>
               </div>
               <button
+                type="button"
                 onClick={() => setSelectedAnnouncement(null)}
                 style={{
-                  background: "rgba(255,255,255,0.2)",
-                  border: "none",
-                  color: "#fff",
-                  borderRadius: "50%",
+                  background: "#ffffff",
+                  border: "1px solid #e5e7eb",
+                  color: "#6b7280",
+                  borderRadius: "8px",
                   width: "28px",
                   height: "28px",
                   cursor: "pointer",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  transition: "all 0.15s ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "#f3f4f6";
+                  e.currentTarget.style.borderColor = "#d1d5db";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "#ffffff";
+                  e.currentTarget.style.borderColor = "#e5e7eb";
                 }}
               >
                 ✕
@@ -343,7 +357,7 @@ export default function PengumumanUser() {
             </div>
 
             <div style={{ padding: "24px" }}>
-              <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "16px", paddingBottom: "12px", borderBottom: "1px solid #f1f5f9" }}>
+              <div style={{ fontSize: "12px", color: "#6b7280", marginBottom: "16px", paddingBottom: "12px", borderBottom: "1px solid #f1f5f9" }}>
                 Disiarkan oleh: <b>{selectedAnnouncement.creator?.name || "Admin Pengadaan"}</b> •{" "}
                 {selectedAnnouncement.published_at ? new Date(selectedAnnouncement.published_at).toLocaleString("id-ID") : "-"}
               </div>

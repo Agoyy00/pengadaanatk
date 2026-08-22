@@ -437,36 +437,48 @@ export default function StockOpname() {
         const masterData = Array.isArray(masterDataRes) ? masterDataRes : (masterDataRes.data || []);
 
         const previewItems = [];
+        const skippedRows = [];
 
         for (let i = 1; i < lines.length; i++) {
           const cols = lines[i].split(delimiter).map(c => c.trim().replace(/^["']|["']$/g, ''));
-          // Format: Kode Barang;Nama Barang;Satuan;Stok Sistem;Stok Fisik
           if (cols.length >= 5) {
             const kodeCSV = cleanText(cols[0]);
             const namaCSV = cleanText(cols[1]);
             const satuanCSV = cleanText(cols[2]);
             const stokFisikVal = parseInt(cols[4]);
 
-            // Skip baris yang satuan atau stok fisik tidak diisi
-            if (!satuanCSV || satuanCSV === "") continue;
-            if (isNaN(stokFisikVal)) continue;
+            if (!satuanCSV || satuanCSV === "") {
+              skippedRows.push({ row: i + 1, reason: "Satuan kosong" });
+              continue;
+            }
+            if (isNaN(stokFisikVal)) {
+              skippedRows.push({ row: i + 1, reason: "Stok fisik tidak valid" });
+              continue;
+            }
 
-            // Validasi satuan harus sesuai daftar opsi (case-insensitive)
-            if (satuanOptions.length > 0 && !satuanOptions.some(opt => cleanText(opt) === satuanCSV)) continue;
+            // Validasi satuan: izinkan 'dus' dan opsi lain yang tersedia
+            const allowedSatuan = new Set(
+              (satuanOptions || []).map(opt => cleanText(opt))
+            );
+            allowedSatuan.add("dus");
+            if (!allowedSatuan.has(satuanCSV)) {
+              skippedRows.push({ row: i + 1, reason: `Satuan '${cols[2]}' tidak dikenali` });
+              continue;
+            }
 
-            const matchedBarang = masterData.find(b => {
-              const masterKode = cleanText(b.kode);
-              const masterNama = cleanText(b.nama);
-              const masterNorm = normalizeKey(masterNama);
-              const csvNorm = normalizeKey(namaCSV);
-              return (
-                masterKode === kodeCSV ||
-                masterNama === namaCSV ||
-                masterNorm === csvNorm ||
-                masterNama.includes(namaCSV) ||
-                namaCSV.includes(masterNama)
-              );
-            });
+            // Prioritas matching: kode_barang dahulu, lalu nama
+            const matchedBarang = masterData.find(b => cleanText(b.kode) === kodeCSV)
+              || masterData.find(b => {
+                const masterNama = cleanText(b.nama);
+                const masterNorm = normalizeKey(masterNama);
+                const csvNorm = normalizeKey(namaCSV);
+                return (
+                  masterNama === namaCSV ||
+                  masterNorm === csvNorm ||
+                  masterNama.includes(namaCSV) ||
+                  namaCSV.includes(masterNama)
+                );
+              });
 
             if (matchedBarang) {
               const exists = previewItems.some(it => it.barang_id === matchedBarang.id);
@@ -482,6 +494,8 @@ export default function StockOpname() {
                   selisih: selisih,
                 });
               }
+            } else {
+              skippedRows.push({ row: i + 1, reason: `Barang '${cols[0]}' / '${cols[1]}' tidak ditemukan` });
             }
           }
         }
@@ -493,30 +507,32 @@ export default function StockOpname() {
           setShowImportPreview(true);
           if (skipped > 0) {
             Swal.fire({
-              icon: "info",
+              icon: "warning",
               title: "Beberapa barang dilewati",
-              text: `${skipped} barang sudah memiliki laporan stock opname yang belum selesai dan tidak ditampilkan.`,
+              text: `${skipped} barang memiliki laporan pending/verified dan tidak ditampilkan.`,
               confirmButtonColor: "#2563eb",
             });
           }
+          if (skippedRows.length > 0) {
+            console.log("CSV Import skipped rows:", skippedRows);
+          }
         } else {
-          const totalRows = lines.length - 1;
           Swal.fire({
             icon: "warning",
-            title: "Tidak Ada Data Cocok",
-            text: `Dari ${totalRows} baris, tidak ada barang yang cocok. ` +
-              "Pastikan nama barang pada CSV sesuai dengan data di sistem.",
-            confirmButtonColor: "#d97706",
+            title: "Tidak ada data valid",
+            text: skippedRows.length > 0
+              ? `Semua baris dilewati. Alasan: ${skippedRows.map(r => `Baris ${r.row}: ${r.reason}`).join(", ")}`
+              : "Tidak ada data yang bisa diimpor.",
+            confirmButtonColor: "#2563eb",
           });
         }
       } catch (err) {
-        console.error("Gagal import CSV", err);
-        Swal.fire("Error", "Gagal mengambil data barang dari server", "error");
+        console.error("Gagal import CSV:", err);
+        Swal.fire("Error", "Gagal memproses file CSV.", "error");
       } finally {
         setImportLoading(false);
+        e.target.value = null;
       }
-
-      e.target.value = null;
     };
     reader.readAsText(file);
   };
@@ -1654,6 +1670,7 @@ export default function StockOpname() {
                             <th style={{ padding: "12px 16px" }}>Tanggal</th>
                             <th style={{ padding: "12px 16px" }}>Pemohon</th>
                             <th style={{ padding: "12px 16px" }}>Nama Barang</th>
+                            <th style={{ padding: "12px 16px", textAlign: "center" }}>Satuan</th>
                             <th style={{ padding: "12px 16px", textAlign: "center" }}>Jumlah Barang</th>
                             <th style={{ padding: "12px 16px", textAlign: "center" }}>Hasil Verifikasi</th>
                             {role !== "user" && <th style={{ padding: "12px 16px", textAlign: "center" }}>Selisih</th>}
@@ -1679,13 +1696,16 @@ export default function StockOpname() {
                                   <div><b>{o.user?.name}</b></div>
                                   <div style={{ fontSize: 12, color: "#6b7280" }}>{o.user?.fakultas || "Fakultas Yarsi"}</div>
                                 </td>
-                                <td style={{ padding: "14px 16px", fontSize: 14 }}>
-                                  <div><b>{o.barang?.nama || "Barang Terhapus"}</b></div>
-                                  <div style={{ fontSize: 12, color: "#9ca3af" }}>Kode: {o.barang?.kode}</div>
-                                </td>
-                                <td style={{ padding: "14px 16px", textAlign: "center", fontSize: 14 }}>
-                                  {o.stok_fisik}
-                                </td>
+                                 <td style={{ padding: "14px 16px", fontSize: 14 }}>
+                                   <div><b>{o.barang?.nama || "Barang Terhapus"}</b></div>
+                                   <div style={{ fontSize: 12, color: "#9ca3af" }}>Kode: {o.barang?.kode}</div>
+                                 </td>
+                                 <td style={{ padding: "14px 16px", textAlign: "center", fontSize: 14, color: "#4b5563" }}>
+                                   {o.satuan || o.barang?.satuan || "-"}
+                                 </td>
+                                 <td style={{ padding: "14px 16px", textAlign: "center", fontSize: 14 }}>
+                                   {o.stok_fisik}
+                                 </td>
                                 <td style={{ padding: "14px 16px", textAlign: "center", fontSize: 14 }}>
                                   {o.hasil_verifikasi !== null && o.hasil_verifikasi !== undefined ? o.hasil_verifikasi : "-"}
                                 </td>

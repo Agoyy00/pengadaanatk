@@ -1,10 +1,9 @@
 import React from "react";
-
-const logoYarsi = "/LogoYarsiTab.png?v=3";
+import logoYarsi from "./LogoYarsi-removebg-preview.png";
 
 export default function SidebarLogo() {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "32px", padding: "4px 0" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "32px", padding: "4px 0" }}>
       {/* Logo YARSI - White */}
       <img
         src={logoYarsi}
@@ -14,6 +13,7 @@ export default function SidebarLogo() {
           height: "38px",
           objectFit: "contain",
           flexShrink: 0,
+          filter: "brightness(0) invert(1) sepia(0) saturate(100)",
         }}
       />
 

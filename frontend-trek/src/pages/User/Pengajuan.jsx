@@ -568,6 +568,93 @@ function Pengajuan() {
     }
   };
 
+  // ====== DOWNLOAD BUKTI PENGajuan (PDF via print) ======
+  const handleDownloadBukti = () => {
+    const printWindow = window.open("", "_blank", "width=800,height=600");
+    if (!printWindow) {
+      Swal.fire("Error", "Pop-up diblokir. Izinkan pop-up untuk mencetak bukti pengajuan.", "error");
+      return;
+    }
+
+    const uniqueSatuan = [...new Set(items.map((i) => i.satuan).filter(Boolean))].join(", ") || "-";
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Bukti Pengajuan ATK</title>
+        <style>
+          body { font-family: 'DejaVu Sans', sans-serif; font-size: 11px; margin: 20px; color: #000; }
+          .header { text-align: center; border-bottom: 3px solid #000; margin-bottom: 15px; padding-bottom: 10px; }
+          .header h2 { margin: 0; font-size: 16px; font-weight: bold; }
+          .header p { margin: 3px 0 0; font-size: 12px; }
+          .section { margin-top: 18px; font-weight: bold; font-size: 13px; }
+          table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+          th, td { border: 1px solid #000; padding: 6px 8px; font-size: 11px; }
+          th { background: #f0f0f0; font-weight: bold; }
+          .footer { margin-top: 20px; font-size: 10px; color: #666; text-align: center; border-top: 1px solid #ccc; padding-top: 10px; }
+          .highlight { background: #e0f2fe; font-weight: bold; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h2>DOKUMEN BUKTI PENGajuan ATK</h2>
+          <p>Universitas YARSI</p>
+        </div>
+
+        <div class="section">Informasi Pengajuan</div>
+        <table>
+          <tr>
+            <td width="25%">Nama Pemohon</td>
+            <td width="25%">${namaPemohon || "-"}</td>
+            <td width="25%">Unit</td>
+            <td width="25%">${unit || "-"}</td>
+          </tr>
+          <tr>
+            <td>Jabatan</td>
+            <td>${jabatan || "-"}</td>
+            <td>Tahun Akademik</td>
+            <td>${tahunAkademik || "-"}</td>
+          </tr>
+          <tr>
+            <td>Tanggal Pengajuan</td>
+            <td>${new Date().toLocaleString("id-ID")}</td>
+            <td>Total Barang</td>
+            <td>${items.length} barang</td>
+          </tr>
+        </table>
+
+        <div class="section">Rincian Barang yang Diajukan</div>
+        <table>
+          <tr><th>No</th><th>Nama Barang</th><th>Jumlah Diajukan</th><th>Satuan</th></tr>
+          ${items.map((item, idx) => `
+            <tr>
+              <td style="text-align: center;">${idx + 1}</td>
+              <td>${item.nama || "-"}</td>
+              <td style="text-align: center;">${item.jumlahDiajukan}</td>
+              <td>${item.satuan || "-"}</td>
+            </tr>
+          `).join("")}
+          <tr class="highlight">
+            <td colspan="2"><strong>Total Jumlah Diajukan</strong></td>
+            <td style="text-align: center;"><strong>${totalJumlahDiajukan}</strong></td>
+            <td>${uniqueSatuan}</td>
+          </tr>
+        </table>
+
+        <div class="footer">
+          Dokumen bukti pengajuan ini digenerate otomatis dari sistem Pengajuan ATK Universitas YARSI.
+        </div>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  };
+
   // ====== IMPORT EXCEL / CSV (PROTEKSI SERVER-SIDE: HANYA BACA NAMA BARANG & KEBUTUHAN TOTAL) ======
   const handleImportCSV = async (e) => {
     const file = e.target.files[0];
@@ -1983,38 +2070,32 @@ function Pengajuan() {
                                       </button>
                                     </div>
 
-                                    <div className="detail-table-wrapper">
-                                      <table className="detail-table">
-                                        <thead>
-                                          <tr>
-                                            <th>No</th>
-                                            <th>Nama Barang</th>
-                                            <th>Jumlah</th>
-                                            <th>Harga Satuan</th>
-                                            <th>Subtotal</th>
-                                          </tr>
-                                        </thead>
-                                        <tbody>
-                                          {items.map((item, idx) => (
-                                            <tr key={item.id}>
-                                              <td className="detail-td-no">{idx + 1}</td>
-                                              <td className="detail-td-nama">{item.nama}</td>
-                                              <td className="detail-td-qty">{item.jumlahDiajukan} {item.satuan}</td>
-                                              <td className="detail-td-harga">Rp {item.estimasiNilai.toLocaleString("id-ID")}</td>
-                                              <td className="detail-td-subtotal">Rp {(item.jumlahDiajukan * item.estimasiNilai).toLocaleString("id-ID")}</td>
+                                      <div className="detail-table-wrapper">
+                                        <table className="detail-table">
+                                          <thead>
+                                            <tr>
+                                              <th>No</th>
+                                              <th>Nama Barang</th>
+                                              <th>Jumlah</th>
                                             </tr>
-                                          ))}
-                                        </tbody>
-                                        <tfoot>
-                                          <tr>
-                                            <td colSpan="2" className="detail-footer-label">Total</td>
-                                            <td className="detail-footer-qty">{totalJumlahDiajukan}</td>
-                                            <td></td>
-                                            <td className="detail-footer-total">Rp {totalNilai.toLocaleString("id-ID")}</td>
-                                          </tr>
-                                        </tfoot>
-                                      </table>
-                                    </div>
+                                          </thead>
+                                          <tbody>
+                                            {items.map((item, idx) => (
+                                              <tr key={item.id}>
+                                                <td className="detail-td-no">{idx + 1}</td>
+                                                <td className="detail-td-nama">{item.nama}</td>
+                                                <td className="detail-td-qty">{item.jumlahDiajukan} {item.satuan}</td>
+                                              </tr>
+                                            ))}
+                                          </tbody>
+                                          <tfoot>
+                                            <tr>
+                                              <td colSpan="2" className="detail-footer-label">Total</td>
+                                              <td className="detail-footer-qty">{totalJumlahDiajukan}</td>
+                                            </tr>
+                                          </tfoot>
+                                        </table>
+                                      </div>
 
                                     <div className="detail-panel-footer">
                                       <button
@@ -2030,14 +2111,10 @@ function Pengajuan() {
                                     </div>
                                   </div>
                                 </div>
-                              )}
-                              <div className="verify-summary-row highlight">
-                                <span>Total Nilai Pengajuan</span>
-                                <strong>Rp {totalNilai.toLocaleString("id-ID")}</strong>
-                              </div>
-                            </div>
+                                                             )}
+                             </div>
 
-                            {/* Checkbox persetujuan */}
+                             {/* Checkbox persetujuan */}
                             <label className="verify-checkbox-label">
                               <input
                                 type="checkbox"
@@ -2050,21 +2127,41 @@ function Pengajuan() {
                               </span>
                             </label>
 
-                            {/* Tombol aksi */}
-                            <div className="verify-panel-actions">
-                              <button
-                                type="button"
-                                className="btn verify-btn-cancel"
-                                onClick={() => setShowVerifyPanel(false)}
-                              >
-                                Kembali
-                              </button>
-                              <button
-                                type="button"
-                                className={`btn btn-primary verify-btn-submit ${!verifyChecked || loadingSubmit ? 'disabled' : ''}`}
-                                disabled={!verifyChecked || loadingSubmit}
-                                onClick={handleSubmit}
-                              >
+                             {/* Tombol aksi */}
+                             <div className="verify-panel-actions">
+                               <button
+                                 type="button"
+                                 className="btn verify-btn-cancel"
+                                 onClick={() => setShowVerifyPanel(false)}
+                               >
+                                 Kembali
+                               </button>
+                               <button
+                                 type="button"
+                                 className="btn verify-btn-download"
+                                 onClick={handleDownloadBukti}
+                                 style={{
+                                   padding: "10px 20px",
+                                   background: "#eff6ff",
+                                   color: "#2563eb",
+                                   border: "1px solid #bfdbfe",
+                                   borderRadius: "8px",
+                                   fontSize: "13px",
+                                   fontWeight: "600",
+                                   cursor: "pointer",
+                                   display: "inline-flex",
+                                   alignItems: "center",
+                                   gap: "6px",
+                                 }}
+                               >
+                                 ⬇️ Unduh Bukti Pengajuan
+                               </button>
+                               <button
+                                 type="button"
+                                 className={`btn btn-primary verify-btn-submit ${!verifyChecked || loadingSubmit ? 'disabled' : ''}`}
+                                 disabled={!verifyChecked || loadingSubmit}
+                                 onClick={handleSubmit}
+                               >
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                   <path d="M22 2L11 13" />
                                   <path d="M22 2l-7 20-4-9-9-4 20-7z" />

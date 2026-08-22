@@ -53,22 +53,14 @@ th { background:#f0f0f0 }
     <th>Diajukan</th>
     <th>Disetujui</th>
     <th>Ditolak</th>
-    <th>Harga</th>
-    <th>Subtotal</th>
 </tr>
 </thead>
 <tbody>
-@php $total = 0; @endphp
 @foreach($pengajuan->items as $i => $item)
 @php
     $isDitolak = ($pengajuan->status === 'ditolak_admin') || (isset($item->jumlah_disetujui) && (int)$item->jumlah_disetujui === 0);
     $disetujuiVal = $isDitolak ? '-' : ($item->jumlah_disetujui ?? $item->jumlah_diajukan);
     $ditolakVal = $isDitolak ? $item->jumlah_diajukan : '-';
-
-    $qty = $isDitolak ? 0 : ($item->jumlah_disetujui ?? $item->jumlah_diajukan);
-    $harga = $item->harga_satuan ?? 0;
-    $sub = $qty * $harga;
-    $total += $sub;
 @endphp
 <tr>
     <td style="text-align: center;">{{ $i + 1 }}</td>
@@ -78,24 +70,12 @@ th { background:#f0f0f0 }
             <br><small style="color: #dc2626; font-style: italic;">Catatan: {{ $item->catatan_revisi }}</small>
         @endif
     </td>
-    <td style="text-align: center;">{{ $item->jumlah_diajukan }}</td>
-    <td style="text-align: center;">{{ $disetujuiVal }}</td>
-    <td style="text-align: center;">{{ $ditolakVal }}</td>
-    <td>Rp {{ number_format($harga,0,',','.') }}</td>
-    @if($isDitolak)
-        <td style="text-align: center;">-</td>
-    @else
-        <td>Rp {{ number_format($sub,0,',','.') }}</td>
-    @endif
+    <td style="text-align: center;">{{ $item->jumlah_diajukan }} {{ $item->barang->satuan ?? '' }}</td>
+    <td style="text-align: center;">{{ $disetujuiVal }} {{ $item->barang->satuan ?? '' }}</td>
+    <td style="text-align: center;">{{ $ditolakVal !== '-' ? $ditolakVal . ' ' . ($item->barang->satuan ?? '') : '-' }}</td>
 </tr>
 @endforeach
 </tbody>
-<tfoot>
-<tr>
-    <th colspan="6" style="text-align: right;">Total</th>
-    <th>Rp {{ number_format($total,0,',','.') }}</th>
-</tr>
-</tfoot>
 </table>
 
 <div class="section">Riwayat Persetujuan</div>

@@ -1,7 +1,7 @@
 import React from "react";
 import { BRANDING } from "../components/Branding";
 
-const logoYarsi = "/LogoYarsiTab.png?v=3";
+import logoYarsi from "../components/LogoYarsi-removebg-preview.png";
 
 export default function Navbar({ onLoginClick }) {
   return (
@@ -30,7 +30,7 @@ export default function Navbar({ onLoginClick }) {
       }}
     >
       {/* BRAND SECTION */}
-      <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
         {/* Logo YARSI - White */}
         <img
           src={logoYarsi}
@@ -40,7 +40,7 @@ export default function Navbar({ onLoginClick }) {
             height: "44px",
             objectFit: "contain",
             flexShrink: 0,
-            color: "1px solid rgba(0, 0, 0, 0.12)"
+            filter: "brightness(0) invert(1) sepia(0) saturate(100)",
           }}
         />
 

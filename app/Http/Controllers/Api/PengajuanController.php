@@ -1331,4 +1331,32 @@ class PengajuanController extends Controller
         $filename = 'Template_Pengajuan_ATK_' . date('Ymd_His') . '.xlsx';
         return Excel::download(new TemplatePengajuanExport($userId), $filename);
     }
+
+    /**
+     * GET /api/pengajuan/{pengajuan}/pdf/bukti
+     * Unduh bukti pengajuan (PDF) untuk user sendiri atau admin/superadmin.
+     */
+    public function downloadBuktiPdf(Request $request, $id)
+    {
+        $pengajuan = Pengajuan::findOrFail($id);
+        $user = Auth::user();
+
+        if (!$user) {
+            return response()->json(['message' => 'Unauthenticated'], 401);
+        }
+
+        if ((int) $user->role_id === 3 && $pengajuan->user_id !== $user->id) {
+            return response()->json(['message' => 'Unauthorized.'], 403);
+        }
+
+        $pengajuan->load([
+            'items.barang',
+            'verifiedBy',
+            'approvedBy',
+        ]);
+
+        $pdf = Pdf::loadView('pdf.pengajuan', compact('pengajuan'));
+
+        return $pdf->stream('Bukti-Pengajuan-' . $pengajuan->id . '.pdf');
+    }
 }

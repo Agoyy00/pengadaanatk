@@ -402,18 +402,18 @@ export default function Pengumuman() {
 
             {/* Announcements List */}
             {loading ? (
-              <div style={{ textAlign: "center", padding: "40px", color: "#64748b" }}>
-                Memuat daftar pengumuman...
-              </div>
+        <div style={{ textAlign: "center", padding: "40px", color: "#6b7280" }}>
+          Memuat daftar pengumuman...
+        </div>
             ) : announcements.length === 0 ? (
               <div
                 style={{
-                  background: "#ffffff",
-                  padding: "40px",
-                  borderRadius: "12px",
-                  textAlign: "center",
-                  color: "#94a3b8",
-                  border: "1px solid #e2e8f0",
+                    background: "#f9fafb",
+                    padding: "40px",
+                    borderRadius: "12px",
+                    textAlign: "center",
+                    color: "#6b7280",
+                    border: "1px dashed #e5e7eb",
                 }}
               >
                 Belum ada pengumuman yang sesuai dengan filter. Klik "Buat Pengumuman Baru" untuk memulai.
@@ -430,71 +430,50 @@ export default function Pengumuman() {
                       key={item.id}
                       className={`pengumuman-card ${isImportant ? "important" : "normal"}`}
                     >
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "10px" }}>
-                        <div>
-                          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
-                            <span className={isImportant ? "badge-priority-important" : "badge-priority-normal"}>
-                              {isImportant ? "🔴 PENTING" : "🔵 NORMAL"}
-                            </span>
-                            <span className={isPublished ? "badge-status-published" : "badge-status-draft"}>
-                              {isPublished ? "PUBLISHED" : "DRAFT"}
-                            </span>
-                            <span style={{ fontSize: "12px", color: "#64748b" }}>
-                              Target: <b>{item.target_type === "ALL" ? "Semua Pengguna" : item.target_type === "ROLE" ? `Role: ${item.target_value?.join(", ")}` : "Spesifik User"}</b>
-                            </span>
-                          </div>
-                          <h3 style={{ margin: "0 0 6px 0", fontSize: "16px", color: "#0f172a", fontWeight: "700" }}>
-                            {item.title}
-                          </h3>
+                      <div className="pengumuman-card-left">
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px", flexWrap: "wrap" }}>
+                          <span className={isImportant ? "badge-priority-important" : "badge-priority-normal"}>
+                            {isImportant ? "🔴 PENTING" : "🔵 NORMAL"}
+                          </span>
+                          <span className={isPublished ? "badge-status-published" : "badge-status-draft"}>
+                            {isPublished ? "PUBLISHED" : "DRAFT"}
+                          </span>
+                          <span style={{ fontSize: "12px", color: "#64748b" }}>
+                            Target: <b>{item.target_type === "ALL" ? "Semua Pengguna" : item.target_type === "ROLE" ? `Role: ${item.target_value?.join(", ")}` : "Spesifik User"}</b>
+                          </span>
                         </div>
-
-                        {/* Read Receipts Stats Badge */}
-                        <button
-                          type="button"
-                          onClick={() => handleOpenReceipts(item)}
-                          title="Lihat siapa saja yang sudah membaca"
-                          style={{
-                            background: "#f1f5f9",
-                            border: "1px solid #cbd5e1",
-                            padding: "6px 12px",
-                            borderRadius: "8px",
-                            fontSize: "12px",
-                            fontWeight: "600",
-                            color: "#334155",
-                            cursor: "pointer",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "6px",
-                          }}
-                        >
-                          👁️ {item.reads_count || 0} dibaca ({readRatio}%)
-                        </button>
-                      </div>
-
-                      <div className="pengumuman-body-text">{item.body}</div>
-
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #f1f5f9", paddingTop: "12px", fontSize: "12px", color: "#64748b" }}>
-                        <div>
+                        <h3 style={{ margin: "0 0 6px 0", fontSize: "16px", color: "#0f172a", fontWeight: "700" }}>
+                          {item.title}
+                        </h3>
+                        <div className="pengumuman-body-text">{item.body}</div>
+                        <div className="pengumuman-card-meta">
                           Dibuat oleh <b>{item.creator?.name || "Admin"}</b> •{" "}
                           {item.published_at ? `Disiarkan: ${new Date(item.published_at).toLocaleString("id-ID")}` : `Dibuat: ${new Date(item.created_at).toLocaleDateString("id-ID")}`}
                           {item.expires_at && ` • Berakhir: ${new Date(item.expires_at).toLocaleDateString("id-ID")}`}
                         </div>
+                      </div>
 
-                        <div style={{ display: "flex", gap: "8px" }}>
+                      <div className="pengumuman-card-right">
+                        <div style={{ textAlign: "center", marginBottom: "4px" }}>
+                          <div style={{ fontSize: "20px", fontWeight: "700", color: "#1e3a8a" }}>{item.reads_count || 0}</div>
+                          <div style={{ fontSize: "11px", color: "#64748b" }}>dibaca ({readRatio}%)</div>
+                        </div>
+                        <div className="pengumuman-card-actions">
                           {!isPublished && (
                             <>
                               <button
                                 type="button"
                                 onClick={() => handlePublish(item)}
                                 style={{
-                                  padding: "5px 10px",
+                                  padding: "6px 10px",
                                   background: "#059669",
                                   color: "#fff",
                                   border: "none",
-                                  borderRadius: "6px",
-                                  fontSize: "12px",
+                                  borderRadius: "8px",
+                                  fontSize: "11px",
                                   fontWeight: "600",
                                   cursor: "pointer",
+                                  whiteSpace: "nowrap",
                                 }}
                               >
                                 📢 Publikasikan
@@ -503,14 +482,15 @@ export default function Pengumuman() {
                                 type="button"
                                 onClick={() => handleOpenEdit(item)}
                                 style={{
-                                  padding: "5px 10px",
-                                  background: "#f1f5f9",
+                                  padding: "6px 10px",
+                                  background: "#ffffff",
                                   color: "#334155",
                                   border: "1px solid #cbd5e1",
-                                  borderRadius: "6px",
-                                  fontSize: "12px",
+                                  borderRadius: "8px",
+                                  fontSize: "11px",
                                   fontWeight: "600",
                                   cursor: "pointer",
+                                  whiteSpace: "nowrap",
                                 }}
                               >
                                 ✏️ Edit
@@ -521,14 +501,24 @@ export default function Pengumuman() {
                             type="button"
                             onClick={() => handleDelete(item)}
                             style={{
-                              padding: "5px 10px",
-                              background: "#fee2e2",
+                              padding: "6px 10px",
+                              background: "#ffffff",
                               color: "#dc2626",
-                              border: "none",
-                              borderRadius: "6px",
-                              fontSize: "12px",
+                              border: "1px solid #fecaca",
+                              borderRadius: "8px",
+                              fontSize: "11px",
                               fontWeight: "600",
                               cursor: "pointer",
+                              whiteSpace: "nowrap",
+                              transition: "all 0.15s ease",
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.background = "#fef2f2";
+                              e.currentTarget.style.borderColor = "#dc2626";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = "#ffffff";
+                              e.currentTarget.style.borderColor = "#fecaca";
                             }}
                           >
                             🗑️ Hapus
@@ -547,21 +537,63 @@ export default function Pengumuman() {
       {/* CREATE / EDIT MODAL */}
       {showFormModal && (
         <div className="pengumuman-modal-overlay">
-          <div className="pengumuman-modal-content">
-            <div className="pengumuman-modal-header">
-              <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "700" }}>
+          <div
+            style={{
+              width: "90%",
+              maxWidth: 680,
+              background: "#ffffff",
+              borderRadius: 16,
+              padding: "28px 24px",
+              maxHeight: "88vh",
+              overflowY: "auto",
+              boxShadow: "0 25px 30px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.03)",
+              display: "flex",
+              flexDirection: "column",
+              color: "#1f2937",
+              position: "relative",
+            }}
+          >
+            {/* Header */}
+            <div
+              style={{
+                padding: "18px 24px",
+                borderBottom: "1px solid #e5e7eb",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                borderTopLeftRadius: 16,
+                borderTopRightRadius: 16,
+                background: "#ffffff",
+              }}
+            >
+              <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "700", color: "#1f2937" }}>
                 {editingId ? "✏️ Edit Draft Pengumuman" : "📢 Buat Pengumuman Baru"}
               </h3>
               <button
+                type="button"
                 onClick={() => setShowFormModal(false)}
                 style={{
-                  background: "rgba(255,255,255,0.2)",
-                  border: "none",
-                  color: "#fff",
-                  borderRadius: "50%",
+                  background: "#ffffff",
+                  border: "1px solid #e5e7eb",
+                  color: "#6b7280",
+                  borderRadius: "8px",
                   width: "28px",
                   height: "28px",
                   cursor: "pointer",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  transition: "all 0.15s ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "#f3f4f6";
+                  e.currentTarget.style.borderColor = "#d1d5db";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "#ffffff";
+                  e.currentTarget.style.borderColor = "#e5e7eb";
                 }}
               >
                 ✕
@@ -570,8 +602,8 @@ export default function Pengumuman() {
 
             <form onSubmit={handleSaveAnnouncement} style={{ padding: "20px" }}>
               <div style={{ marginBottom: "14px" }}>
-                <label style={{ display: "block", fontSize: "12.5px", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>
-                  Judul Pengumuman *
+                <label style={{ display: "block", fontSize: "12.5px", fontWeight: "600", color: "#374151", marginBottom: "4px" }}>
+                  Judul Pengumuman <span style={{ color: "#ef4444" }}>*</span>
                 </label>
                 <input
                   type="text"
@@ -582,16 +614,19 @@ export default function Pengumuman() {
                   style={{
                     width: "100%",
                     padding: "9px 12px",
-                    borderRadius: "8px",
-                    border: "1px solid #cbd5e1",
+                    borderRadius: 8,
+                    border: "1px solid #d1d5db",
+                    background: "#f9fafb",
+                    color: "#1f2937",
                     fontSize: "13.5px",
+                    outline: "none",
                   }}
                 />
               </div>
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "14px" }}>
                 <div>
-                  <label style={{ display: "block", fontSize: "12.5px", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>
+                  <label style={{ display: "block", fontSize: "12.5px", fontWeight: "600", color: "#374151", marginBottom: "4px" }}>
                     Prioritas
                   </label>
                   <select
@@ -600,9 +635,12 @@ export default function Pengumuman() {
                     style={{
                       width: "100%",
                       padding: "8px 12px",
-                      borderRadius: "8px",
-                      border: "1px solid #cbd5e1",
+                      borderRadius: 8,
+                      border: "1px solid #d1d5db",
+                      background: "#f9fafb",
+                      color: "#1f2937",
                       fontSize: "13px",
+                      outline: "none",
                     }}
                   >
                     <option value="NORMAL">🔵 Normal</option>
@@ -611,7 +649,7 @@ export default function Pengumuman() {
                 </div>
 
                 <div>
-                  <label style={{ display: "block", fontSize: "12.5px", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>
+                  <label style={{ display: "block", fontSize: "12.5px", fontWeight: "600", color: "#374151", marginBottom: "4px" }}>
                     Status Pengumuman
                   </label>
                   <select
@@ -620,9 +658,12 @@ export default function Pengumuman() {
                     style={{
                       width: "100%",
                       padding: "8px 12px",
-                      borderRadius: "8px",
-                      border: "1px solid #cbd5e1",
+                      borderRadius: 8,
+                      border: "1px solid #d1d5db",
+                      background: "#f9fafb",
+                      color: "#1f2937",
                       fontSize: "13px",
+                      outline: "none",
                     }}
                   >
                     <option value="PUBLISHED">📢 Langsung Siarkan (Published)</option>
@@ -633,7 +674,7 @@ export default function Pengumuman() {
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "14px" }}>
                 <div>
-                  <label style={{ display: "block", fontSize: "12.5px", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>
+                  <label style={{ display: "block", fontSize: "12.5px", fontWeight: "600", color: "#374151", marginBottom: "4px" }}>
                     Target Penerima
                   </label>
                   <select
@@ -642,9 +683,12 @@ export default function Pengumuman() {
                     style={{
                       width: "100%",
                       padding: "8px 12px",
-                      borderRadius: "8px",
-                      border: "1px solid #cbd5e1",
+                      borderRadius: 8,
+                      border: "1px solid #d1d5db",
+                      background: "#f9fafb",
+                      color: "#1f2937",
                       fontSize: "13px",
+                      outline: "none",
                     }}
                   >
                     <option value="ALL">Semua Pengguna (Broadcast)</option>
@@ -653,7 +697,7 @@ export default function Pengumuman() {
                 </div>
 
                 <div>
-                  <label style={{ display: "block", fontSize: "12.5px", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>
+                  <label style={{ display: "block", fontSize: "12.5px", fontWeight: "600", color: "#374151", marginBottom: "4px" }}>
                     Tanggal Berakhir Tayang (Opsional)
                   </label>
                   <input
@@ -663,21 +707,24 @@ export default function Pengumuman() {
                     style={{
                       width: "100%",
                       padding: "8px 12px",
-                      borderRadius: "8px",
-                      border: "1px solid #cbd5e1",
+                      borderRadius: 8,
+                      border: "1px solid #d1d5db",
+                      background: "#f9fafb",
+                      color: "#1f2937",
                       fontSize: "13px",
+                      outline: "none",
                     }}
                   />
                 </div>
               </div>
 
               {formTargetType === "ROLE" && (
-                <div style={{ marginBottom: "14px", background: "#f8fafc", padding: "10px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
-                  <label style={{ display: "block", fontSize: "12px", fontWeight: "600", color: "#475569", marginBottom: "6px" }}>
+                <div style={{ marginBottom: "14px", background: "#f9fafb", padding: "10px", borderRadius: 8, border: "1px solid #e5e7eb" }}>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: "600", color: "#374151", marginBottom: "6px" }}>
                     Pilih Target Role:
                   </label>
                   <div style={{ display: "flex", gap: "16px", fontSize: "13px" }}>
-                    <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", color: "#374151" }}>
                       <input
                         type="checkbox"
                         checked={formTargetRoles.includes("user")}
@@ -688,7 +735,7 @@ export default function Pengumuman() {
                       />
                       Pemohon / User
                     </label>
-                    <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", color: "#374151" }}>
                       <input
                         type="checkbox"
                         checked={formTargetRoles.includes("admin")}
@@ -704,8 +751,8 @@ export default function Pengumuman() {
               )}
 
               <div style={{ marginBottom: "16px" }}>
-                <label style={{ display: "block", fontSize: "12.5px", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>
-                  Isi Pesan Pengumuman *
+                <label style={{ display: "block", fontSize: "12.5px", fontWeight: "600", color: "#374151", marginBottom: "4px" }}>
+                  Isi Pesan Pengumuman <span style={{ color: "#ef4444" }}>*</span>
                 </label>
                 <textarea
                   rows={6}
@@ -716,26 +763,29 @@ export default function Pengumuman() {
                   style={{
                     width: "100%",
                     padding: "10px 12px",
-                    borderRadius: "8px",
-                    border: "1px solid #cbd5e1",
+                    borderRadius: 8,
+                    border: "1px solid #d1d5db",
+                    background: "#f9fafb",
+                    color: "#1f2937",
                     fontSize: "13.5px",
                     lineHeight: 1.5,
                     resize: "vertical",
+                    outline: "none",
                   }}
                 />
               </div>
 
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", paddingTop: 16, borderTop: "1px solid #e5e7eb" }}>
                 <button
                   type="button"
                   onClick={() => setShowFormModal(false)}
                   style={{
                     padding: "8px 16px",
-                    background: "#f1f5f9",
-                    color: "#475569",
-                    border: "none",
-                    borderRadius: "6px",
-                    fontWeight: "600",
+                    border: "1px solid #d1d5db",
+                    background: "#ffffff",
+                    color: "#374151",
+                    borderRadius: 8,
+                    fontWeight: 600,
                     cursor: "pointer",
                     fontSize: "13px",
                   }}
@@ -746,6 +796,7 @@ export default function Pengumuman() {
                   type="submit"
                   disabled={submitting}
                   className="btn-primary-pengumuman"
+                  style={{ opacity: submitting ? 0.7 : 1 }}
                 >
                   {submitting ? "Menyimpan..." : editingId ? "Simpan Perubahan" : "Simpan & Siarkan"}
                 </button>
@@ -758,28 +809,69 @@ export default function Pengumuman() {
       {/* READ RECEIPTS MODAL */}
       {showReceiptModal && (
         <div className="pengumuman-modal-overlay">
-          <div className="pengumuman-modal-content" style={{ maxWidth: "600px" }}>
-            <div className="pengumuman-modal-header">
-              <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "700" }}>
+          <div
+            className="pengumuman-modal-content"
+            style={{
+              maxWidth: "600px",
+              width: "90%",
+              maxHeight: "80vh",
+              display: "flex",
+              flexDirection: "column",
+              position: "relative",
+            }}
+          >
+            {/* Header */}
+            <div
+              className="pengumuman-modal-header"
+              style={{
+                padding: "18px 24px",
+                borderBottom: "1px solid #e2e8f0",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                position: "relative",
+              }}
+            >
+              <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "700", color: "#0f172a" }}>
                 👁️ Statistik Keterbacaan Pengumuman
               </h3>
               <button
+                type="button"
                 onClick={() => setShowReceiptModal(false)}
                 style={{
-                  background: "rgba(255,255,255,0.2)",
-                  border: "none",
-                  color: "#fff",
-                  borderRadius: "50%",
+                  position: "absolute",
+                  top: 16,
+                  right: 16,
+                  background: "#ffffff",
+                  border: "1px solid #e5e7eb",
+                  color: "#6b7280",
+                  borderRadius: "8px",
                   width: "28px",
                   height: "28px",
                   cursor: "pointer",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  zIndex: 10,
+                  transition: "all 0.15s ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "#f3f4f6";
+                  e.currentTarget.style.borderColor = "#d1d5db";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "#ffffff";
+                  e.currentTarget.style.borderColor = "#e5e7eb";
                 }}
               >
                 ✕
               </button>
             </div>
 
-            <div style={{ padding: "20px" }}>
+            {/* Body (scrollable) */}
+            <div style={{ padding: "20px", overflowY: "auto", flex: 1 }}>
               {loadingReceipts || !receiptData ? (
                 <p style={{ color: "#64748b", textAlign: "center" }}>Memuat status pembacaan...</p>
               ) : (
@@ -798,7 +890,7 @@ export default function Pengumuman() {
                   </h4>
                   <div style={{ maxHeight: "200px", overflowY: "auto", border: "1px solid #e2e8f0", borderRadius: "8px", marginBottom: "16px" }}>
                     {receiptData.readers?.length === 0 ? (
-                      <p style={{ padding: "12px", color: "#94a3b8", fontStyle: "italic", margin: 0, fontSize: "12px" }}>
+                      <p style={{ padding: "12px", color: "#6b7280", fontStyle: "italic", margin: 0, fontSize: "12px" }}>
                         Belum ada pengguna yang membaca pengumuman ini.
                       </p>
                     ) : (
@@ -852,6 +944,34 @@ export default function Pengumuman() {
                   )}
                 </>
               )}
+            </div>
+
+            {/* Footer */}
+            <div
+              style={{
+                padding: "16px 24px",
+                borderTop: "1px solid #e2e8f0",
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: "10px",
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setShowReceiptModal(false)}
+                style={{
+                  padding: "8px 20px",
+                  borderRadius: 8,
+                  border: "1px solid #cbd5e1",
+                  background: "#fff",
+                  color: "#334155",
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                Tutup
+              </button>
             </div>
           </div>
         </div>

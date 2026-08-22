@@ -101,6 +101,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/pengajuan/{pengajuan}/lampiran', [PengajuanController::class, 'getLampirans']);
     Route::get('/lampiran/{id}/download', [PengajuanController::class, 'downloadLampiran']);
     Route::delete('/lampiran/{id}', [PengajuanController::class, 'deleteLampiran']);
+    Route::get('/pengajuan/{pengajuan}/pdf/bukti', [PengajuanController::class, 'downloadBuktiPdf']);
 
     /*
     | Form Pengambilan Barang (Serah Terima & Auto-Deduct)

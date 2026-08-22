@@ -289,9 +289,34 @@ export default function FormPengambilanModal({ isOpen, onClose, pengajuan, onSuc
     }
   };
 
-  const handleDownloadPdf = (pengambilanId) => {
-    window.open(`${API_BASE}/pengambilan-barang/${pengambilanId}/pdf`, "_blank");
-  };
+  const handleDownloadPdf = async (pengambilanId) => {
+  try {
+    const res = await fetch(`${API_BASE}/pengambilan-barang/${pengambilanId}/pdf`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`, // Pastikan variabel 'token' sudah tersedia di scope/state ini
+        Accept: "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      alert("Gagal mengunduh dokumen PDF.");
+      return;
+    }
+
+    // Ambil data binary PDF
+    const blob = await res.blob();
+    
+    // Buat URL lokal di browser dari Blob tersebut
+    const fileUrl = window.URL.createObjectURL(blob);
+    
+    // Buka URL Blob di tab baru
+    window.open(fileUrl, "_blank");
+
+  } catch (error) {
+    console.error("Gagal cetak PDF:", error);
+  }
+};
 
   if (!isOpen || !pengajuan) return null;
 

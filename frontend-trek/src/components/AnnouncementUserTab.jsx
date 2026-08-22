@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import Swal from "sweetalert2";
+import "../css/Pengumuman.css";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000/api";
 
@@ -90,7 +91,7 @@ export default function AnnouncementUserTab({ subTab = "active", onUnreadChanged
           }}
         >
           <div style={{ fontSize: 40, marginBottom: 12 }}>📢</div>
-          <h4 style={{ margin: "0 0 6px 0", color: "#111827" }}>
+          <h4 style={{ margin: "0 0 6px 0", color: "#1f2937", fontWeight: 700 }}>
             {subTab === "history" ? "Belum ada riwayat pengumuman" : "Tidak ada pengumuman aktif"}
           </h4>
           <p style={{ margin: 0, color: "#6b7280", fontSize: 14 }}>
@@ -111,22 +112,24 @@ export default function AnnouncementUserTab({ subTab = "active", onUnreadChanged
                 onClick={() => handleOpenDetail(item)}
                 style={{
                   padding: "16px 20px",
-                  borderRadius: 12,
-                  background: isUnread ? "#f0fdf4" : "#ffffff",
-                  border: isImportant
-                    ? "2px solid #ef4444"
-                    : isUnread
-                    ? "1.5px solid #86efac"
-                    : "1px solid #e5e7eb",
-                  boxShadow: isUnread
-                    ? "0 4px 12px rgba(34, 197, 94, 0.12)"
-                    : "0 1px 3px rgba(0, 0, 0, 0.05)",
-                  cursor: "pointer",
+                  borderRadius: 14,
+                  background: "#ffffff",
+                  border: "1px solid #e5e7eb",
+                  borderLeft: isImportant ? "4px solid #ef4444" : isUnread ? "4px solid #22c55e" : "4px solid #cbd5e1",
+                  boxShadow: "0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02)",
                   transition: "all 0.2s ease-in-out",
-                  position: "relative",
+                  cursor: "pointer",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(-2px)";
+                  e.currentTarget.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.06)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow = "0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02)";
                 }}
               >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, position: "relative" }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 6 }}>
                       {isImportant && (
@@ -162,7 +165,7 @@ export default function AnnouncementUserTab({ subTab = "active", onUnreadChanged
                       </span>
                     </div>
 
-                    <h3 style={{ margin: "0 0 6px 0", fontSize: 16, color: "#111827", fontWeight: 700 }}>
+                    <h3 style={{ margin: "0 0 6px 0", fontSize: 16, color: "#1f2937", fontWeight: 700 }}>
                       {item.title}
                     </h3>
 
@@ -208,107 +211,136 @@ export default function AnnouncementUserTab({ subTab = "active", onUnreadChanged
       {/* DETAIL MODAL */}
       {selectedAnnouncement && (
         <div
-          className="modal-overlay"
+          className="pengumuman-modal-overlay"
           onClick={() => setSelectedAnnouncement(null)}
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: "rgba(0, 0, 0, 0.5)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 9999,
-          }}
         >
           <div
-            className="modal-box-small"
-            onClick={(e) => e.stopPropagation()}
+            className="pengumuman-modal-content"
             style={{
+              maxWidth: "620px",
               width: "90%",
-              maxWidth: 620,
-              background: "#fff",
-              borderRadius: 14,
-              padding: 24,
               maxHeight: "85vh",
-              overflowY: "auto",
-              boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)",
+              position: "relative",
             }}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
-              <div>
-                {selectedAnnouncement.priority === "IMPORTANT" && (
-                  <span
-                    style={{
-                      background: "#fee2e2",
-                      color: "#dc2626",
-                      padding: "2px 8px",
-                      borderRadius: 6,
-                      fontSize: 12,
-                      fontWeight: 700,
-                      display: "inline-block",
-                      marginBottom: 6,
-                    }}
-                  >
-                    🚨 PENGUMUMAN PENTING
-                  </span>
-                )}
-                <h2 style={{ margin: 0, fontSize: 20, color: "#111827" }}>
-                  {selectedAnnouncement.title}
-                </h2>
-              </div>
+            {/* Header */}
+            <div
+              className="pengumuman-modal-header"
+              style={{
+                padding: "18px 24px",
+                borderBottom: "1px solid #e5e7eb",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                position: "relative",
+                background: "#ffffff",
+                color: "#1f2937",
+                borderBottomLeftRadius: 0,
+                borderBottomRightRadius: 0,
+                borderTopLeftRadius: 16,
+                borderTopRightRadius: 16,
+              }}
+            >
+              {selectedAnnouncement.priority === "IMPORTANT" && (
+                <span
+                  style={{
+                    background: "#fee2e2",
+                    color: "#dc2626",
+                    padding: "4px 10px",
+                    borderRadius: 20,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    marginRight: 8,
+                  }}
+                >
+                  🚨 PENTING
+                </span>
+              )}
+              <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "700", flex: 1, color: "#1f2937" }}>
+                {selectedAnnouncement.title}
+              </h3>
               <button
+                type="button"
                 onClick={() => setSelectedAnnouncement(null)}
                 style={{
-                  background: "transparent",
-                  border: "none",
-                  fontSize: 20,
-                  cursor: "pointer",
+                  position: "absolute",
+                  top: 16,
+                  right: 16,
+                  background: "#ffffff",
+                  border: "1px solid #e5e7eb",
                   color: "#6b7280",
+                  borderRadius: "8px",
+                  width: "28px",
+                  height: "28px",
+                  cursor: "pointer",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  zIndex: 10,
+                  transition: "all 0.15s ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "#f3f4f6";
+                  e.currentTarget.style.borderColor = "#d1d5db";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "#ffffff";
+                  e.currentTarget.style.borderColor = "#e5e7eb";
                 }}
               >
                 ✕
               </button>
             </div>
 
-            <div
-              style={{
-                fontSize: 12,
-                color: "#6b7280",
-                padding: "8px 12px",
-                background: "#f8fafc",
-                borderRadius: 8,
-                marginBottom: 16,
-              }}
-            >
-              Diterbitkan oleh: <b>{selectedAnnouncement.creator?.name || "Admin/Superadmin"}</b> •{" "}
-              {formatDate(selectedAnnouncement.published_at || selectedAnnouncement.created_at)}
+            {/* Body */}
+            <div style={{ padding: "20px 24px", overflowY: "auto", flex: 1 }}>
+              <div
+                style={{
+                  fontSize: 12,
+                  color: "#64748b",
+                  padding: "8px 12px",
+                  background: "#f8fafc",
+                  borderRadius: 8,
+                  marginBottom: 16,
+                }}
+              >
+                Diterbitkan oleh: <b>{selectedAnnouncement.creator?.name || "Admin/Superadmin"}</b> •{" "}
+                {formatDate(selectedAnnouncement.published_at || selectedAnnouncement.created_at)}
+              </div>
+
+              <div
+                style={{
+                  fontSize: 14,
+                  lineHeight: 1.7,
+                  color: "#374151",
+                  whiteSpace: "pre-wrap",
+                }}
+              >
+                {selectedAnnouncement.body}
+              </div>
             </div>
 
+            {/* Footer */}
             <div
               style={{
-                fontSize: 14,
-                lineHeight: 1.7,
-                color: "#374151",
-                whiteSpace: "pre-wrap",
-                marginBottom: 24,
+                padding: "16px 24px",
+                borderTop: "1px solid #e2e8f0",
+                display: "flex",
+                justifyContent: "flex-end",
               }}
             >
-              {selectedAnnouncement.body}
-            </div>
-
-            <div style={{ display: "flex", justifyContent: "flex-end" }}>
               <button
                 type="button"
                 onClick={() => setSelectedAnnouncement(null)}
                 style={{
                   padding: "8px 20px",
                   borderRadius: 8,
-                  border: "none",
-                  background: "#2563eb",
-                  color: "white",
+                  border: "1px solid #cbd5e1",
+                  background: "#fff",
+                  color: "#334155",
+                  fontSize: "13px",
                   fontWeight: 600,
                   cursor: "pointer",
                 }}

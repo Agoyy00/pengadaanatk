@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import Swal from "sweetalert2";
+import "../css/Pengumuman.css";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000/api";
 
@@ -292,11 +293,22 @@ export default function AnnouncementAdminTab({ subTab = "active" }) {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             style={{
-              padding: "8px 12px",
-              borderRadius: 8,
+              padding: "9px 14px",
+              borderRadius: 10,
               border: "1px solid #cbd5e1",
               fontSize: 13,
               minWidth: 220,
+              background: "#f9fafb",
+              color: "#1f2937",
+              transition: "border-color 0.2s, box-shadow 0.2s",
+            }}
+            onFocus={(e) => {
+              e.currentTarget.style.borderColor = "#2563eb";
+              e.currentTarget.style.boxShadow = "0 0 0 3px rgba(37, 99, 235, 0.08)";
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.borderColor = "#cbd5e1";
+              e.currentTarget.style.boxShadow = "none";
             }}
           />
           <select
@@ -354,7 +366,9 @@ export default function AnnouncementAdminTab({ subTab = "active" }) {
           }}
         >
           <div style={{ fontSize: 40, marginBottom: 12 }}>📢</div>
-          <h4 style={{ margin: "0 0 6px 0", color: "#111827" }}>Tidak ada pengumuman</h4>
+          <h4 style={{ margin: "0 0 6px 0", color: "#1f2937", fontWeight: 700 }}>
+            Tidak ada pengumuman
+          </h4>
           <p style={{ margin: 0, color: "#6b7280", fontSize: 14 }}>
             Gunakan tombol "+ Buat Pengumuman Baru" untuk membuat siaran ke user.
           </p>
@@ -372,10 +386,21 @@ export default function AnnouncementAdminTab({ subTab = "active" }) {
                 key={item.id}
                 style={{
                   padding: "16px 20px",
-                  borderRadius: 12,
+                  borderRadius: 14,
                   background: "#ffffff",
-                  border: isImportant ? "1.5px solid #fca5a5" : "1px solid #e5e7eb",
-                  boxShadow: "0 1px 3px rgba(0, 0, 0, 0.04)",
+                  border: "1px solid #e5e7eb",
+                  borderLeft: isImportant ? "4px solid #ef4444" : "4px solid #3b82f6",
+                  boxShadow: "0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02)",
+                  transition: "all 0.2s ease-in-out",
+                  transform: "translateY(0)",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(-2px)";
+                  e.currentTarget.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.06)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow = "0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02)";
                 }}
               >
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
@@ -412,7 +437,7 @@ export default function AnnouncementAdminTab({ subTab = "active" }) {
                       </span>
                     </div>
 
-                    <h3 style={{ margin: "0 0 6px 0", fontSize: 16, color: "#111827", fontWeight: 700 }}>
+                    <h3 style={{ margin: "0 0 6px 0", fontSize: 16, color: "#1f2937", fontWeight: 700 }}>
                       {item.title}
                     </h3>
 
@@ -456,7 +481,7 @@ export default function AnnouncementAdminTab({ subTab = "active" }) {
                   </div>
 
                   {/* Action buttons */}
-                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
                     {isDraft && (
                       <button
                         onClick={() => handlePublish(item.id)}
@@ -464,14 +489,22 @@ export default function AnnouncementAdminTab({ subTab = "active" }) {
                           padding: "6px 12px",
                           borderRadius: 8,
                           border: "none",
-                          background: "#16a34a",
+                          background: "linear-gradient(135deg, #16a34a 0%, #15803d 100%)",
                           color: "white",
                           fontSize: 12,
-                          fontWeight: 600,
+                          fontWeight: 700,
                           cursor: "pointer",
+                          boxShadow: "0 2px 5px rgba(22, 163, 74, 0.2)",
+                          transition: "all 0.15s ease",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.boxShadow = "0 4px 12px rgba(22, 163, 74, 0.3)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.boxShadow = "0 2px 5px rgba(22, 163, 74, 0.2)";
                         }}
                       >
-                        Terbitkan
+                        🚀 Terbitkan
                       </button>
                     )}
                     {isDraft && (
@@ -480,15 +513,24 @@ export default function AnnouncementAdminTab({ subTab = "active" }) {
                         style={{
                           padding: "6px 12px",
                           borderRadius: 8,
-                          border: "1px solid #cbd5e1",
-                          background: "#fff",
-                          color: "#334155",
+                          border: "1px solid #d1d5db",
+                          background: "#ffffff",
+                          color: "#374151",
                           fontSize: 12,
                           fontWeight: 600,
                           cursor: "pointer",
+                          transition: "all 0.15s ease",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = "#f3f4f6";
+                          e.currentTarget.style.borderColor = "#9ca3af";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = "#ffffff";
+                          e.currentTarget.style.borderColor = "#d1d5db";
                         }}
                       >
-                        Edit
+                        ✏️ Edit
                       </button>
                     )}
                     <button
@@ -496,15 +538,36 @@ export default function AnnouncementAdminTab({ subTab = "active" }) {
                       style={{
                         padding: "6px 12px",
                         borderRadius: 8,
-                        border: "1px solid #fca5a5",
-                        background: "#fff",
-                        color: "#dc2626",
+                        border: "none",
+                        background: "#dc2626",
+                        color: "#ffffff",
                         fontSize: 12,
-                        fontWeight: 600,
+                        fontWeight: 700,
                         cursor: "pointer",
+                        transition: "all 0.15s ease",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = "#b91c1c";
+                        e.currentTarget.style.boxShadow = "0 2px 8px rgba(220, 38, 38, 0.3)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = "#dc2626";
+                        e.currentTarget.style.boxShadow = "none";
+                      }}
+                      onMouseDown={(e) => {
+                        e.currentTarget.style.background = "#991b1b";
+                      }}
+                      onMouseUp={(e) => {
+                        e.currentTarget.style.background = "#dc2626";
+                      }}
+                      onFocus={(e) => {
+                        e.currentTarget.style.boxShadow = "0 0 0 2px rgba(220, 38, 38, 0.4)";
+                      }}
+                      onBlur={(e) => {
+                        e.currentTarget.style.boxShadow = "none";
                       }}
                     >
-                      Hapus
+                      🗑️ Hapus
                     </button>
                   </div>
                 </div>
@@ -516,49 +579,70 @@ export default function AnnouncementAdminTab({ subTab = "active" }) {
 
       {/* CREATE / EDIT MODAL */}
       {showFormModal && (
-        <div
-          className="modal-overlay"
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: "rgba(0, 0, 0, 0.5)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 9999,
-          }}
-        >
+        <div className="pengumuman-modal-overlay">
           <div
             className="modal-box-small"
             style={{
               width: "90%",
               maxWidth: 600,
-              background: "#fff",
-              borderRadius: 14,
-              padding: 24,
+              background: "#ffffff",
+              borderRadius: 16,
+              padding: "28px 24px",
               maxHeight: "85vh",
               overflowY: "auto",
+              color: "#1f2937",
+              position: "relative",
+              boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.03)",
             }}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <h2 style={{ margin: 0, fontSize: 18 }}>
-                {editingId ? "Edit Pengumuman" : "Buat Pengumuman Baru"}
+            {/* Close Button - Top Right */}
+            <button
+              type="button"
+              onClick={() => setShowFormModal(false)}
+              style={{
+                position: "absolute",
+                top: 16,
+                right: 16,
+                width: 32,
+                height: 32,
+                borderRadius: "8px",
+                background: "#ffffff",
+                border: "1px solid #e5e7eb",
+                color: "#6b7280",
+                fontSize: 16,
+                fontWeight: 600,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                zIndex: 10,
+                transition: "all 0.15s ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "#f3f4f6";
+                e.currentTarget.style.borderColor = "#d1d5db";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "#ffffff";
+                e.currentTarget.style.borderColor = "#e5e7eb";
+              }}
+            >
+              ✕
+            </button>
+
+            <div style={{ marginBottom: 20, paddingRight: 40 }}>
+              <h2 style={{ margin: "0 0 6px 0", fontSize: 18, color: "#1f2937", fontWeight: 700 }}>
+                {editingId ? "✏️ Edit Draft Pengumuman" : "📢 Buat Pengumuman Baru"}
               </h2>
-              <button
-                onClick={() => setShowFormModal(false)}
-                style={{ background: "transparent", border: "none", fontSize: 20, cursor: "pointer" }}
-              >
-                ✕
-              </button>
+              <p style={{ margin: 0, fontSize: 13, color: "#6b7280" }}>
+                Isi formulir berikut untuk membuat pengumuman baru.
+              </p>
             </div>
 
             <form onSubmit={handleSaveAnnouncement}>
               <div style={{ marginBottom: 14 }}>
-                <label style={{ display: "block", marginBottom: 6, fontSize: 13, fontWeight: 600 }}>
-                  Judul Pengumuman *
+                <label style={{ display: "block", marginBottom: 6, fontSize: 13, fontWeight: 600, color: "#374151" }}>
+                  Judul Pengumuman <span style={{ color: "#ef4444" }}>*</span>
                 </label>
                 <input
                   type="text"
@@ -570,15 +654,18 @@ export default function AnnouncementAdminTab({ subTab = "active" }) {
                     width: "100%",
                     padding: 10,
                     borderRadius: 8,
-                    border: "1px solid #cbd5e1",
+                    border: "1px solid #d1d5db",
+                    background: "#f9fafb",
+                    color: "#1f2937",
                     fontSize: 14,
+                    outline: "none",
                   }}
                 />
               </div>
 
               <div style={{ marginBottom: 14 }}>
-                <label style={{ display: "block", marginBottom: 6, fontSize: 13, fontWeight: 600 }}>
-                  Isi / Pesan Pengumuman *
+                <label style={{ display: "block", marginBottom: 6, fontSize: 13, fontWeight: 600, color: "#374151" }}>
+                  Isi / Pesan Pengumuman <span style={{ color: "#ef4444" }}>*</span>
                 </label>
                 <textarea
                   required
@@ -590,16 +677,20 @@ export default function AnnouncementAdminTab({ subTab = "active" }) {
                     width: "100%",
                     padding: 10,
                     borderRadius: 8,
-                    border: "1px solid #cbd5e1",
+                    border: "1px solid #d1d5db",
+                    background: "#f9fafb",
+                    color: "#1f2937",
                     fontSize: 14,
                     fontFamily: "inherit",
+                    outline: "none",
+                    resize: "vertical",
                   }}
                 />
               </div>
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
                 <div>
-                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, fontWeight: 600 }}>
+                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, fontWeight: 600, color: "#374151" }}>
                     Tingkat Prioritas
                   </label>
                   <select
@@ -609,9 +700,11 @@ export default function AnnouncementAdminTab({ subTab = "active" }) {
                       width: "100%",
                       padding: 9,
                       borderRadius: 8,
-                      border: "1px solid #cbd5e1",
-                      background: "#fff",
+                      border: "1px solid #d1d5db",
+                      background: "#f9fafb",
+                      color: "#1f2937",
                       fontSize: 13,
+                      outline: "none",
                     }}
                   >
                     <option value="NORMAL">Normal (Info Reguler)</option>
@@ -620,7 +713,7 @@ export default function AnnouncementAdminTab({ subTab = "active" }) {
                 </div>
 
                 <div>
-                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, fontWeight: 600 }}>
+                  <label style={{ display: "block", marginBottom: 6, fontSize: 13, fontWeight: 600, color: "#374151" }}>
                     Status Publikasi
                   </label>
                   <select
@@ -630,9 +723,11 @@ export default function AnnouncementAdminTab({ subTab = "active" }) {
                       width: "100%",
                       padding: 9,
                       borderRadius: 8,
-                      border: "1px solid #cbd5e1",
-                      background: "#fff",
+                      border: "1px solid #d1d5db",
+                      background: "#f9fafb",
+                      color: "#1f2937",
                       fontSize: 13,
+                      outline: "none",
                     }}
                   >
                     <option value="PUBLISHED">Langsung Terbitkan</option>
@@ -641,18 +736,19 @@ export default function AnnouncementAdminTab({ subTab = "active" }) {
                 </div>
               </div>
 
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 20 }}>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 20, paddingTop: 16, borderTop: "1px solid #e5e7eb" }}>
                 <button
                   type="button"
                   onClick={() => setShowFormModal(false)}
                   style={{
-                    padding: "9px 16px",
+                    padding: "9px 20px",
                     borderRadius: 8,
-                    border: "1px solid #cbd5e1",
-                    background: "transparent",
-                    color: "#475569",
+                    border: "1px solid #d1d5db",
+                    background: "#ffffff",
+                    color: "#374151",
                     fontWeight: 600,
                     cursor: "pointer",
+                    fontSize: 14,
                   }}
                 >
                   Batal
@@ -664,10 +760,12 @@ export default function AnnouncementAdminTab({ subTab = "active" }) {
                     padding: "9px 20px",
                     borderRadius: 8,
                     border: "none",
-                    background: "#2563eb",
-                    color: "white",
+                    background: "#1e3a8a",
+                    color: "#ffffff",
                     fontWeight: 700,
                     cursor: submitting ? "not-allowed" : "pointer",
+                    fontSize: 14,
+                    opacity: submitting ? 0.7 : 1,
                   }}
                 >
                   {submitting ? "Menyimpan..." : "Simpan Pengumuman"}
@@ -680,114 +778,158 @@ export default function AnnouncementAdminTab({ subTab = "active" }) {
 
       {/* READ RECEIPTS MODAL */}
       {showReceiptModal && (
-        <div
-          className="modal-overlay"
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: "rgba(0, 0, 0, 0.5)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 9999,
-          }}
-        >
+        <div className="pengumuman-modal-overlay">
           <div
-            className="modal-box-small"
+            className="pengumuman-modal-content"
             style={{
+              maxWidth: "650px",
               width: "90%",
-              maxWidth: 650,
-              background: "#fff",
-              borderRadius: 14,
-              padding: 24,
               maxHeight: "85vh",
-              overflowY: "auto",
+              position: "relative",
             }}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-              <h2 style={{ margin: 0, fontSize: 18 }}>Statistik Pembacaan Pengumuman</h2>
+            {/* Header */}
+            <div
+              className="pengumuman-modal-header"
+              style={{
+                padding: "18px 24px",
+                borderBottom: "1px solid #e5e7eb",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                position: "relative",
+                background: "#ffffff",
+                color: "#1f2937",
+                borderBottomLeftRadius: 0,
+                borderBottomRightRadius: 0,
+                borderTopLeftRadius: 16,
+                borderTopRightRadius: 16,
+              }}
+            >
+              <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "700", color: "#1f2937" }}>
+                Statistik Pembacaan Pengumuman
+              </h3>
               <button
+                type="button"
                 onClick={() => setShowReceiptModal(false)}
-                style={{ background: "transparent", border: "none", fontSize: 20, cursor: "pointer" }}
+                style={{
+                  position: "absolute",
+                  top: 16,
+                  right: 16,
+                  background: "#ffffff",
+                  border: "1px solid #e5e7eb",
+                  color: "#6b7280",
+                  borderRadius: "8px",
+                  width: "28px",
+                  height: "28px",
+                  cursor: "pointer",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  zIndex: 10,
+                  transition: "all 0.15s ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "#f3f4f6";
+                  e.currentTarget.style.borderColor = "#d1d5db";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "#ffffff";
+                  e.currentTarget.style.borderColor = "#e5e7eb";
+                }}
               >
                 ✕
               </button>
             </div>
 
-            {loadingReceipt ? (
-              <div style={{ padding: "30px 0", textAlign: "center", color: "#6b7280" }}>
-                Memuat data pembaca...
-              </div>
-            ) : receiptData ? (
-              <div>
-                <div
-                  style={{
-                    padding: "12px 16px",
-                    background: "#f0fdf4",
-                    borderRadius: 8,
-                    border: "1px solid #bbf7d0",
-                    marginBottom: 16,
-                    display: "flex",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <div>
-                    <span style={{ fontSize: 13, color: "#166534" }}>Sudah Membaca:</span>{" "}
-                    <strong>{receiptData.read_count} user</strong>
-                  </div>
-                  <div>
-                    <span style={{ fontSize: 13, color: "#991b1b" }}>Belum Membaca:</span>{" "}
-                    <strong>{receiptData.unread_count} user</strong>
-                  </div>
+            {/* Body (scrollable) */}
+            <div style={{ padding: "20px 24px", overflowY: "auto", flex: 1 }}>
+              {loadingReceipt ? (
+                <div style={{ padding: "30px 0", textAlign: "center", color: "#6b7280" }}>
+                  Memuat data pembaca...
                 </div>
+              ) : receiptData ? (
+                <div>
+                  <div
+                    style={{
+                      padding: "12px 16px",
+                      background: "#f0fdf4",
+                      borderRadius: 8,
+                      border: "1px solid #bbf7d0",
+                      marginBottom: 16,
+                      display: "flex",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <div>
+                      <span style={{ fontSize: 13, color: "#166534" }}>Sudah Membaca:</span>{" "}
+                      <strong>{receiptData.read_count} user</strong>
+                    </div>
+                    <div>
+                      <span style={{ fontSize: 13, color: "#991b1b" }}>Belum Membaca:</span>{" "}
+                      <strong>{receiptData.unread_count} user</strong>
+                    </div>
+                  </div>
 
-                <h4 style={{ margin: "0 0 8px 0", fontSize: 14 }}>Daftar Pengguna yang Sudah Membaca:</h4>
-                <div style={{ maxHeight: 220, overflowY: "auto", border: "1px solid #e2e8f0", borderRadius: 8 }}>
-                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-                    <thead>
-                      <tr style={{ background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
-                        <th style={{ padding: "8px 12px", textAlign: "left" }}>Nama Pengguna</th>
-                        <th style={{ padding: "8px 12px", textAlign: "left" }}>Email</th>
-                        <th style={{ padding: "8px 12px", textAlign: "right" }}>Waktu Baca</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {receiptData.readers && receiptData.readers.length > 0 ? (
-                        receiptData.readers.map((r, i) => (
-                          <tr key={i} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                            <td style={{ padding: "8px 12px", fontWeight: 600 }}>{r.user_name}</td>
-                            <td style={{ padding: "8px 12px", color: "#64748b" }}>{r.user_email}</td>
-                            <td style={{ padding: "8px 12px", textAlign: "right", color: "#64748b" }}>
-                              {formatDate(r.read_at)}
+                  <h4 style={{ margin: "0 0 8px 0", fontSize: 14 }}>
+                    Daftar Pengguna yang Sudah Membaca:
+                  </h4>
+                  <div style={{ maxHeight: 220, overflowY: "auto", border: "1px solid #e2e8f0", borderRadius: 8 }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                      <thead>
+                        <tr style={{ background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
+                          <th style={{ padding: "8px 12px", textAlign: "left" }}>Nama Pengguna</th>
+                          <th style={{ padding: "8px 12px", textAlign: "left" }}>Email</th>
+                          <th style={{ padding: "8px 12px", textAlign: "right" }}>Waktu Baca</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {receiptData.readers && receiptData.readers.length > 0 ? (
+                          receiptData.readers.map((r, i) => (
+                            <tr key={i} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                              <td style={{ padding: "8px 12px", fontWeight: 600 }}>{r.user_name}</td>
+                              <td style={{ padding: "8px 12px", color: "#64748b" }}>{r.user_email}</td>
+                              <td style={{ padding: "8px 12px", textAlign: "right", color: "#64748b" }}>
+                                {formatDate(r.read_at)}
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan={3} style={{ padding: "20px 0", textAlign: "center", color: "#9ca3af" }}>
+                              Belum ada user yang membaca pengumuman ini.
                             </td>
                           </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td colSpan={3} style={{ padding: "20px 0", textAlign: "center", color: "#9ca3af" }}>
-                            Belum ada user yang membaca pengumuman ini.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-              </div>
-            ) : null}
+              ) : null}
+            </div>
 
-            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
+            {/* Footer */}
+            <div
+              style={{
+                padding: "16px 24px",
+                borderTop: "1px solid #e2e8f0",
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: "10px",
+              }}
+            >
               <button
                 type="button"
                 onClick={() => setShowReceiptModal(false)}
                 style={{
-                  padding: "8px 18px",
+                  padding: "8px 20px",
                   borderRadius: 8,
-                  border: "none",
-                  background: "#2563eb",
-                  color: "white",
+                  border: "1px solid #cbd5e1",
+                  background: "#fff",
+                  color: "#334155",
+                  fontSize: "13px",
                   fontWeight: 600,
                   cursor: "pointer",
                 }}

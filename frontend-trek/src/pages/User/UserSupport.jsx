@@ -109,44 +109,19 @@ export default function UserSupport() {
           {location.pathname === "/support" && (
             <div>
               {/* Tab Navigation Wrapper */}
-              <div
-                style={{
-                  display: "flex",
-                  gap: 10,
-                  borderBottom: "2px solid #e5e7eb",
-                  marginBottom: 20,
-                  paddingBottom: 4,
-                  flexWrap: "wrap",
-                }}
-              >
+              <div className="support-tab-container">
                 <button
                   type="button"
                   onClick={() => handleTabChange("tiket")}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    padding: "10px 18px",
-                    fontWeight: 600,
-                    borderRadius: 10,
-                    border: "none",
-                    backgroundColor: currentTab === "tiket" ? "#1e40af" : "transparent",
-                    color: currentTab === "tiket" ? "#ffffff" : "#6b7280",
-                    cursor: "pointer",
-                    boxShadow: currentTab === "tiket" ? "0 4px 12px rgba(30, 64, 175, 0.2)" : "none",
-                    transition: "all 0.2s ease-in-out",
-                  }}
+                  className={`support-tab-btn ${currentTab === "tiket" ? "active" : ""}`}
                 >
                   <span>🎫 Daftar Tiket Support</span>
                   {supportUnreadCount > 0 && (
                     <span
+                      className="support-tab-badge"
                       style={{
                         background: currentTab === "tiket" ? "#ffffff" : "#ef4444",
-                        color: currentTab === "tiket" ? "#1e40af" : "#ffffff",
-                        padding: "2px 6px",
-                        borderRadius: 10,
-                        fontSize: 11,
-                        fontWeight: 700,
+                        color: currentTab === "tiket" ? "#1e3a8a" : "#ffffff",
                       }}
                     >
                       {supportUnreadCount}
@@ -157,31 +132,15 @@ export default function UserSupport() {
                 <button
                   type="button"
                   onClick={() => handleTabChange("pengumuman-aktif")}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    padding: "10px 18px",
-                    fontWeight: 600,
-                    borderRadius: 10,
-                    border: "none",
-                    backgroundColor: currentTab === "pengumuman-aktif" ? "#1e40af" : "transparent",
-                    color: currentTab === "pengumuman-aktif" ? "#ffffff" : "#6b7280",
-                    cursor: "pointer",
-                    boxShadow: currentTab === "pengumuman-aktif" ? "0 4px 12px rgba(30, 64, 175, 0.2)" : "none",
-                    transition: "all 0.2s ease-in-out",
-                  }}
+                  className={`support-tab-btn ${currentTab === "pengumuman-aktif" ? "active" : ""}`}
                 >
                   <span>📢 Pengumuman Aktif</span>
                   {announcementUnreadCount > 0 && (
                     <span
+                      className="support-tab-badge"
                       style={{
                         background: currentTab === "pengumuman-aktif" ? "#ffffff" : "#16a34a",
-                        color: currentTab === "pengumuman-aktif" ? "#1e40af" : "#ffffff",
-                        padding: "2px 6px",
-                        borderRadius: 10,
-                        fontSize: 11,
-                        fontWeight: 700,
+                        color: currentTab === "pengumuman-aktif" ? "#1e3a8a" : "#ffffff",
                       }}
                     >
                       {announcementUnreadCount}
@@ -192,20 +151,7 @@ export default function UserSupport() {
                 <button
                   type="button"
                   onClick={() => handleTabChange("pengumuman-riwayat")}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    padding: "10px 18px",
-                    fontWeight: 600,
-                    borderRadius: 10,
-                    border: "none",
-                    backgroundColor: currentTab === "pengumuman-riwayat" ? "#1e40af" : "transparent",
-                    color: currentTab === "pengumuman-riwayat" ? "#ffffff" : "#6b7280",
-                    cursor: "pointer",
-                    boxShadow: currentTab === "pengumuman-riwayat" ? "0 4px 12px rgba(30, 64, 175, 0.2)" : "none",
-                    transition: "all 0.2s ease-in-out",
-                  }}
+                  className={`support-tab-btn ${currentTab === "pengumuman-riwayat" ? "active" : ""}`}
                 >
                   <span>📁 Riwayat Pengumuman</span>
                 </button>
